@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced IDGT Asset Analyzer & Ranking Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chosen Palette: Professional Calm (Light grays, Slate, Indigo accent) -->
+    <!-- Application Structure Plan: Retains a two-column primary layout for inputs and contextual information, making it familiar. Inputs are on the left, grouped into clear cards. The right column now uses accordions for detailed explanations (Input Fields, Calculation Logic, Output Metrics, Limitations), reducing initial clutter and allowing users to explore details as needed. A dedicated, full-width section below the main grid is introduced for displaying calculation results, giving them prominence and space. This structure enhances clarity and guided interaction, making it easier for inexperienced users to navigate and understand the tool's components and outputs. -->
+    <!-- Visualization & Content Choices: 
+        - Inputs: Grouped into cards (HTML/CSS) with clear labels and inline hints/tooltips -> Goal: Easy Data Entry -> Interaction: Standard form inputs, dynamic asset addition/removal -> Justification: Intuitive for data input, tooltips provide on-demand help for complex terms.
+        - Explanations: Accordion sections (HTML/CSS/JS) for detailed text -> Goal: Organized Information -> Interaction: Expand/collapse sections -> Justification: Prevents information overload, users can access details selectively.
+        - Results: Enhanced HTML table (HTML/CSS/JS for formatting) -> Goal: Clear Presentation of Outcomes -> Interaction: Static display, but with improved readability and formatting -> Justification: Familiar format for quantitative output, improved styling aids comprehension.
+        - Library/Method: Vanilla JS for accordion, tooltips, input validation, DOM manipulation, and calculations. Tailwind CSS for styling.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f4f7f9; /* Lighter, softer gray */
+            color: #334155; /* Slate-700 for text */
+        }
+        .input-label { @apply block text-sm font-medium text-slate-600 mb-1; }
+        .input-field { @apply mt-1 block w-full py-2 px-3 border border-slate-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm placeholder-slate-400; }
+        .input-field-sm { @apply mt-1 block w-full py-1.5 px-2.5 border border-slate-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-xs placeholder-slate-400; }
+        
+        .btn { @apply py-2.5 px-5 border border-transparent rounded-lg shadow-md text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-150 ease-in-out; }
+        .btn-primary { @apply bg-indigo-600 hover:bg-indigo-700 text-white focus:ring-indigo-500; }
+        .btn-secondary { @apply bg-slate-600 hover:bg-slate-700 text-white focus:ring-slate-500; }
+        .btn-delete { @apply bg-red-600 hover:bg-red-700 text-white focus:ring-red-500 text-xs px-3 py-1.5; }
+
+
+        .card { @apply bg-white shadow-xl rounded-xl p-6; }
+        .asset-card { @apply bg-slate-50 shadow-lg rounded-xl p-5 border border-slate-200; }
+        
+        .section-title { @apply text-2xl font-bold text-slate-700 mb-5 border-b-2 border-slate-200 pb-3; }
+        .subsection-title { @apply text-xl font-semibold text-indigo-700 mt-6 mb-3; }
+        
+        .results-table th, .results-table td { @apply px-3 py-2 border border-slate-300 text-sm text-left whitespace-nowrap; }
+        .results-table th { @apply bg-slate-100 font-semibold text-slate-700; }
+        .results-table tr:nth-child(even) { @apply bg-slate-50; }
+
+
+        .loading-spinner {
+            border: 3px solid #e0e7ff; /* Indigo-100 */
+            border-top: 3px solid #4f46e5; /* Indigo-600 */
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+            margin-left: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+
+        .accordion-item { @apply bg-white rounded-lg shadow-md mb-3; }
+        .accordion-header { @apply flex justify-between items-center w-full p-4 cursor-pointer hover:bg-slate-50 transition-colors duration-150; }
+        .accordion-title { @apply text-lg font-semibold text-slate-700; }
+        .accordion-icon { @apply text-indigo-600 text-xl transition-transform duration-300; }
+        .accordion-content { @apply hidden p-4 border-t border-slate-200 text-sm text-slate-600 leading-relaxed; }
+        .accordion-content ul { @apply list-disc pl-5 space-y-1; }
+        .accordion-content strong { @apply font-semibold text-slate-700; }
+        .accordion-content .formula { @apply font-mono text-sm text-indigo-700 bg-indigo-50 p-1 rounded; }
+        .accordion-content .affected-outputs-list { @apply list-disc list-inside text-xs mt-1; }
+        .accordion-content .explanation-table th, .accordion-content .explanation-table td { @apply px-2 py-1.5 border border-slate-200 text-xs text-left; }
+        .accordion-content .explanation-table th { @apply bg-slate-100 font-medium; }
+        
+        .tooltip-container { @apply relative inline-block; }
+        .tooltip-icon { @apply ml-1 text-slate-400 hover:text-indigo-600 cursor-help text-xs; }
+        .tooltip-text { 
+            @apply invisible absolute z-10 w-64 p-2 -mt-1 text-xs text-white bg-slate-700 rounded-md shadow-lg 
+                   opacity-0 transition-opacity duration-300 left-1/2 transform -translate-x-1/2 bottom-full mb-2;
+        }
+        .tooltip-container:hover .tooltip-text { @apply visible opacity-100; }
+
+
+        .error-message { @apply mt-2 text-sm text-red-600 bg-red-50 p-3 rounded-md border border-red-300; }
+        .info-message { @apply mt-2 text-sm text-blue-600 bg-blue-50 p-3 rounded-md border border-blue-300; }
+        #notificationsArea { @apply mt-4 mb-4; }
+
+
+    </style>
+</head>
+<body class="bg-slate-100 p-4 md:p-8">
+    <div class="container mx-auto max-w-screen-2xl">
+        <header class="mb-10 text-center">
+            <h1 class="text-4xl md:text-5xl font-bold text-slate-800">IDGT Asset Analyzer</h1>
+            <p class="text-slate-600 mt-3 text-lg">Advanced Swap Asset Modeling & Efficiency Ranking</p>
+        </header>
+
+
+        <div id="notificationsArea" class="mb-6"></div>
+
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            <div class="lg:col-span-1 space-y-8">
+                <div class="card">
+                    <h2 class="section-title">Grantor Information</h2>
+                    <div>
+                        <label for="grantorCurrentAge" class="input-label">Current Age
+                            <span class="tooltip-container">
+                                <span class="tooltip-icon">&#9432;</span>
+                                <span class="tooltip-text">Grantor's age, used for mortality calculations.</span>
+                            </span>
+                        </label>
+                        <input type="number" id="grantorCurrentAge" class="input-field" value="65" min="0" max="119">
+                    </div>
+                    <div>
+                        <label for="grantorGender" class="input-label">Gender</label>
+                        <select id="grantorGender" class="input-field">
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="grantorFedOrdIncomeTaxRate" class="input-label">Fed Ord. Income Tax Rate (%)</label>
+                        <input type="number" id="grantorFedOrdIncomeTaxRate" class="input-field" value="37" step="0.1">
+                    </div>
+                    <div>
+                        <label for="grantorFedLtcgTaxRate" class="input-label">Fed LTCG Tax Rate (%)</label>
+                        <input type="number" id="grantorFedLtcgTaxRate" class="input-field" value="20" step="0.1">
+                    </div>
+                    <div>
+                        <label for="grantorStateOrdIncomeTaxRate" class="input-label">State Ord. Income Tax Rate (%)</label>
+                        <input type="number" id="grantorStateOrdIncomeTaxRate" class="input-field" value="5" step="0.1">
+                    </div>
+                    <div>
+                        <label for="grantorStateLtcgTaxRate" class="input-label">State LTCG Tax Rate (%)</label>
+                        <input type="number" id="grantorStateLtcgTaxRate" class="input-field" value="5" step="0.1">
+                    </div>
+                    <div>
+                        <label for="netInvestmentIncomeTaxRate" class="input-label">Net Investment Income Tax (NIIT) Rate (%)</label>
+                        <input type="number" id="netInvestmentIncomeTaxRate" class="input-field" value="3.8" step="0.1">
+                    </div>
+                </div>
+
+
+                <div class="card">
+                    <h2 class="section-title">Economic & Tax Assumptions</h2>
+                    <div>
+                        <label for="discountRate" class="input-label">Discount Rate (d) (%)
+                            <span class="tooltip-container">
+                                <span class="tooltip-icon">&#9432;</span>
+                                <span class="tooltip-text">Rate to calculate present value of future amounts. Reflects time value of money and risk.</span>
+                            </span>
+                        </label>
+                        <input type="number" id="discountRate" class="input-field" value="4.0" step="0.1">
+                    </div>
+                    <div>
+                        <label for="taxProvisionInflationRate" class="input-label">Tax Provision Inflation Rate (%)</label>
+                        <input type="number" id="taxProvisionInflationRate" class="input-field" value="2.0" step="0.1">
+                        <p class="text-xs text-slate-500 mt-1">Annual inflation for estate tax exemption.</p>
+                    </div>
+                     <div>
+                        <label for="totalGrantorEstate" class="input-label">Total Grantor Estate (Excl. IDGT Assets) ($)
+                            <span class="tooltip-container">
+                                <span class="tooltip-icon">&#9432;</span>
+                                <span class="tooltip-text">Estimate of grantor's current taxable estate value, NOT including assets considered for this IDGT. Used for more accurate estate tax projections.</span>
+                            </span>
+                        </label>
+                        <input type="number" id="totalGrantorEstate" class="input-field" value="10000000" step="100000">
+                    </div>
+                    <div>
+                        <label for="federalEstateTaxRate" class="input-label">Federal Estate Tax Rate (%)</label>
+                        <input type="number" id="federalEstateTaxRate" class="input-field" value="40" step="0.1">
+                    </div>
+                    <div>
+                        <label for="federalEstateExemption" class="input-label">Current Fed Estate Tax Exemption ($)</label>
+                        <input type="number" id="federalEstateExemption" class="input-field" value="13610000" step="10000">
+                    </div>
+                    <div>
+                        <label for="beneficiaryFedLtcgTaxRate" class="input-label">Beneficiary Fed LTCG Tax Rate (%)</label>
+                        <input type="number" id="beneficiaryFedLtcgTaxRate" class="input-field" value="20" step="0.1">
+                    </div>
+                    <div>
+                        <label for="beneficiaryStateLtcgTaxRate" class="input-label">Beneficiary State LTCG Tax Rate (%)</label>
+                        <input type="number" id="beneficiaryStateLtcgTaxRate" class="input-field" value="5" step="0.1">
+                    </div>
+                    <div>
+                        <label for="yearsPostDeathToSale" class="input-label">Years Post-Grantor's Death Until Bene Sells Asset (k)</label>
+                        <input type="number" id="yearsPostDeathToSale" class="input-field" value="1" min="0">
+                    </div>
+                    <div>
+                        <label for="maxProjectionYears" class="input-label">Max Projection Years</label>
+                        <input type="number" id="maxProjectionYears" class="input-field" value="35" min="1" max="80">
+                    </div>
+                    
+                    <h3 class="subsection-title">Post-IDGT Asset Sale Reinvestment Profile</h3>
+                    <div><label for="postSaleReinvestmentGrowthRate" class="input-label">Growth Rate (%):</label><input type="number" id="postSaleReinvestmentGrowthRate" class="input-field" value="6.0" step="0.1"></div>
+                    <div><label for="postSaleReinvestmentIncomeYield" class="input-label">Income Yield (%):</label><input type="number" id="postSaleReinvestmentIncomeYield" class="input-field" value="1.5" step="0.1"></div>
+
+
+                    <h3 class="subsection-title">Swapped-In Asset Profile (for Optimal Swap)</h3>
+                    <div><label for="swappedInAssetInitialBasisPct" class="input-label">Initial Basis (% of Swap Value):</label><input type="number" id="swappedInAssetInitialBasisPct" class="input-field" value="100" step="0.1"><p class="text-xs text-slate-500 mt-1">E.g., 100 for cash.</p></div>
+                    <div><label for="swappedInAssetGrowthRate" class="input-label">Growth Rate (%):</label><input type="number" id="swappedInAssetGrowthRate" class="input-field" value="4.0" step="0.1"></div>
+                    <div><label for="swappedInAssetIncomeYield" class="input-label">Income Yield (%):</label><input type="number" id="swappedInAssetIncomeYield" class="input-field" value="0.0" step="0.1"></div>
+                    <div><label for="swappedInAssetIncomeTaxRate" class="input-label">Grantor Tax Rate on Its Income (%):</label><input type="number" id="swappedInAssetIncomeTaxRate" class="input-field" value="0" step="0.1"> <p class="text-xs text-slate-500 mt-1">E.g., 0 for life ins. cash value, or use ord. rates.</p></div>
+                    <div><label for="swappedInAssetCgTaxRate" class="input-label">Grantor Tax Rate on Its Cap Gains (%):</label><input type="number" id="swappedInAssetCgTaxRate" class="input-field" value="0" step="0.1"> <p class="text-xs text-slate-500 mt-1">E.g., 0 for life ins., or use CG rates.</p></div>
+                </div>
+
+
+                <div class="card">
+                    <h2 class="section-title">Assets to Evaluate</h2>
+                    <div id="assetsContainer" class="space-y-6"></div>
+                    <button id="addAssetButton" class="btn btn-secondary mt-6 w-full flex items-center justify-center">
+                        <span class="text-xl mr-2">&#xFF0B;</span> Add Another Asset
+                    </button>
+                </div>
+            </div>
+
+
+            <div class="lg:col-span-2 space-y-6">
+                <div class="accordion-item">
+                    <div class="accordion-header">
+                        <span class="accordion-title">Calculator Overview & Goal</span>
+                        <span class="accordion-icon transform rotate-0">&#x276F;</span>
+                    </div>
+                    <div class="accordion-content">
+                        <p class="mb-2">This tool is an interactive calculator designed to help explore an advanced estate planning strategy known as an <strong>Intentionally Defective Grantor Trust (IDGT)</strong>.</p>
+                        <p><strong>Goal:</strong> The primary goal is to estimate and compare the net lifetime benefits of gifting or selling any individual asset to an IDGT. It tries to identify which assets might be more "efficient" for this strategy by looking at projected tax savings, overall wealth transfer to beneficiaries, and an "Efficiency Ratio." The calculator also attempts to find the "Optimal Swap Timing" – the best projected year to potentially exchange an asset out of the IDGT to take advantage of a step-up in basis at death.</p>
+                        <p class="text-xs text-red-700 bg-red-50 p-2 rounded mt-3"><strong>Important Disclaimer:</strong> This is a simplified model for educational and illustrative purposes only. It is not financial, tax, or legal advice. Always consult with qualified professionals.</p>
+                    </div>
+                </div>
+                
+                <div class="accordion-item">
+                    <div class="accordion-header">
+                        <span class="accordion-title">Input Field Explanations</span>
+                        <span class="accordion-icon transform rotate-0">&#x276F;</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full explanation-table">
+                                <thead><tr><th>Input Field</th><th>Importance & Effect</th><th>Directly Affects Outputs</th></tr></thead>
+                                <tbody>
+                                 <tr><td colspan="3" class="font-bold bg-slate-100">Grantor Information</td></tr>
+                                 <tr><td>Current Age & Gender</td><td><strong>Importance:</strong> Establishes baseline for mortality probabilities (likelihood of survival/death each year) using SSA tables. <br><strong>Effect:</strong> Younger ages/longer life expectancies generally mean more years for benefits (tax burn, growth outside estate) and costs (lost step-up if no swap) to accrue. Affects the probability weighting of all future cash flows.</td><td class="affected-outputs-list"><li>All NPVs</li><li>All PV calculations</li><li>Optimal Swap Year</li></td></tr>
+                                 <tr><td>Tax Rates (Fed Ord., LTCG, State Ord., LTCG, NIIT)</td><td><strong>Importance:</strong> Combine to determine grantor's effective tax rate on IDGT income/gains. <br><strong>Effect:</strong> Higher rates increase "tax burn" benefit (grantor pays IDGT's taxes, depleting their estate non-gift).</td><td class="affected-outputs-list"><li>PV Tax Burn</li><li>All NPVs</li><li>Optimal Swap Year</li></td></tr>
+                                 <tr><td colspan="3" class="font-bold bg-slate-100">Economic & Tax Assumptions</td></tr>
+                                 <tr><td>Discount Rate (d)</td><td><strong>Importance:</strong> Rate for present value calculations. Reflects time value of money & risk. <br><strong>Effect:</strong> Higher rate makes distant future amounts less valuable today.</td><td class="affected-outputs-list"><li>All NPVs</li><li>All PV calculations</li><li>Optimal Swap Year</li></td></tr>
+                                 <tr><td>Tax Provision Inflation Rate</td><td><strong>Importance:</strong> Growth rate of federal estate tax exemption. <br><strong>Effect:</strong> Higher inflation increases future exemption, potentially reducing PV of Estate Tax Savings.</td><td class="affected-outputs-list"><li>PV Estate Tax Impact</li><li>All NPVs</li><li>Optimal Swap Year</li></td></tr>
+                                 <tr><td>Total Grantor Estate (Excl. IDGT Assets)</td><td><strong>Importance:</strong> Used to determine if the grantor's overall estate is likely to be subject to estate tax, making the removal of IDGT assets more impactful. <br><strong>Effect:</strong> A higher total estate value (relative to the exemption) increases the potential PV Estate Tax Savings from the IDGT.</td><td class="affected-outputs-list"><li>PV Estate Tax Impact</li><li>All NPVs</li><li>Optimal Swap Year</li></td></tr>
+                                 <tr><td>Federal Estate Tax Rate</td><td><strong>Importance:</strong> Statutory tax rate on taxable estate at death. <br><strong>Effect:</strong> Higher rate increases value of removing assets from estate, boosting PV Estate Tax Savings.</td><td class="affected-outputs-list"><li>PV Estate Tax Impact</li><li>Tax-Excl. Gift Benefit</li><li>All NPVs</li></td></tr>
+                                 <tr><td>Current Fed Estate Tax Exemption</td><td><strong>Importance:</strong> Amount transferable tax-free. <br><strong>Effect:</strong> Lower exemption makes estate planning more critical, increasing benefit of reducing taxable estate.</td><td class="affected-outputs-list"><li>PV Estate Tax Impact</li><li>All NPVs</li></td></tr>
+                                 <tr><td>Beneficiary Tax Rates (Fed LTCG, State LTCG)</td><td><strong>Importance:</strong> Combined rate beneficiaries pay on gains from IDGT assets (carryover basis if no swap). <br><strong>Effect:</strong> Higher rates increase cost of lost step-up if no swap, making swaps more attractive.</td><td class="affected-outputs-list"><li>PV Step-Up Impact</li><li>All NPVs</li></td></tr>
+                                 <tr><td>Years Post-Grantor's Death Until Bene Sells Asset (k)</td><td><strong>Importance:</strong> Assumed holding period by beneficiaries before selling inherited asset. <br><strong>Effect:</strong> Longer period discounts future CGT impact more heavily.</td><td class="affected-outputs-list"><li>PV Step-Up Impact</li><li>All NPVs</li></td></tr>
+                                 <tr><td>Max Projection Years</td><td><strong>Importance:</strong> Time horizon for all calculations. <br><strong>Effect:</strong> Longer horizons allow more compounding but add uncertainty.</td><td class="affected-outputs-list"><li>All calculations</li></td></tr>
+                                 <tr><td colspan="3" class="font-bold bg-slate-100">Post-IDGT Asset Sale Reinvestment Profile</td></tr>
+                                 <tr><td>Growth Rate & Income Yield</td><td><strong>Importance:</strong> Expected returns if original IDGT asset sold and proceeds reinvested in trust. <br><strong>Effect:</strong> Higher returns increase future IDGT value and tax burn on this new profile.</td><td class="affected-outputs-list"><li>All NPVs</li><li>PV Tax Burn</li></td></tr>
+                                 <tr><td colspan="3" class="font-bold bg-slate-100">Swapped-In Asset Profile</td></tr>
+                                 <tr><td>Initial Basis %, Growth, Yield, Tax Rates</td><td><strong>Importance:</strong> Defines financial characteristics of asset replacing original in IDGT if swap occurs. <br><strong>Effect:</strong> Impacts IDGT performance and grantor tax burn *after* swap. Low-return, tax-efficient asset (e.g., cash) highlights step-up benefit of asset swapped *out*.</td><td class="affected-outputs-list"><li>NPV (Optimal Swap)</li><li>Optimal Swap Year</li></td></tr>
+                                 <tr><td colspan="3" class="font-bold bg-slate-100">Asset-Specific Inputs</td></tr>
+                                 <tr><td>Current Undiscounted FMV</td><td><strong>Importance:</strong> Asset's fair market value before discounts. <br><strong>Effect:</strong> Base for gifted value, growth, estate tax savings. Higher FMV means larger potential dollar impacts.</td><td class="affected-outputs-list"><li>All calculations</li></td></tr>
+                                 <tr><td>Valuation Discount (%)</td><td><strong>Importance:</strong> % reduction to FMV for gift tax (e.g., lack of marketability). <br><strong>Effect:</strong> Reduces "Gift Val" (denominator for Efficiency Ratios). Does not reduce economic value for growth/estate tax.</td><td class="affected-outputs-list"><li>Gift Val</li><li>Efficiency Ratios</li></td></tr>
+                                 <tr><td>Current Cost Basis</td><td><strong>Importance:</strong> Original basis for calculating capital gains. <br><strong>Effect:</strong> Lower basis means larger embedded gain, increasing cost of lost step-up (no swap) and potential tax burn on IDGT sale.</td><td class="affected-outputs-list"><li>PV Step-Up Impact</li><li>PV Tax Burn</li></td></tr>
+                                 <tr><td>Exp. Annual Appreciation (g) & Income Yield (y) (%)</td><td><strong>Importance:</strong> Expected asset growth and income rates. <br><strong>Effect:</strong> Major drivers. Higher appreciation increases value removed from estate but also potential lost step-up. Higher yield boosts PV Tax Burn.</td><td class="affected-outputs-list"><li>All NPVs</li><li>PV Tax Burn</li></td></tr>
+                                 <tr><td>Sale Year in IDGT (0 if never)</td><td><strong>Importance:</strong> Year IDGT assumed to sell original asset. <br><strong>Effect:</strong> Earlier sale realizes post-contribution gains sooner for tax burn. Asset profile changes to "Post-IDGT Reinvestment."</td><td class="affected-outputs-list"><li>PV Tax Burn</li><li>Asset Profile Change</li></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="accordion-item">
+                    <div class="accordion-header">
+                        <span class="accordion-title">Understanding Optimal Swap Timing</span>
+                        <span class="accordion-icon transform rotate-0">&#x276F;</span>
+                    </div>
+                    <div class="accordion-content">
+                        <p class="mb-2">The 'Optimal Swap Timing' is the calculated future year when it's projected to be most financially advantageous to use the IDGT's 'swap power.' This means bringing the specific asset out of the IDGT and back into your personal estate (typically in exchange for cash or other assets of equal value, now explicitly modeled with its own return/tax profile).</p>
+                        <p class="mb-2"><strong>How it's determined (with refined logic):</strong></p>
+                        <ul>
+                            <li>For each asset, the calculator simulates a 'swap' for every possible future year.</li>
+                            <li>For each simulated swap year, it recalculates the total expected financial benefit (Net Present Value or NPV). This NPV considers:
+                                <ul class="list-[circle] pl-5 space-y-1 my-1">
+                                    <li><strong>Tax Burn Benefit:</strong> Value of you paying the IDGT's income taxes. Before the swap, this is on the original asset's yield and its post-contribution capital gains (if sold by IDGT). At and after the swap, this is on the *newly swapped-in asset's* income/gains.</li>
+                                    <li><strong>Estate Tax Impact:</strong> This is a net calculation. If death is *before* the swap, the original asset is out of your estate (saving tax). If death is *at or after* the swap:
+                                        <ul class="list-[square] pl-5 space-y-1 my-1">
+                                            <li>The original asset is back in your estate (costing estate tax on its value).</li>
+                                            <li>The *newly swapped-in asset* is now out of your estate (saving estate tax on its value).</li>
+                                            <li><strong>Refinement:</strong> The value of the original asset passing at death (after being swapped out) is also considered to have *forfeited* the "tax-exclusive gift benefit" (a <span class="formula">Value * Rate<sup>2</sup></span> type saving) it would have achieved if an equivalent value had been gifted during life. This forfeited benefit reduces the NPV of the swap scenario.</li>
+                                        </ul>
+                                    </li>
+                                    <li><strong>Step-Up in Basis Impact:</strong> If death is *before* the swap, the original asset (in IDGT) doesn't get a step-up (cost to heirs). If death is *at or after* the swap, the original asset (back in your estate) *does* get a step-up (benefit to heirs). The *newly swapped-in asset* (in IDGT) would have its own basis considerations for heirs.</li>
+                                </ul>
+                            </li>
+                            <li>All outcomes are weighted by the probability of passing away in each year and discounted to today's dollars.</li>
+                            <li>The 'Optimal Swap Year' yields the highest NPV for that asset across all these possibilities.</li>
+                            <li>An early optimal swap (e.g., Year 1) might occur if the original asset has a very large embedded gain (making immediate step-up highly valuable, even with the new forfeited benefit adjustment), low ongoing tax burn potential, and/or if the discount rate heavily favors near-term benefits.</li>
+                        </ul>
+                    </div>
+                </div>
+
+
+                <div class="accordion-item">
+                    <div class="accordion-header">
+                        <span class="accordion-title">Key Calculation Note: Tax Burn on Capital Gains</span>
+                        <span class="accordion-icon transform rotate-0">&#x276F;</span>
+                    </div>
+                    <div class="accordion-content">
+                        <p class="mb-2">For the purpose of calculating the Net Present Value (NPV) and the Efficiency Ratio in this tool, the "tax burn" benefit derived from an asset sale by the IDGT is specifically defined:</p>
+                        <ul>
+                            <li>The calculator counts the tax paid by you (the grantor) on capital gains that accrue <strong>after</strong> the asset was contributed to the IDGT as a positive component of the "PV Tax Burn." This reflects the "alpha" or additional wealth generated and tax-shielded due to the IDGT structure on <em>new growth</em>.</li>
+                            <li>If an asset has pre-existing (embedded) capital gains at the time it's gifted, and the IDGT later sells this asset, you (the grantor) are still legally responsible for paying the capital gains tax on that pre-existing portion (calculated from the original carryover basis). This payment genuinely reduces your personal estate (which is beneficial for overall estate tax purposes) and allows the IDGT to retain the full gross sale proceeds.</li>
+                            <li>However, this calculator, for its specific "PV Tax Burn" component contributing to the NPV and Efficiency Ratio, <strong>isolates the benefit to post-contribution gains</strong>. This approach aims to provide a clearer comparison of assets based on the <em>new value</em> and tax efficiency generated <em>after</em> they are placed into the IDGT structure for its growth phase, rather than giving "alpha" credit in the tax burn line item for taxes on gains that existed prior to the gift.</li>
+                            <li>The overall estate tax savings calculation (PV Estate Tax Impact) still considers the removal of the asset's full fair market value (including pre-existing gains and all future growth until a potential swap) from your estate, and is now more accurately assessed based on the `Total Grantor Estate` input.</li>
+                        </ul>
+                    </div>
+                </div>
+
+
+                <div class="accordion-item">
+                    <div class="accordion-header">
+                        <span class="accordion-title">General Notes & Limitations</span>
+                        <span class="accordion-icon transform rotate-0">&#x276F;</span>
+                    </div>
+                    <div class="accordion-content">
+                         <ul>
+                            <li>This calculator is for illustrative and educational purposes only. It is <strong>not</strong> financial, tax, or legal advice.</li>
+                            <li>The accuracy depends heavily on input accuracy and underlying assumptions. Tax laws and mortality data can change.</li>
+                            <li>Mortality data used is from the SSA 2021 Period Life Table. Professional analysis may use different tables or adjustments.</li>
+                            <li>Federal estate tax exemption is inflated annually; however, detailed income tax bracket inflation is not modeled for the grantor's income tax rates. Tax rates are assumed to be static.</li>
+                            <li>The estate tax calculation now considers the `Total Grantor Estate` input for a more realistic assessment of whether the estate (including IDGT assets if swapped back or never gifted) would exceed the projected exemption. However, it still simplifies certain complex interactions and does not model all possible estate planning nuances.</li>
+                            <li>State-specific tax nuances (e.g., deductibility of state taxes for federal income tax) are simplified. State estate/inheritance taxes are not modeled here.</li>
+                            <li>Always consult with qualified financial advisors, estate planning attorneys, and tax professionals for personalized advice.</li>
+                        </ul>
+                    </div>
+                </div>
+                 <div class="accordion-item">
+                    <div class="accordion-header">
+                        <span class="accordion-title">Output Column Explanations</span>
+                        <span class="accordion-icon transform rotate-0">&#x276F;</span>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="overflow-x-auto">
+                           <table class="min-w-full explanation-table">
+                                <thead><tr><th>Output Column Name</th><th>Description</th><th>Core Formula / Logic</th></tr></thead>
+                                <tbody>
+                                 <tr><td>Rank (No Swap Effic.)</td><td>Ranking of assets based on their Efficiency Ratio if no swap occurs. Higher is better.</td><td class="formula">Sorted by "Effic. (No Swap)" descending.</td></tr>
+                                 <tr><td>Asset Name</td><td>User-defined name for the asset.</td><td class="formula">User Input</td></tr>
+                                 <tr><td>Gift Val ($)</td><td>The value of the asset gifted to the IDGT after any valuation discounts. This is the amount that typically uses up lifetime gift exemption.</td><td class="formula">Asset's Undiscounted FMV * (1 - Asset's Valuation Discount Percent)</td></tr>
+                                 <tr><td>Sale Yr</td><td>The year the IDGT is assumed to sell the original asset (if 0, never sold by IDGT).</td><td class="formula">User Input</td></tr>
+                                 <tr><td>NPV (No Swap) ($)</td><td>Net Present Value of the IDGT strategy for this asset if no asset swap ever occurs. Represents the total probability-weighted, discounted financial benefit.</td><td class="formula">PV Tax Burn (No Swap) + PV Estate Tax Impact (No Swap) + PV Step-Up Impact (No Swap)</td></tr>
+                                 <tr><td>Effic. (No Swap)</td><td>Efficiency Ratio if no swap occurs. NPV (No Swap) / Gift Value. Higher indicates more benefit per dollar of gifted value.</td><td class="formula">NPV (No Swap) / Gift Value (if Gift Value > 0 else 0)</td></tr>
+                                 <tr><td>Opt. Swap Yr</td><td>The calculated optimal year to swap the original asset out of the IDGT to maximize total NPV. "N/A" if no swap is better.</td><td class="formula">Year (1 to Max Proj. Yrs) yielding highest NPV (With Swap Scenario)</td></tr>
+                                 <tr><td>NPV (Optimal Swap) ($)</td><td>NPV of the IDGT strategy if asset is swapped at "Opt. Swap Yr". Considers benefits/costs before/after swap, including forfeited tax-exclusive benefit.</td><td class="formula">Max of [PV Tax Burn (Swap) + PV Estate Tax Impact (Swap) + PV Step-Up Impact (Swap)]</td></tr>
+                                 <tr><td>Effic. (Optimal Swap)</td><td>Efficiency Ratio if asset swapped at "Opt. Swap Yr". NPV (Optimal Swap) / Gift Value.</td><td class="formula">NPV (Optimal Swap) / Gift Value (if Gift Value > 0 else 0)</td></tr>
+                                 <tr><td>Tax-Excl. Gift Benefit (Initial Gift) ($)</td><td>Structural tax saving from making initial gift tax-exclusive vs. tax-inclusive death transfer. One-time benefit.</td><td class="formula">Asset's Undiscounted FMV * (Federal Estate Tax Rate<sup>2</sup>)</td></tr>
+                                 <tr><td>PV Tax Burn (No Swap) ($)</td><td>PV of all income taxes on IDGT income/gains (post-contribution if asset sold by IDGT) paid by grantor over lifetime, no swap.</td><td class="formula">SUM [ (Annual Tax Burn * Prob. Alive) / (1 + Disc. Rate)^Year ]</td></tr>
+                                 <tr><td>PV Estate Tax Impact (Net) ($)</td><td>PV of net impact on federal estate taxes due to IDGT strategy (no swap). Positive if saves tax. Considers `Total Grantor Estate`.</td><td class="formula">SUM [ (Net Estate Tax Saved/Cost * Prob. Death) / (1 + Disc. Rate)^Year ]</td></tr>
+                                 <tr><td>PV Step-Up Impact (Net) ($)</td><td>PV of net impact on CGT for beneficiaries due to basis changes (loss of step-up if no swap, gain if swapped).</td><td class="formula">SUM [ (Net CGT Impact * Prob. Death) / (1 + Disc. Rate)^(Year + k) ]</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-2">Note: "PV Estate Tax Impact (Net)" and "PV Step-Up Impact (Net)" in the table refer to the "No Swap" scenario. The NPV (Optimal Swap) calculation internally derives its own PVs for these components based on the swap timing and the refined logic.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="my-10 text-center">
+            <button id="calculateButton" class="btn btn-primary text-lg w-full md:w-auto">
+                Calculate & Rank Assets <span id="calculationSpinner" class="loading-spinner hidden"></span>
+            </button>
+        </div>
+
+
+        <div id="resultsOuterContainer" class="mt-8 card hidden">
+             <h2 class="section-title">Calculation Results</h2>
+            <div id="resultsContainer" class="overflow-x-auto">
+            </div>
+        </div>
+
+
+        <footer class="text-center mt-16 py-6 border-t border-slate-300">
+            <p class="text-sm text-slate-500">&copy; 2024-2025 Enhanced IDGT Asset Analyzer. For illustrative purposes only.</p>
+        </footer>
+    </div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const SSA_2021_LX_TABLE = {0:[100000,100000],1:[99414,99494],2:[99372,99455],3:[99345,99432],4:[99323,99415],5:[99304,99400],6:[99289,99388],7:[99275,99378],8:[99262,99367],9:[99250,99358],10:[99238,99348],11:[99225,99338],12:[99211,99327],13:[99195,99314],14:[99173,99298],15:[99143,99279],16:[99098,99256],17:[99035,99227],18:[98949,99192],19:[98840,99150],20:[98715,99105],21:[98579,99055],22:[98433,98999],23:[98275,98939],24:[98106,98873],25:[97926,98802],26:[97734,98725],27:[97530,98643],28:[97316,98555],29:[97089,98462],30:[96850,98361],31:[96601,98252],32:[96342,98135],33:[96073,98008],34:[95797,97873],35:[95512,97730],36:[95218,97579],37:[94916,97420],38:[94603,97252],39:[94277,97075],40:[93937,96887],41:[93582,96687],42:[93211,96474],43:[92825,96247],44:[92423,96008],45:[92003,95756],46:[91564,95489],47:[91100,95203],48:[90608,94897],49:[90083,94568],50:[89523,94215],51:[88926,93837],52:[88289,93433],53:[87606,93000],54:[86874,92537],55:[86089,92040],56:[85248,91503],57:[84347,90924],58:[83386,90303],59:[82361,89635],60:[81272,88915],61:[80112,88142],62:[78882,87313],63:[77582,86427],64:[76208,85481],65:[74759,84470],66:[73232,83391],67:[71626,82239],68:[69939,81011],69:[68168,79703],70:[66312,78312],71:[64369,76834],72:[62338,75265],73:[60220,73603],74:[58016,71844],75:[55728,69986],76:[53360,68028],77:[50917,65968],78:[48407,63808],79:[45837,61550],80:[43217,59200],81:[40558,56764],82:[37872,54250],83:[35173,51668],84:[32476,49028],85:[29798,46343],86:[27155,43627],87:[24563,40896],88:[22038,38165],89:[19595,35450],90:[17250,32766],91:[15016,30129],92:[12909,27554],93:[10942,25056],94:[9130,22649],95:[7485,20347],96:[6018,18161],97:[4738,16100],98:[3649,14170],99:[2749,12377],100:[2028,10724],101:[1466,9213],102:[1039,7843],103:[722,6610],104:[491,5510],105:[326,4538],106:[212,3688],107:[135,2953],108:[84,2327],109:[51,1803],110:[30,1372],111:[17,1024],112:[10,742],113:[5,526],114:[3,364],115:[2,246],116:[1,162],117:[0,104],118:[0,65],119:[0,39]};
+    const MAX_AGE_IN_TABLE = 119;
+
+
+    const assetsContainer = document.getElementById('assetsContainer');
+    const addAssetButton = document.getElementById('addAssetButton');
+    const calculateButton = document.getElementById('calculateButton');
+    const resultsContainer = document.getElementById('resultsContainer');
+    const resultsOuterContainer = document.getElementById('resultsOuterContainer');
+    const notificationsArea = document.getElementById('notificationsArea');
+    const calculationSpinner = document.getElementById('calculationSpinner');
+    let assetCounter = 0;
+
+
+    function showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.textContent = message;
+        if (type === 'error') {
+            notification.className = 'error-message';
+        } else {
+            notification.className = 'info-message';
+        }
+        notificationsArea.innerHTML = ''; 
+        notificationsArea.appendChild(notification);
+        
+        setTimeout(() => {
+          if(notificationsArea.contains(notification)) {
+            notificationsArea.removeChild(notification);
+          }
+        }, type === 'error' ? 8000 : 5000);
+    }
+    
+    function validateInputs(grantor, assumptions, assets) {
+        let isValid = true;
+        let errors = [];
+
+
+        if (grantor.currentAge < 0 || grantor.currentAge > MAX_AGE_IN_TABLE) errors.push("Grantor's Current Age is outside the valid range (0-119).");
+        if (grantor.fedOrdIncomeTaxRate < 0 || grantor.fedOrdIncomeTaxRate > 1) errors.push("Grantor Fed Ord. Income Tax Rate must be between 0% and 100%.");
+        if (grantor.fedLtcgTaxRate < 0 || grantor.fedLtcgTaxRate > 1) errors.push("Grantor Fed LTCG Tax Rate must be between 0% and 100%.");
+        if (grantor.stateOrdIncomeTaxRate < 0 || grantor.stateOrdIncomeTaxRate > 1) errors.push("Grantor State Ord. Income Tax Rate must be between 0% and 100%.");
+        if (grantor.stateLtcgTaxRate < 0 || grantor.stateLtcgTaxRate > 1) errors.push("Grantor State LTCG Tax Rate must be between 0% and 100%.");
+        if (grantor.niitRate < 0 || grantor.niitRate > 1) errors.push("NIIT Rate must be between 0% and 100%.");
+
+
+        if (assumptions.discountRate < 0) errors.push("Discount Rate cannot be negative.");
+        if (assumptions.taxProvisionInflationRate < -0.1 || assumptions.taxProvisionInflationRate > 0.2) errors.push("Tax Provision Inflation Rate seems unusual (expected range -10% to 20%).");
+        if (assumptions.totalGrantorEstate < 0) errors.push("Total Grantor Estate cannot be negative.");
+        if (assumptions.federalEstateTaxRate < 0 || assumptions.federalEstateTaxRate > 1) errors.push("Federal Estate Tax Rate must be between 0% and 100%.");
+        if (assumptions.federalEstateExemptionCurrent < 0) errors.push("Current Fed Estate Tax Exemption cannot be negative.");
+        if (assumptions.beneficiaryFedLtcgTaxRate < 0 || assumptions.beneficiaryFedLtcgTaxRate > 1) errors.push("Beneficiary Fed LTCG Tax Rate must be between 0% and 100%.");
+        if (assumptions.beneficiaryStateLtcgTaxRate < 0 || assumptions.beneficiaryStateLtcgTaxRate > 1) errors.push("Beneficiary State LTCG Tax Rate must be between 0% and 100%.");
+        if (assumptions.yearsPostDeathToSale < 0) errors.push("Years Post-Grantor's Death Until Bene Sells Asset cannot be negative.");
+        if (assumptions.maxProjectionYears < 1 || assumptions.maxProjectionYears > 100) errors.push("Max Projection Years must be between 1 and 100.");
+        
+        assets.forEach((asset, index) => {
+            if (asset.fmvUndiscounted <= 0) errors.push(`Asset #${index + 1}: Current Undiscounted FMV must be positive.`);
+            if (asset.valuationDiscountPct < 0 || asset.valuationDiscountPct > 1) errors.push(`Asset #${index + 1}: Valuation Discount must be between 0% and 100%.`);
+            if (asset.basis0 < 0) errors.push(`Asset #${index + 1}: Current Cost Basis cannot be negative.`);
+            if (asset.basis0 > asset.fmvUndiscounted * (1-asset.valuationDiscountPct) && asset.valuationDiscountPct < 1) {
+                // This is a soft warning, not an error that stops calculation
+                // showNotification(`Asset #${index + 1}: Cost Basis is higher than gifted FMV. This is unusual.`, 'info');
+            }
+            if (asset.annualAppreciationRate < -1 || asset.annualAppreciationRate > 1) errors.push(`Asset #${index + 1}: Expected Annual Appreciation seems unusual (expected range -100% to 100%).`);
+            if (asset.annualIncomeYieldRate < 0 || asset.annualIncomeYieldRate > 1) errors.push(`Asset #${index + 1}: Expected Annual Income Yield must be between 0% and 100%.`);
+            if (asset.saleYear < 0) errors.push(`Asset #${index + 1}: Sale Year in IDGT cannot be negative.`);
+        });
+
+
+        if (errors.length > 0) {
+            showNotification("Please correct the following input errors:\n- " + errors.join("\n- "), 'error');
+            isValid = false;
+        }
+        return isValid;
+    }
+
+
+
+
+    function getLx(age, gender) {
+        if (age < 0) age = 0; // Handle potential negative age from calculation drift
+        if (age > MAX_AGE_IN_TABLE) { return 0; }
+        const entry = SSA_2021_LX_TABLE[Math.floor(age)]; // Use Math.floor for safety
+        return entry ? entry[gender === 'male' ? 0 : 1] : 0;
+    }
+
+
+    function getProbSurvivalToYearT(currentAge, yearT, gender, lxCurrentAge) {
+        if (lxCurrentAge === 0) return 0;
+        const lxAtYearTAge = getLx(currentAge + yearT, gender);
+        return lxAtYearTAge / lxCurrentAge;
+    }
+
+
+    function getProbDeathInYearT(currentAge, yearT, gender, lxCurrentAge) {
+        if (lxCurrentAge === 0) return 0;
+        const lxAtStartOfYear = getLx(currentAge + yearT, gender);
+        const lxAtEndOfYear = getLx(currentAge + yearT + 1, gender);
+        return Math.max(0, (lxAtStartOfYear - lxAtEndOfYear)) / lxCurrentAge;
+    }
+
+
+    function createAssetCard(assetId) {
+        const card = document.createElement('div');
+        card.classList.add('asset-card', 'space-y-3');
+        card.setAttribute('id', `assetCard${assetId}`);
+        card.innerHTML = `
+            <div class="flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-indigo-700">Asset #${assetId + 1}</h3>
+                ${assetId > 0 ? `<button type="button" class="btn btn-delete remove-asset-btn" data-asset-id="${assetId}">Remove</button>` : ''}
+            </div>
+            <div><label for="assetName${assetId}" class="input-label">Asset Name:</label><input type="text" id="assetName${assetId}" class="input-field-sm" value="Asset ${assetId + 1}"></div>
+            <div><label for="fmvUndiscounted${assetId}" class="input-label">Current Undiscounted FMV ($):</label><input type="number" id="fmvUndiscounted${assetId}" class="input-field-sm" value="1000000" step="1000"></div>
+            <div><label for="valuationDiscountPct${assetId}" class="input-label">Valuation Discount (%):</label><input type="number" id="valuationDiscountPct${assetId}" class="input-field-sm" value="0" step="0.1" min="0" max="100"></div>
+            <div><label for="basis0${assetId}" class="input-label">Current Cost Basis ($):</label><input type="number" id="basis0${assetId}" class="input-field-sm" value="200000" step="1000"></div>
+            <div><label for="annualAppreciationRate${assetId}" class="input-label">Exp. Annual Appreciation (g) (%):</label><input type="number" id="annualAppreciationRate${assetId}" class="input-field-sm" value="7" step="0.1"></div>
+            <div><label for="annualIncomeYieldRate${assetId}" class="input-label">Exp. Annual Income Yield (y) (%):</label><input type="number" id="annualIncomeYieldRate${assetId}" class="input-field-sm" value="2" step="0.1" min="0"></div>
+            <div><label for="assetSaleYear${assetId}" class="input-label">Sale Year in IDGT (0 if never):</label><input type="number" id="assetSaleYear${assetId}" class="input-field-sm" value="0" min="0"></div>
+        `;
+        if (assetsContainer) {
+            assetsContainer.appendChild(card);
+            const removeBtn = card.querySelector('.remove-asset-btn');
+            if (removeBtn) {
+                removeBtn.addEventListener('click', function() { 
+                    const cardToRemove = document.getElementById(`assetCard${this.dataset.assetId}`);
+                    if (cardToRemove) cardToRemove.remove();
+                });
+            }
+        }
+    }
+
+
+    if (addAssetButton) {
+        addAssetButton.addEventListener('click', () => { createAssetCard(assetCounter); assetCounter++; });
+    }
+
+
+    function getSafeFloat(elementId, defaultValue = 0) {
+        const val = parseFloat(document.getElementById(elementId).value);
+        return isNaN(val) ? defaultValue : val;
+    }
+    function getSafeInt(elementId, defaultValue = 0) {
+        const val = parseInt(document.getElementById(elementId).value);
+        return isNaN(val) ? defaultValue : val;
+    }
+
+
+    function getInputs() {
+        const grantor = {
+            currentAge: getSafeInt('grantorCurrentAge', 65),
+            gender: document.getElementById('grantorGender').value || 'male',
+            fedOrdIncomeTaxRate: getSafeFloat('grantorFedOrdIncomeTaxRate', 37) / 100,
+            fedLtcgTaxRate: getSafeFloat('grantorFedLtcgTaxRate', 20) / 100,
+            stateOrdIncomeTaxRate: getSafeFloat('grantorStateOrdIncomeTaxRate', 5) / 100,
+            stateLtcgTaxRate: getSafeFloat('grantorStateLtcgTaxRate', 5) / 100,
+            niitRate: getSafeFloat('netInvestmentIncomeTaxRate', 3.8) / 100,
+        };
+        const assumptions = {
+            discountRate: getSafeFloat('discountRate', 4.0) / 100,
+            taxProvisionInflationRate: getSafeFloat('taxProvisionInflationRate', 2.0) / 100,
+            totalGrantorEstate: getSafeFloat('totalGrantorEstate', 10000000),
+            federalEstateTaxRate: getSafeFloat('federalEstateTaxRate', 40) / 100,
+            federalEstateExemptionCurrent: getSafeFloat('federalEstateExemption', 13610000),
+            beneficiaryFedLtcgTaxRate: getSafeFloat('beneficiaryFedLtcgTaxRate', 20) / 100,
+            beneficiaryStateLtcgTaxRate: getSafeFloat('beneficiaryStateLtcgTaxRate', 5) / 100,
+            yearsPostDeathToSale: getSafeInt('yearsPostDeathToSale', 1),
+            maxProjectionYears: getSafeInt('maxProjectionYears', 35),
+            postSaleReinvestmentGrowthRate: getSafeFloat('postSaleReinvestmentGrowthRate', 6.0) / 100,
+            postSaleReinvestmentIncomeYield: getSafeFloat('postSaleReinvestmentIncomeYield', 1.5) / 100,
+            swappedInAssetInitialBasisPct: getSafeFloat('swappedInAssetInitialBasisPct', 100) / 100,
+            swappedInAssetGrowthRate: getSafeFloat('swappedInAssetGrowthRate', 4.0) / 100,
+            swappedInAssetIncomeYield: getSafeFloat('swappedInAssetIncomeYield', 0.0) / 100,
+            swappedInAssetIncomeTaxRate: getSafeFloat('swappedInAssetIncomeTaxRate', 0) / 100,
+            swappedInAssetCgTaxRate: getSafeFloat('swappedInAssetCgTaxRate', 0) / 100,
+        };
+        const assets = [];
+        if (assetsContainer) {
+            assetsContainer.querySelectorAll('.asset-card').forEach((card, i) => {
+                const idSuffix = card.id.replace('assetCard', '');
+                const assetData = {
+                    id: `Asset_${idSuffix}`, name: document.getElementById(`assetName${idSuffix}`).value || `Asset ${i + 1}`,
+                    fmvUndiscounted: getSafeFloat(`fmvUndiscounted${idSuffix}`, 1000000),
+                    valuationDiscountPct: getSafeFloat(`valuationDiscountPct${idSuffix}`, 0) / 100,
+                    basis0: getSafeFloat(`basis0${idSuffix}`, 200000),
+                    annualAppreciationRate: getSafeFloat(`annualAppreciationRate${idSuffix}`, 7) / 100,
+                    annualIncomeYieldRate: getSafeFloat(`annualIncomeYieldRate${idSuffix}`, 2) / 100,
+                    saleYear: getSafeInt(`assetSaleYear${idSuffix}`, 0),
+                };
+                assetData.fmvGifted = assetData.fmvUndiscounted * (1 - assetData.valuationDiscountPct);
+                assets.push(assetData);
+            });
+        }
+        return { grantor, assumptions, assets };
+    }
+
+
+    if (calculateButton) {
+        calculateButton.addEventListener('click', () => {
+            notificationsArea.innerHTML = ''; // Clear previous notifications
+            const { grantor, assumptions, assets } = getInputs();
+            
+            if (!validateInputs(grantor, assumptions, assets)) {
+                resultsOuterContainer.classList.add('hidden');
+                return;
+            }
+
+
+            if (!resultsContainer || !resultsOuterContainer) {
+                showNotification("Results container not found in DOM.", 'error');
+                return;
+            }
+            if (assets.length === 0) {
+                showNotification("Please add at least one asset to evaluate.", 'error');
+                resultsOuterContainer.classList.add('hidden');
+                return;
+            }
+
+
+            resultsOuterContainer.classList.remove('hidden');
+            resultsContainer.innerHTML = `<p class="p-4 text-slate-600">Calculating... This may take a moment for optimal swap analysis.</p>`;
+            calculationSpinner.classList.remove('hidden');
+            calculateButton.disabled = true;
+
+
+            setTimeout(() => { // Simulate async calculation
+                const results = [];
+                const lxCurrentAgeGrantor = getLx(grantor.currentAge, grantor.gender);
+
+
+                if (lxCurrentAgeGrantor === 0 && grantor.currentAge <= MAX_AGE_IN_TABLE) {
+                     showNotification("Error: Grantor's current age has zero survivors in the mortality table. Results may be unreliable.", 'error');
+                }
+
+
+
+
+                const grantorEffectiveOrdTaxRate = grantor.fedOrdIncomeTaxRate + grantor.stateOrdIncomeTaxRate + grantor.niitRate;
+                const grantorEffectiveCgTaxRate = grantor.fedLtcgTaxRate + grantor.stateLtcgTaxRate + grantor.niitRate;
+                const beneficiaryEffectiveCgTaxRate = assumptions.beneficiaryFedLtcgTaxRate + assumptions.beneficiaryStateLtcgTaxRate;
+
+
+                const annualExemptions = [];
+                let currentExemption = assumptions.federalEstateExemptionCurrent;
+                for (let i = 0; i < assumptions.maxProjectionYears; i++) {
+                    annualExemptions.push(currentExemption);
+                    currentExemption *= (1 + assumptions.taxProvisionInflationRate);
+                }
+
+
+                assets.forEach(asset => {
+                    let { npvIdgtAsset: npvNoSwap, efficiencyRatio: effNoSwap, pvTaxBurn: tbNoSwap, pvEstateTaxImpact: etiNoSwap, pvStepUpImpact: suiNoSwap } = calculateNpvsForAsset(asset, grantor, assumptions, annualExemptions, lxCurrentAgeGrantor, grantorEffectiveOrdTaxRate, grantorEffectiveCgTaxRate, beneficiaryEffectiveCgTaxRate, 0);
+                    const lifetimeGiftAdvantage = asset.fmvUndiscounted * Math.pow(assumptions.federalEstateTaxRate, 2);
+                    let maxNpvWithSwap = -Infinity;
+                    let optimalSwapYear = 0;
+
+
+                    for (let s_year = 1; s_year <= assumptions.maxProjectionYears; s_year++) {
+                        let { npvIdgtAsset: npvForThisSwapYear } = calculateNpvsForAsset(asset, grantor, assumptions, annualExemptions, lxCurrentAgeGrantor, grantorEffectiveOrdTaxRate, grantorEffectiveCgTaxRate, beneficiaryEffectiveCgTaxRate, s_year);
+                        if (npvForThisSwapYear > maxNpvWithSwap) {
+                            maxNpvWithSwap = npvForThisSwapYear;
+                            optimalSwapYear = s_year;
+                        }
+                    }
+                    
+                    if (maxNpvWithSwap <= npvNoSwap) {
+                        maxNpvWithSwap = npvNoSwap;
+                        optimalSwapYear = 0; 
+                    }
+                    const efficiencyWithSwap = asset.fmvGifted !== 0 ? maxNpvWithSwap / asset.fmvGifted : 0;
+
+
+                    results.push({
+                        ...asset,
+                        npvIdgtAssetNoSwap: npvNoSwap,
+                        efficiencyRatioNoSwap: effNoSwap,
+                        pvTaxBurnNoSwap: tbNoSwap,
+                        pvEstateTaxSavingsNoSwap: etiNoSwap, 
+                        pvLostStepUpCostNoSwap: suiNoSwap, 
+                        optimalSwapYear: optimalSwapYear,
+                        npvIdgtAssetWithSwap: maxNpvWithSwap,
+                        efficiencyRatioWithSwap: efficiencyWithSwap,
+                        lifetimeGiftAdvantage: lifetimeGiftAdvantage,
+                    });
+                });
+                displayRankedResults(results);
+                calculationSpinner.classList.add('hidden');
+                calculateButton.disabled = false;
+                showNotification("Calculations complete. Results are displayed below.", 'info');
+            }, 250); 
+        });
+    }
+
+
+    function calculateNpvsForAsset(asset, grantor, assumptions, annualExemptions, lxCurrentAgeGrantor, grantorEffOrdRate, grantorEffCgRate, beneEffCgRate, swapYearS) {
+        let totalPvTaxBurn = 0;
+        let totalPvEstateTaxImpact = 0;
+        let totalPvStepUpImpact = 0;
+
+
+        let assetCurrentlySoldInTrust_forBurn = false;
+        let currentValueInTrustForYield_forBurn_Original = asset.fmvGifted; 
+        let valueAtSaleInTrust_forBurn = 0;
+        let currentValueInTrustForYield_forBurn_SwappedIn = 0;
+        const fmvAtGiftForPostContributionGain = asset.fmvUndiscounted; 
+
+
+        for (let k_alive_year = 0; k_alive_year < assumptions.maxProjectionYears; k_alive_year++) {
+            const year_k_actual = k_alive_year + 1;
+            const prob_grantor_alive_at_start_of_this_year_k = getProbSurvivalToYearT(grantor.currentAge, k_alive_year, grantor.gender, lxCurrentAgeGrantor);
+
+
+            if (prob_grantor_alive_at_start_of_this_year_k === 0 && lxCurrentAgeGrantor > 0) break;
+            
+            let annual_income_for_burn_k;
+            let tax_on_sale_by_idgt_this_year_k = 0;
+            let tax_on_yield_k;
+
+
+            if (swapYearS > 0 && year_k_actual >= swapYearS) { 
+                if (year_k_actual === swapYearS) { 
+                    let value_of_original_asset_at_swap_time;
+                    if (asset.saleYear > 0 && swapYearS > asset.saleYear) { 
+                        const sale_price_orig = asset.fmvUndiscounted * Math.pow((1 + asset.annualAppreciationRate), asset.saleYear);
+                        value_of_original_asset_at_swap_time = sale_price_orig * Math.pow((1 + assumptions.postSaleReinvestmentGrowthRate), swapYearS - asset.saleYear);
+                    } else if (asset.saleYear > 0 && swapYearS === asset.saleYear){ 
+                         value_of_original_asset_at_swap_time = asset.fmvUndiscounted * Math.pow((1 + asset.annualAppreciationRate), swapYearS);
+                    } else { 
+                        value_of_original_asset_at_swap_time = asset.fmvUndiscounted * Math.pow((1 + asset.annualAppreciationRate), swapYearS);
+                    }
+                    currentValueInTrustForYield_forBurn_SwappedIn = value_of_original_asset_at_swap_time; 
+                }
+                
+                annual_income_for_burn_k = currentValueInTrustForYield_forBurn_SwappedIn * assumptions.swappedInAssetIncomeYield;
+                tax_on_yield_k = annual_income_for_burn_k * assumptions.swappedInAssetIncomeTaxRate; 
+                currentValueInTrustForYield_forBurn_SwappedIn *= (1 + assumptions.swappedInAssetGrowthRate); 
+                
+            } else { 
+                if (asset.saleYear > 0 && year_k_actual === asset.saleYear && !assetCurrentlySoldInTrust_forBurn) {
+                    const salePriceInTrust = asset.fmvUndiscounted * Math.pow((1 + asset.annualAppreciationRate), asset.saleYear);
+                    const postContributionGain = salePriceInTrust - fmvAtGiftForPostContributionGain; 
+                    if (postContributionGain > 0) {
+                        tax_on_sale_by_idgt_this_year_k = postContributionGain * grantorEffCgRate;
+                    }
+                    valueAtSaleInTrust_forBurn = salePriceInTrust; 
+                    currentValueInTrustForYield_forBurn_Original = salePriceInTrust; 
+                    assetCurrentlySoldInTrust_forBurn = true;
+                }
+
+
+                if (assetCurrentlySoldInTrust_forBurn) { 
+                    annual_income_for_burn_k = currentValueInTrustForYield_forBurn_Original * assumptions.postSaleReinvestmentIncomeYield;
+                    currentValueInTrustForYield_forBurn_Original *= (1 + assumptions.postSaleReinvestmentGrowthRate); 
+                } else { 
+                    annual_income_for_burn_k = currentValueInTrustForYield_forBurn_Original * asset.annualIncomeYieldRate;
+                    currentValueInTrustForYield_forBurn_Original *= (1 + asset.annualAppreciationRate); 
+                }
+                tax_on_yield_k = annual_income_for_burn_k * grantorEffOrdRate;
+            }
+            
+            const total_annual_burn_k = tax_on_yield_k + tax_on_sale_by_idgt_this_year_k;
+            if (lxCurrentAgeGrantor > 0) { // Only add to PV if grantor has a chance of being alive
+                 totalPvTaxBurn += (total_annual_burn_k * prob_grantor_alive_at_start_of_this_year_k) / Math.pow((1 + assumptions.discountRate), year_k_actual);
+            }
+        }
+
+
+        for (let t_death_idx = 0; t_death_idx < assumptions.maxProjectionYears; t_death_idx++) {
+            const year_of_death = t_death_idx + 1;
+            const prob_death_this_year = getProbDeathInYearT(grantor.currentAge, t_death_idx, grantor.gender, lxCurrentAgeGrantor);
+            
+            if (prob_death_this_year === 0 && lxCurrentAgeGrantor > 0 && year_of_death < assumptions.maxProjectionYears && t_death_idx < (assumptions.maxProjectionYears -1) ) continue;
+
+
+            let fmv_original_asset_at_death;
+            let basis_original_asset_at_death;
+            let fmv_swapped_in_asset_at_death = 0;
+            let basis_swapped_in_asset_at_death = 0;
+
+
+            let original_asset_sold_in_trust_by_death = false;
+            let value_at_original_asset_sale_in_trust = 0;
+            if (asset.saleYear > 0 && year_of_death >= asset.saleYear) {
+                original_asset_sold_in_trust_by_death = true;
+                value_at_original_asset_sale_in_trust = asset.fmvUndiscounted * Math.pow((1 + asset.annualAppreciationRate), asset.saleYear);
+            }
+
+
+            if (original_asset_sold_in_trust_by_death) {
+                fmv_original_asset_at_death = value_at_original_asset_sale_in_trust * Math.pow((1 + assumptions.postSaleReinvestmentGrowthRate), year_of_death - asset.saleYear);
+                basis_original_asset_at_death = value_at_original_asset_sale_in_trust; 
+            } else {
+                fmv_original_asset_at_death = asset.fmvUndiscounted * Math.pow((1 + asset.annualAppreciationRate), year_of_death);
+                basis_original_asset_at_death = asset.basis0;
+            }
+
+
+            if (swapYearS > 0 && year_of_death >= swapYearS) {
+                let value_of_original_asset_at_swap_time; 
+                if (asset.saleYear > 0 && swapYearS > asset.saleYear) { 
+                    const sale_price_orig = asset.fmvUndiscounted * Math.pow((1 + asset.annualAppreciationRate), asset.saleYear);
+                    value_of_original_asset_at_swap_time = sale_price_orig * Math.pow((1 + assumptions.postSaleReinvestmentGrowthRate), swapYearS - asset.saleYear);
+                } else if (asset.saleYear > 0 && swapYearS === asset.saleYear) { 
+                     value_of_original_asset_at_swap_time = asset.fmvUndiscounted * Math.pow((1 + asset.annualAppreciationRate), swapYearS);
+                } else { 
+                    value_of_original_asset_at_swap_time = asset.fmvUndiscounted * Math.pow((1 + asset.annualAppreciationRate), swapYearS);
+                }
+                
+                fmv_swapped_in_asset_at_death = value_of_original_asset_at_swap_time * Math.pow((1 + assumptions.swappedInAssetGrowthRate), year_of_death - swapYearS);
+                basis_swapped_in_asset_at_death = value_of_original_asset_at_swap_time * assumptions.swappedInAssetInitialBasisPct;
+            }
+            
+            const inflated_exemption_at_death = annualExemptions[t_death_idx];
+            
+            if (swapYearS === 0 || year_of_death < swapYearS) { 
+                const estate_value_for_tax_check_no_swap = assumptions.totalGrantorEstate + fmv_original_asset_at_death; // Asset effectively remains in estate for this check
+                const is_estate_taxable_no_swap = (estate_value_for_tax_check_no_swap > inflated_exemption_at_death) ? 1 : 0;
+                // The benefit is removing the IDGT asset from this potentially taxable estate
+                const estate_tax_saved = fmv_original_asset_at_death * assumptions.federalEstateTaxRate * is_estate_taxable_no_swap;
+                if (lxCurrentAgeGrantor > 0) totalPvEstateTaxImpact += (estate_tax_saved * prob_death_this_year) / Math.pow((1 + assumptions.discountRate), year_of_death);
+
+
+                const gain_if_no_step_up = Math.max(0, fmv_original_asset_at_death - basis_original_asset_at_death);
+                const cgt_for_beneficiary = gain_if_no_step_up * beneEffCgRate;
+                if (lxCurrentAgeGrantor > 0) totalPvStepUpImpact -= (cgt_for_beneficiary * prob_death_this_year) / Math.pow((1 + assumptions.discountRate), (year_of_death + assumptions.yearsPostDeathToSale));
+            
+            } else { 
+                // Original asset is back in grantor's estate
+                const estate_value_with_orig_asset_back = assumptions.totalGrantorEstate + fmv_original_asset_at_death;
+                const is_orig_asset_taxable_in_estate = (estate_value_with_orig_asset_back > inflated_exemption_at_death) ? 1 : 0;
+                const estate_tax_cost_orig_asset = fmv_original_asset_at_death * assumptions.federalEstateTaxRate * is_orig_asset_taxable_in_estate;
+                if (lxCurrentAgeGrantor > 0) totalPvEstateTaxImpact -= (estate_tax_cost_orig_asset * prob_death_this_year) / Math.pow((1 + assumptions.discountRate), year_of_death);
+
+
+                // Swapped-in asset is now out of grantor's estate (in IDGT)
+                // The "saving" is that this fmv_swapped_in_asset_at_death is NOT in the grantor's estate.
+                // We check if the grantor's estate (WITHOUT this swapped-in asset, but potentially including other assets that would have made it taxable) would have been taxable.
+                const estate_value_for_swapped_in_check = assumptions.totalGrantorEstate; // Base estate
+                const is_estate_taxable_for_swapped_in_benefit = (estate_value_for_swapped_in_check + fmv_swapped_in_asset_at_death > inflated_exemption_at_death) ? 1 : 0;
+                const estate_tax_saved_swapped_in = fmv_swapped_in_asset_at_death * assumptions.federalEstateTaxRate * is_estate_taxable_for_swapped_in_benefit;
+                if (lxCurrentAgeGrantor > 0) totalPvEstateTaxImpact += (estate_tax_saved_swapped_in * prob_death_this_year) / Math.pow((1 + assumptions.discountRate), year_of_death);
+                
+                // Original asset gets step-up in basis as it's in grantor's estate
+                const gain_orig_asset_would_have_been_taxed = Math.max(0, fmv_original_asset_at_death - basis_original_asset_at_death);
+                const cgt_saved_by_step_up_orig_asset = gain_orig_asset_would_have_been_taxed * beneEffCgRate;
+                if (lxCurrentAgeGrantor > 0) totalPvStepUpImpact += (cgt_saved_by_step_up_orig_asset * prob_death_this_year) / Math.pow((1 + assumptions.discountRate), (year_of_death + assumptions.yearsPostDeathToSale));
+
+
+                // Swapped-in asset (in IDGT) does NOT get step-up
+                const gain_swapped_in_asset_if_no_step_up = Math.max(0, fmv_swapped_in_asset_at_death - basis_swapped_in_asset_at_death);
+                const cgt_for_bene_swapped_in = gain_swapped_in_asset_if_no_step_up * beneEffCgRate;
+                if (lxCurrentAgeGrantor > 0) totalPvStepUpImpact -= (cgt_for_bene_swapped_in * prob_death_this_year) / Math.pow((1 + assumptions.discountRate), (year_of_death + assumptions.yearsPostDeathToSale));
+
+
+                // Lost tax-exclusive benefit because original asset is now part of taxable estate
+                const lost_tax_exclusive_benefit_on_death_transfer = fmv_original_asset_at_death * Math.pow(assumptions.federalEstateTaxRate, 2);
+                // This is a cost, so subtract it. Or, if PV Estate Tax Impact is defined as "savings", this reduces the savings.
+                if (lxCurrentAgeGrantor > 0) totalPvEstateTaxImpact -= (lost_tax_exclusive_benefit_on_death_transfer * prob_death_this_year) / Math.pow((1 + assumptions.discountRate), year_of_death);
+            }
+        } 
+
+
+        const finalNpv = totalPvTaxBurn + totalPvEstateTaxImpact + totalPvStepUpImpact;
+        
+        return {
+            npvIdgtAsset: finalNpv,
+            efficiencyRatio: asset.fmvGifted !== 0 ? finalNpv / asset.fmvGifted : 0,
+            pvTaxBurn: totalPvTaxBurn,
+            pvEstateTaxImpact: totalPvEstateTaxImpact, 
+            pvStepUpImpact: totalPvStepUpImpact 
+        };
+    }
+
+
+    function displayRankedResults(results) {
+        const rankedResults = [...results].sort((a, b) => b.efficiencyRatioNoSwap - a.efficiencyRatioNoSwap);
+        const formatCurrency = (value) => value.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
+        const formatRatio = (value) => value.toFixed(4);
+
+
+        let tableHTML = `
+            <table class="min-w-full results-table">
+                <thead>
+                    <tr>
+                        <th>Rank (No Swap Effic.)</th><th>Asset Name</th><th>Gift Val ($)</th><th>Sale Yr</th>
+                        <th>NPV (No Swap) ($)</th><th>Effic. (No Swap)</th>
+                        <th>Opt. Swap Yr</th><th>NPV (Optimal Swap) ($)</th><th>Effic. (Optimal Swap)</th>
+                        <th>Tax-Excl. Gift Benefit (Initial Gift) ($)</th>
+                        <th>PV Tax Burn (No Swap) ($)</th><th>PV Estate Tax Impact (Net) ($)</th><th>PV Step-Up Impact (Net) ($)</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        rankedResults.forEach((res, index) => {
+            tableHTML += `
+                <tr>
+                    <td class="text-center">${index + 1}</td>
+                    <td>${res.name}</td>
+                    <td class="text-right">${formatCurrency(res.fmvGifted)}</td>
+                    <td class="text-center">${res.saleYear > 0 ? res.saleYear : 'N/A'}</td>
+                    <td class="text-right">${formatCurrency(res.npvIdgtAssetNoSwap)}</td>
+                    <td class="text-right">${formatRatio(res.efficiencyRatioNoSwap)}</td>
+                    <td class="text-center">${res.optimalSwapYear > 0 ? res.optimalSwapYear : 'N/A'}</td>
+                    <td class="text-right">${formatCurrency(res.npvIdgtAssetWithSwap)}</td>
+                    <td class="text-right">${formatRatio(res.efficiencyRatioWithSwap)}</td>
+                    <td class="text-right">${formatCurrency(res.lifetimeGiftAdvantage)}</td>
+                    <td class="text-right">${formatCurrency(res.pvTaxBurnNoSwap)}</td>
+                    <td class="text-right">${formatCurrency(res.pvEstateTaxSavingsNoSwap)}</td> 
+                    <td class="text-right">${formatCurrency(res.pvLostStepUpCostNoSwap)}</td>
+                </tr>
+            `;
+        });
+        tableHTML += `</tbody></table>`;
+        
+        if (resultsContainer) {
+            resultsContainer.innerHTML = tableHTML;
+        }
+    }
+
+
+    document.querySelectorAll('.accordion-header').forEach(header => {
+        header.addEventListener('click', () => {
+            const content = header.nextElementSibling;
+            const icon = header.querySelector('.accordion-icon');
+            const isExpanded = content.style.display === 'block';
+            
+            content.style.display = isExpanded ? 'none' : 'block';
+            icon.style.transform = isExpanded ? 'rotate(0deg)' : 'rotate(90deg)';
+        });
+    });
+    
+    createAssetCard(assetCounter); // Initialize with one asset card
+    assetCounter++;
+
+
+});
+</script>
+</body>
+</html>
+
+
+
+
+
