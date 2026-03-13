@@ -153,27 +153,27 @@ export function calculateNPV_Gift(params) {
       const probDeathThisYear = getProbDeathInYear(grantorAge, t, gender);
       const df = discountFactor(discountRate, t);
 
-    const pvStepUpThisYear = stepUpImpactIfDeathThisYear * probDeathThisYear * df;
-    const pvContributionThisYear = probDeathThisYear * df * (estateTaxSavingsIfDeathThisYear + stepUpImpactIfDeathThisYear - taxBurn);
+      const pvStepUpThisYear = stepUpImpactIfDeathThisYear * probDeathThisYear * df;
+      const pvContributionThisYear = probDeathThisYear * df * (estateTaxSavingsIfDeathThisYear + stepUpImpactIfDeathThisYear - taxBurn);
 
-    totalPvContribution += pvContributionThisYear;
-    totalPvStepUp += pvStepUpThisYear;
-    totalProbDeath += probDeathThisYear;
-    weightedYearSum += probDeathThisYear * t;
+      totalPvContribution += pvContributionThisYear;
+      totalPvStepUp += pvStepUpThisYear;
+      totalProbDeath += probDeathThisYear;
+      weightedYearSum += probDeathThisYear * t;
 
-    annualDetail.push({
-      year: t,
-      assetFMV: valueAtT,
-      taxBurn,
-      cumulativeTaxBurn,
-      estateTaxSavingsIfDeathThisYear,
-      stepUpImpactIfDeathThisYear,
-      probDeathThisYear,
-      discountFactor: df,
-      pvContributionThisYear,
-      pvStepUpThisYear,
-    });
-  }
+      annualDetail.push({
+        year: t,
+        assetFMV: valueAtT,
+        taxBurn,
+        cumulativeTaxBurn,
+        estateTaxSavingsIfDeathThisYear,
+        stepUpImpactIfDeathThisYear,
+        probDeathThisYear,
+        discountFactor: df,
+        pvContributionThisYear,
+        pvStepUpThisYear,
+      });
+    }
 
   result.annualDetail = annualDetail;
   result.annualSummary = {
@@ -191,6 +191,7 @@ export function calculateNPV_Gift(params) {
   result.optimalSwapYear = peak ? peak.year : null;
   result.efficiencyRatio = assetFMV > 0 ? result.npv / assetFMV : 0;
   result.pvStepUp = totalPvStepUp;
+  }
 
   return result;
 }
