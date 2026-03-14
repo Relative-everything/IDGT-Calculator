@@ -272,7 +272,8 @@ export function calculateNPV_InstallmentSale(params) {
 
   let cumulativeTaxBurn = 0;
   let totalPvContribution = 0;
-    let totalPvStepUp = 0;
+  let totalProbDeath = 0;
+  let totalPvStepUp = 0;
   let weightedYearSum = 0;
   const annualDetail = [];
 
