@@ -75,93 +75,107 @@ export default function App() {
   const handleCalculate = () => {
     setIsCalculating(true)
 
-    const skipped = []
-
-    const output = assets
-      .map((asset) => {
-        const baseParams = {
-          assetFMV: asset.fmv,
-          costBasis: asset.basis,
-          annualGrowthRate: asset.growthRate,
-          annualIncomeYield: asset.incomeYield,
-          saleYearInIDGT: asset.saleYear,
-          valuationDiscountPct: asset.discount,
-          grantorAge: grantor.age,
-          grantorGender: grantor.gender,
-          discountRate: assumptions.discountRate / 100,
-          taxProvisionInflationRate: assumptions.taxInflationRate / 100,
-          totalGrantorEstate: assumptions.totalGrantorEstate,
-          federalEstateExemption: assumptions.federalEstateExemption,
-          federalEstateTaxRate: 0.4,
-          grantorFedOrdIncomeTaxRate: grantor.fedOrdIncomeTaxRate / 100,
-          grantorFedLtcgTaxRate: grantor.fedLtcgTaxRate / 100,
-          grantorStateOrdIncomeTaxRate: grantor.stateOrdIncomeTaxRate / 100,
-          grantorStateLtcgTaxRate: grantor.stateLtcgTaxRate / 100,
-          grantorNIITRate: grantor.niitRate / 100,
-          beneficiaryFedLtcgRate: assumptions.beneficiaryFedLtcg / 100,
-          beneficiaryStateLtcgRate: assumptions.beneficiaryStateLtcg / 100,
-          yearsPostDeathToSale: assumptions.yearsPostDeath,
-          maxProjectionYears: assumptions.maxYears,
-          tcjaSunset: assumptions.tcjaSunset,
-          state: grantor.state,
-          returnAnnualDetail: true,
-        }
-
-        if (asset.transferMechanism === 'grat' || asset.transferMechanism === 'slat') {
-          skipped.push(asset.name)
-          return null
-        }
-
-        if (asset.transferMechanism === 'installment') {
-          const result = calculateNPV_InstallmentSale({
-            ...baseParams,
-            noteRate: 0.05,
-            noteTerm: 10,
-            section7520Rate: 0.05,
-            grantor: {
-              fedOrdIncomeTaxRate: grantor.fedOrdIncomeTaxRate / 100,
-              fedLtcgTaxRate: grantor.fedLtcgTaxRate / 100,
-              niitRate: grantor.niitRate / 100,
-            },
-          })
-
-          return {
-            assetName: asset.name,
-            transferMechanism: 'Installment Sale',
-            assetValue: asset.fmv,
-            ...result,
-          }
-        }
-
-        const result = calculateNPV_Gift({
-          ...baseParams,
-          maxYears: assumptions.maxYears,
-        })
-
-        return {
-          assetName: asset.name,
-          transferMechanism: 'Gift',
-          assetValue: asset.fmv,
-          ...result,
-        }
-      })
-      .filter(Boolean)
-
-    if (skipped.length > 0) {
-      window.alert(
-        `GRAT and SLAT calculations coming in v2 — skipping this asset${
-          skipped.length === 1 ? '' : 's'
-        }: ${skipped.join(', ')}`
-      )
-    }
-
-    setResults(output)
-    setHasCalculated(true)
-    setIsCalculating(false)
-
+    // Delay to ensure "Calculating..." renders before heavy computation
     setTimeout(() => {
-      resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }, 50)
+      const skipped = []
+      const output = []
+
+      try {
+        const mapped = assets
+          .map((asset) => {
+            try {
+              const baseParams = {
+                assetFMV: asset.fmv,
+                costBasis: asset.basis,
+                annualGrowthRate: asset.growthRate,
+                annualIncomeYield: asset.incomeYield,
+                saleYearInIDGT: asset.saleYear,
+                valuationDiscountPct: asset.discount,
+                grantorAge: grantor.age,
+                grantorGender: grantor.gender,
+                discountRate: assumptions.discountRate / 100,
+                taxProvisionInflationRate: assumptions.taxInflationRate / 100,
+                totalGrantorEstate: assumptions.totalGrantorEstate,
+                federalEstateExemption: assumptions.federalEstateExemption,
+                federalEstateTaxRate: 0.4,
+                grantorFedOrdIncomeTaxRate: grantor.fedOrdIncomeTaxRate / 100,
+                grantorFedLtcgTaxRate: grantor.fedLtcgTaxRate / 100,
+                grantorStateOrdIncomeTaxRate: grantor.stateOrdIncomeTaxRate / 100,
+                grantorStateLtcgTaxRate: grantor.stateLtcgTaxRate / 100,
+                grantorNIITRate: grantor.niitRate / 100,
+                beneficiaryFedLtcgRate: assumptions.beneficiaryFedLtcg / 100,
+                beneficiaryStateLtcgRate: assumptions.beneficiaryStateLtcg / 100,
+                yearsPostDeathToSale: assumptions.yearsPostDeath,
+                maxProjectionYears: assumptions.maxYears,
+                state: grantor.state,
+                returnAnnualDetail: true,
+              }
+
+              if (asset.transferMechanism === 'grat' || asset.transferMechanism === 'slat') {
+                skipped.push(asset.name)
+                return null
+              }
+
+              if (asset.transferMechanism === 'installment') {
+                const result = calculateNPV_InstallmentSale({
+                  ...baseParams,
+                  noteRate: 0.05,
+                  noteTerm: 10,
+                  section7520Rate: 0.05,
+                  grantor: {
+                    fedOrdIncomeTaxRate: grantor.fedOrdIncomeTaxRate / 100,
+                    fedLtcgTaxRate: grantor.fedLtcgTaxRate / 100,
+                    niitRate: grantor.niitRate / 100,
+                  },
+                })
+
+                return {
+                  assetName: asset.name,
+                  transferMechanism: 'Installment Sale',
+                  assetValue: asset.fmv,
+                  ...result,
+                }
+              }
+
+              const result = calculateNPV_Gift({
+                ...baseParams,
+                maxYears: assumptions.maxYears,
+              })
+
+              return {
+                assetName: asset.name,
+                transferMechanism: 'Gift',
+                assetValue: asset.fmv,
+                ...result,
+              }
+            } catch (assetError) {
+              console.error(`Asset "${asset?.name ?? 'unknown'}" error:`, assetError)
+              return null
+            }
+          })
+          .filter(Boolean)
+
+        output.push(...mapped)
+      } catch (error) {
+        console.error('Unexpected calculation error:', error)
+      } finally {
+        setResults(output)
+        setHasCalculated(true)
+        setIsCalculating(false)
+
+        if (skipped.length > 0) {
+          window.alert(
+            `GRAT and SLAT calculations coming in v2 — skipping this asset${
+              skipped.length === 1 ? '' : 's'
+            }: ${skipped.join(', ')}`
+          )
+        }
+
+        setTimeout(() => {
+          resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }, 50)
+      }
+    }, 16)
   }
 
   const handleGiftDeathComparison = (params) => {
