@@ -7,7 +7,7 @@ const transferMechanisms = [
   { value: 'slat', label: 'SLAT (Coming Soon)', disabled: true },
 ];
 
-export default function AssetInputPanel({ assets, onAssetsChange }) {
+export default function AssetInputPanel({ assets, onAssetsChange, swappedInProfile, onSwappedInProfileChange }) {
   const updateAsset = (index, updates) => {
     const updated = assets.map((a, i) => (i === index ? { ...a, ...updates } : a));
     onAssetsChange(updated);
@@ -142,6 +142,71 @@ export default function AssetInputPanel({ assets, onAssetsChange }) {
             </div>
           </div>
         ))}
+      </div>
+      <div className="rounded border border-slate-200 bg-white p-4">
+        <h3 className="text-lg font-semibold">Swapped-In Asset Profile</h3>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="text-sm font-medium">Initial Basis (% of swap value)</label>
+            <input
+              type="number"
+              value={swappedInProfile.basisPct}
+              onChange={(e) => onSwappedInProfileChange({
+                ...swappedInProfile,
+                basisPct: Number(e.target.value),
+              })}
+              className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Growth Rate (%)</label>
+            <input
+              type="number"
+              value={swappedInProfile.growthRate}
+              onChange={(e) => onSwappedInProfileChange({
+                ...swappedInProfile,
+                growthRate: Number(e.target.value),
+              })}
+              className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Income Yield (%)</label>
+            <input
+              type="number"
+              value={swappedInProfile.incomeYield}
+              onChange={(e) => onSwappedInProfileChange({
+                ...swappedInProfile,
+                incomeYield: Number(e.target.value),
+              })}
+              className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Grantor Ordinary Income Tax Rate (%)</label>
+            <input
+              type="number"
+              value={swappedInProfile.grantorOrdIncomeTaxRate}
+              onChange={(e) => onSwappedInProfileChange({
+                ...swappedInProfile,
+                grantorOrdIncomeTaxRate: Number(e.target.value),
+              })}
+              className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Grantor LTCG Tax Rate (%)</label>
+            <input
+              type="number"
+              value={swappedInProfile.grantorLtcgTaxRate}
+              onChange={(e) => onSwappedInProfileChange({
+                ...swappedInProfile,
+                grantorLtcgTaxRate: Number(e.target.value),
+              })}
+              className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
+            />
+          </div>
+        </div>
       </div>
       <button
         className="rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"

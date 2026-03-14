@@ -83,6 +83,7 @@ export function calculateNPV_Gift(params) {
     maxYears,
     tcjaSunset = false,
     state = null,
+    totalGrantorEstate = 0,
     beneficiaryFedLtcg = 0,
     beneficiaryStateLtcg = 0,
     returnAnnualDetail = false,
@@ -113,84 +114,119 @@ export function calculateNPV_Gift(params) {
   });
 
   const projectedEstate = assetFMV * Math.pow(1 + annualGrowthRate, maxYears);
-  const estateTaxImpact = calculateEstateTaxImpact({
-    taxableEstate: projectedEstate,
+
+  const estateTaxImpactWithAsset = calculateEstateTaxImpact({
+    taxableEstate: totalGrantorEstate + projectedEstate,
+    state,
+    useSunsetExemption: Boolean(tcjaSunset),
+  });
+  const estateTaxImpactWithoutAsset = calculateEstateTaxImpact({
+    taxableEstate: totalGrantorEstate,
     state,
     useSunsetExemption: Boolean(tcjaSunset),
   });
 
-  const pvEstateTax = estateTaxImpact.totalTax;
-  const npv = projectedEstate - pvEstateTax; // simplistic: post-tax value at horizon
-
-  const result = {
-    npv,
-    pvTaxBurn,
-    pvEstateTax,
-    estateTaxImpact,
+  // Projected estate tax savings if the asset is removed from the estate via gift.
+  // This is a snapshot at the end of the planning horizon; the true value is the
+  // probability-weighted present value of the savings over the grantor's lifetime.
+  const projectedEstateTaxSavings =
+    estateTaxImpactWithAsset.totalTax - estateTaxImpactWithoutAsset.totalTax;
+  const estateTaxImpact = {
+    withAsset: estateTaxImpactWithAsset,
+    withoutAsset: estateTaxImpactWithoutAsset,
   };
 
-  if (returnAnnualDetail) {
-    let cumulativeTaxBurn = 0;
-    let totalPvContribution = 0;
-    let totalProbDeath = 0;
-    let weightedYearSum = 0;
+  // Probability-weighted present values (PV) for estate tax savings and the step-up "cost".
+  // These use the mortality table to weight the expected timing of death.
+  let totalPvEstateTax = 0;
+  let totalPvStepUpCost = 0;
+  let totalProbDeath = 0;
+  let weightedYearSum = 0;
+  let cumulativeTaxBurn = 0;
+  let bestYearContribution = -Infinity;
+  let optimalSwapYear = null;
 
-    const annualDetail = [];
-    for (let t = 1; t <= maxYears; t += 1) {
-      const valueAtT = assetFMV * Math.pow(1 + annualGrowthRate, t - 1);
-      const incomeThisYear = valueAtT * annualIncomeYield;
-      const taxBurn = incomeThisYear * federalEstateTaxRate;
-      cumulativeTaxBurn += taxBurn;
+  const annualDetail = returnAnnualDetail ? [] : null;
+  for (let t = 1; t <= maxYears; t += 1) {
+    const valueAtT = assetFMV * Math.pow(1 + annualGrowthRate, t - 1);
+    const incomeThisYear = valueAtT * annualIncomeYield;
+    const taxBurn = incomeThisYear * federalEstateTaxRate;
+    cumulativeTaxBurn += taxBurn;
 
-      const estateTaxImpactThisYear = calculateEstateTaxImpact({
-        taxableEstate: valueAtT,
-        state,
-        useSunsetExemption: Boolean(tcjaSunset),
-      });
-      const estateTaxSavingsIfDeathThisYear = estateTaxImpactThisYear.totalTax;
+    const estateTaxImpactWithAssetAtT = calculateEstateTaxImpact({
+      taxableEstate: totalGrantorEstate + valueAtT,
+      state,
+      useSunsetExemption: Boolean(tcjaSunset),
+    });
+    const estateTaxImpactWithoutAssetAtT = calculateEstateTaxImpact({
+      taxableEstate: totalGrantorEstate,
+      state,
+      useSunsetExemption: Boolean(tcjaSunset),
+    });
 
-      const stepUpImpactIfDeathThisYear = Math.max(0, valueAtT - costBasis) * beneficiaryTaxRate;
-      const probDeathThisYear = getProbDeathInYear(grantorAge, t, gender);
-      const df = discountFactor(discountRate, t);
+    const estateTaxSavingsIfDeathThisYear =
+      estateTaxImpactWithAssetAtT.totalTax - estateTaxImpactWithoutAssetAtT.totalTax;
 
-      const pvStepUpThisYear = stepUpImpactIfDeathThisYear * probDeathThisYear * df;
-      const pvContributionThisYear = probDeathThisYear * df * (estateTaxSavingsIfDeathThisYear + stepUpImpactIfDeathThisYear - taxBurn);
+    const stepUpCostIfDeathThisYear = Math.max(0, valueAtT - costBasis) * beneficiaryTaxRate;
+    const probDeathThisYear = getProbDeathInYear(grantorAge, t, gender);
+    const df = discountFactor(discountRate, t);
 
-      totalPvContribution += pvContributionThisYear;
-      totalPvStepUp += pvStepUpThisYear;
-      totalProbDeath += probDeathThisYear;
-      weightedYearSum += probDeathThisYear * t;
+    const pvEstateTaxSavingsThisYear = estateTaxSavingsIfDeathThisYear * probDeathThisYear * df;
+    const pvStepUpCostThisYear = stepUpCostIfDeathThisYear * probDeathThisYear * df;
 
+    const pvContributionThisYear = pvEstateTaxSavingsThisYear - pvStepUpCostThisYear;
+
+    if (pvContributionThisYear > bestYearContribution) {
+      bestYearContribution = pvContributionThisYear;
+      optimalSwapYear = t;
+    }
+
+    totalPvEstateTax += pvEstateTaxSavingsThisYear;
+    totalPvStepUpCost += pvStepUpCostThisYear;
+    totalProbDeath += probDeathThisYear;
+    weightedYearSum += probDeathThisYear * t;
+
+    if (returnAnnualDetail) {
       annualDetail.push({
         year: t,
         assetFMV: valueAtT,
         taxBurn,
         cumulativeTaxBurn,
         estateTaxSavingsIfDeathThisYear,
-        stepUpImpactIfDeathThisYear,
+        stepUpCostIfDeathThisYear,
         probDeathThisYear,
         discountFactor: df,
+        pvEstateTaxSavingsThisYear,
+        pvStepUpCostThisYear: -pvStepUpCostThisYear,
         pvContributionThisYear,
-        pvStepUpThisYear,
       });
     }
+  }
 
-  result.annualDetail = annualDetail;
-  result.annualSummary = {
-    totalTaxBurn: cumulativeTaxBurn,
-    totalPvContribution,
-    totalPvStepUp,
-    weightedAverageYearOfDeath: totalProbDeath > 0 ? weightedYearSum / totalProbDeath : 0,
+  const pvStepUp = -totalPvStepUpCost;
+  const pvEstateTax = totalPvEstateTax;
+  const npv = pvTaxBurn + pvEstateTax + pvStepUp;
+
+  const result = {
+    npv,
+    pvTaxBurn,
+    pvEstateTax,
+    pvStepUp,
+    estateTaxImpact,
+    optimalSwapYear,
+    efficiencyRatio: assetFMV > 0 ? npv / assetFMV : 0,
   };
 
-  const peak = annualDetail.reduce((best, row) => {
-    if (!best || row.pvContributionThisYear > best.pvContributionThisYear) return row;
-    return best;
-  }, null);
-
-  result.optimalSwapYear = peak ? peak.year : null;
-  result.efficiencyRatio = assetFMV > 0 ? result.npv / assetFMV : 0;
-  result.pvStepUp = totalPvStepUp;
+  if (returnAnnualDetail) {
+    result.annualDetail = annualDetail;
+    result.annualSummary = {
+      totalTaxBurn: cumulativeTaxBurn,
+      totalPvContribution: totalPvEstateTax - totalPvStepUpCost,
+      totalPvStepUp: -totalPvStepUpCost,
+      weightedAverageYearOfDeath:
+        totalProbDeath > 0 ? weightedYearSum / totalProbDeath : 0,
+      projectedEstateTaxSavings,
+    };
   }
 
   return result;

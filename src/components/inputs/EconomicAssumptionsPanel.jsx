@@ -47,6 +47,15 @@ export default function EconomicAssumptionsPanel({ assumptions, onAssumptionsCha
           />
         </div>
         <div>
+          <label className="text-sm font-medium">Federal Estate Tax Rate (%)</label>
+          <input
+            type="number"
+            value={assumptions.federalEstateTaxRate}
+            onChange={(e) => update('federalEstateTaxRate', Number(e.target.value))}
+            className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
+          />
+        </div>
+        <div>
           <label className="text-sm font-medium">Federal Estate Tax Exemption ($)</label>
           <input
             type="number"

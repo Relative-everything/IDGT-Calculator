@@ -39,6 +39,7 @@ const DEFAULT_ASSUMPTIONS = {
   discountRate: 4,
   taxInflationRate: 2,
   totalGrantorEstate: 10_000_000,
+  federalEstateTaxRate: 40,
   federalEstateExemption: 13_610_000,
   tcjaSunset: false,
   beneficiaryFedLtcg: 20,
@@ -51,10 +52,19 @@ const DEFAULT_ASSUMPTIONS = {
   stateEstateCliffMultiplier: 1.05,
 }
 
+const DEFAULT_SWAP_PROFILE = {
+  basisPct: 1.0,
+  growthRate: 0.04,
+  incomeYield: 0.0,
+  grantorOrdIncomeTaxRate: 0.0,
+  grantorLtcgTaxRate: 0.0,
+}
+
 export default function App() {
   const [grantor, setGrantor] = useState(DEFAULT_GRANTOR)
   const [assets, setAssets] = useState([DEFAULT_ASSET])
   const [assumptions, setAssumptions] = useState(DEFAULT_ASSUMPTIONS)
+  const [swappedInProfile, setSwappedInProfile] = useState(DEFAULT_SWAP_PROFILE)
   const [results, setResults] = useState([])
   const [isCalculating, setIsCalculating] = useState(false)
   const [activeTab, setActiveTab] = useState('Asset Inputs')
@@ -92,19 +102,19 @@ export default function App() {
                 saleYearInIDGT: asset.saleYear,
                 valuationDiscountPct: asset.discount,
                 grantorAge: grantor.age,
-                grantorGender: grantor.gender,
+                gender: grantor.gender.toLowerCase(),
                 discountRate: assumptions.discountRate / 100,
                 taxProvisionInflationRate: assumptions.taxInflationRate / 100,
                 totalGrantorEstate: assumptions.totalGrantorEstate,
                 federalEstateExemption: assumptions.federalEstateExemption,
-                federalEstateTaxRate: 0.4,
+                federalEstateTaxRate: assumptions.federalEstateTaxRate / 100,
                 grantorFedOrdIncomeTaxRate: grantor.fedOrdIncomeTaxRate / 100,
                 grantorFedLtcgTaxRate: grantor.fedLtcgTaxRate / 100,
                 grantorStateOrdIncomeTaxRate: grantor.stateOrdIncomeTaxRate / 100,
                 grantorStateLtcgTaxRate: grantor.stateLtcgTaxRate / 100,
                 grantorNIITRate: grantor.niitRate / 100,
-                beneficiaryFedLtcgRate: assumptions.beneficiaryFedLtcg / 100,
-                beneficiaryStateLtcgRate: assumptions.beneficiaryStateLtcg / 100,
+                beneficiaryFedLtcg: assumptions.beneficiaryFedLtcg / 100,
+                beneficiaryStateLtcg: assumptions.beneficiaryStateLtcg / 100,
                 yearsPostDeathToSale: assumptions.yearsPostDeath,
                 maxProjectionYears: assumptions.maxYears,
                 state: grantor.state,
@@ -149,6 +159,7 @@ export default function App() {
                 ...result,
               }
             } catch (assetError) {
+              console.error('Asset failed:', asset.name, assetError?.message, assetError?.stack)
               console.error(`Asset "${asset?.name ?? 'unknown'}" error:`, assetError)
               return null
             }
@@ -157,6 +168,7 @@ export default function App() {
 
         output.push(...mapped)
       } catch (error) {
+        console.error('Asset failed:', error?.message, error?.stack)
         console.error('Unexpected calculation error:', error)
       } finally {
         setResults(output)
@@ -186,6 +198,7 @@ export default function App() {
     setGrantor(DEFAULT_GRANTOR)
     setAssets([DEFAULT_ASSET])
     setAssumptions(DEFAULT_ASSUMPTIONS)
+    setSwappedInProfile(DEFAULT_SWAP_PROFILE)
     setResults([])
   }
 
@@ -202,7 +215,12 @@ export default function App() {
       case 'Asset Inputs':
         return (
           <div className="space-y-6">
-            <AssetInputPanel assets={assets} onAssetsChange={setAssets} />
+            <AssetInputPanel
+              assets={assets}
+              onAssetsChange={setAssets}
+              swappedInProfile={swappedInProfile}
+              onSwappedInProfileChange={setSwappedInProfile}
+            />
             <EconomicAssumptionsPanel
               assumptions={assumptions}
               onAssumptionsChange={handleAssumptionsChange}
