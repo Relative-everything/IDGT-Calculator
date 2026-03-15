@@ -207,11 +207,14 @@ export function calculateNPV_Gift(params) {
   const pvEstateTax = totalPvEstateTax;
   const npv = pvTaxBurn + pvEstateTax + pvStepUp;
 
+  const taxExclusiveGiftBenefit = assetFMV * federalEstateTaxRate ** 2;
+
   const result = {
     npv,
     pvTaxBurn,
     pvEstateTax,
     pvStepUp,
+    taxExclusiveGiftBenefit,
     estateTaxImpact,
     optimalSwapYear,
     efficiencyRatio: assetFMV > 0 ? npv / assetFMV : 0,
