@@ -45,3 +45,10 @@ benchmarked against Holistiplan and Tax Status. Future enterprise migration plan
 If you encounter an irreconcilable trade-off between calculation accuracy and
 implementation complexity, surface it explicitly with your recommended resolution.
 Do not resolve silently.
+
+## Current commit
+7168bd8
+
+## NEXT SESSIONS ROADMAP
+- Golden reference test suite (only after core calc confirmed working end-to-end in live site)
+

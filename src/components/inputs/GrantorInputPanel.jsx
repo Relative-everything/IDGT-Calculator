@@ -57,15 +57,29 @@ export default function GrantorInputPanel({ grantor, onGrantorChange }) {
         </div>
 
         <div>
-          <label className="text-sm font-medium">Gender</label>
-          <select
-            value={grantor.gender}
-            onChange={(e) => update('gender', e.target.value)}
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
-          >
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-          </select>
+          <div className="text-sm font-medium">Grantor Gender</div>
+          <div className="mt-1 flex items-center gap-4">
+            <label className="inline-flex items-center gap-2">
+              <input
+                type="radio"
+                name="grantorGender"
+                value="male"
+                checked={grantor.gender === 'male'}
+                onChange={() => update('gender', 'male')}
+              />
+              Male
+            </label>
+            <label className="inline-flex items-center gap-2">
+              <input
+                type="radio"
+                name="grantorGender"
+                value="female"
+                checked={grantor.gender === 'female'}
+                onChange={() => update('gender', 'female')}
+              />
+              Female
+            </label>
+          </div>
         </div>
 
         <div>
