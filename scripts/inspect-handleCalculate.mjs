@@ -58,7 +58,7 @@ function runCalculation() {
             saleYearInIDGT: asset.saleYear,
             valuationDiscountPct: asset.discount,
             grantorAge: grantor.age,
-            grantorGender: grantor.gender,
+            gender: (grantor.gender || '').toLowerCase(),
             discountRate: assumptions.discountRate / 100,
             taxProvisionInflationRate: assumptions.taxInflationRate / 100,
             totalGrantorEstate: assumptions.totalGrantorEstate,

@@ -102,7 +102,7 @@ export default function App() {
                 saleYearInIDGT: asset.saleYear,
                 valuationDiscountPct: asset.discount,
                 grantorAge: grantor.age,
-                gender: grantor.gender.toLowerCase(),
+                gender: (grantor.gender || '').toLowerCase(),
                 discountRate: assumptions.discountRate / 100,
                 taxProvisionInflationRate: assumptions.taxInflationRate / 100,
                 totalGrantorEstate: assumptions.totalGrantorEstate,

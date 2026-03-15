@@ -19,7 +19,7 @@ export default function ProjectionsTable({ asset, grantor, assumptions, hasCalcu
       annualGrowthRate: asset.growthRate,
       annualIncomeYield: asset.incomeYield,
       grantorAge: grantor.age,
-      gender: grantor.gender,
+      gender: grantor.gender?.toLowerCase(),
       discountRate: assumptions.discountRate / 100,
       federalEstateTaxRate: 0.4,
       maxYears: assumptions.maxYears,
