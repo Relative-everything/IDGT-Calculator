@@ -16,8 +16,8 @@ export default function ProjectionsTable({ asset, grantor, assumptions, hasCalcu
     const commonParams = {
       assetFMV: asset.fmv,
       costBasis: asset.basis,
-      annualGrowthRate: asset.growthRate,
-      annualIncomeYield: asset.incomeYield,
+      annualGrowthRate: asset.growthRate / 100,
+      annualIncomeYield: asset.incomeYield / 100,
       grantorAge: grantor.age,
       gender: grantor.gender?.toLowerCase(),
       discountRate: assumptions.discountRate / 100,
