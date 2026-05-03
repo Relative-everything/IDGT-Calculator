@@ -28,8 +28,8 @@ const DEFAULT_ASSET = {
   fmv: 1_000_000,
   discount: 0,
   basis: 200_000,
-  growthRate: 0.07,
-  incomeYield: 0.02,
+  growthRate: 7,
+  incomeYield: 2,
   saleYear: 0,
   transferMechanism: 'gift',
   exemptionAlreadyExhausted: false,
@@ -97,10 +97,10 @@ export default function App() {
               const baseParams = {
                 assetFMV: asset.fmv,
                 costBasis: asset.basis,
-                annualGrowthRate: asset.growthRate,
-                annualIncomeYield: asset.incomeYield,
+                annualGrowthRate: asset.growthRate / 100,
+                annualIncomeYield: asset.incomeYield / 100,
                 saleYearInIDGT: asset.saleYear,
-                valuationDiscountPct: asset.discount,
+                valuationDiscountPct: asset.discount / 100,
                 grantorAge: grantor.age,
                 gender: (grantor.gender || '').toLowerCase(),
                 discountRate: assumptions.discountRate / 100,
@@ -215,6 +215,7 @@ export default function App() {
       case 'Asset Inputs':
         return (
           <div className="space-y-6">
+            <GrantorInputPanel grantor={grantor} onGrantorChange={setGrantor} />
             <AssetInputPanel
               assets={assets}
               onAssetsChange={setAssets}
@@ -226,6 +227,21 @@ export default function App() {
               onAssumptionsChange={handleAssumptionsChange}
               grantorState={grantor.state}
             />
+            <div className="space-y-3" ref={resultsRef}>
+              <button
+                className="rounded bg-indigo-600 px-6 py-3 text-base font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+                onClick={handleCalculate}
+                disabled={isCalculating}
+              >
+                {isCalculating ? 'Calculating...' : 'Calculate'}
+              </button>
+              {hasCalculated ? (
+                <>
+                  <p className="text-xs text-slate-500">Last calculated: {calculatedAt}</p>
+                  <ResultsTable results={results} calculatedAt={calculatedAt} />
+                </>
+              ) : null}
+            </div>
           </div>
         )
       case 'Transfer Mechanism':
