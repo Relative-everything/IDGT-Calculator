@@ -11,10 +11,6 @@ export default function EconomicAssumptionsPanel({ assumptions, onAssumptionsCha
     return STATE_ESTATE_TAX[grantorState] || null;
   }, [grantorState]);
 
-  const exemptionDisplay = assumptions.tcjaSunset
-    ? 7_000_000
-    : assumptions.federalEstateExemption;
-
   return (
     <section className="space-y-6">
       <h2 className="text-xl font-semibold">Economic Assumptions</h2>
@@ -59,26 +55,10 @@ export default function EconomicAssumptionsPanel({ assumptions, onAssumptionsCha
           <label className="text-sm font-medium">Federal Estate Tax Exemption ($)</label>
           <input
             type="number"
-            value={exemptionDisplay}
+            value={assumptions.federalEstateExemption}
             onChange={(e) => update('federalEstateExemption', Number(e.target.value))}
             className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
-            disabled={assumptions.tcjaSunset}
           />
-        </div>
-        <div className="md:col-span-2">
-          <label className="flex items-center gap-2 text-sm font-medium">
-            <input
-              type="checkbox"
-              checked={assumptions.tcjaSunset}
-              onChange={(e) => update('tcjaSunset', e.target.checked)}
-            />
-            TCJA Sunset (use $7M exemption post-2025)
-          </label>
-          {assumptions.tcjaSunset ? (
-            <div className="mt-2 rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-              TCJA Sunset active — federal exemption reduced to ~$7M post-2025 per §2010(c)(3).
-            </div>
-          ) : null}
         </div>
         <div>
           <label className="text-sm font-medium">Beneficiary Federal LTCG Rate (%)</label>

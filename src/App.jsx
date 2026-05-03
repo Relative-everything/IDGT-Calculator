@@ -41,7 +41,6 @@ const DEFAULT_ASSUMPTIONS = {
   totalGrantorEstate: 10_000_000,
   federalEstateTaxRate: 40,
   federalEstateExemption: 13_610_000,
-  tcjaSunset: false,
   beneficiaryFedLtcg: 20,
   beneficiaryStateLtcg: 5,
   yearsPostDeath: 1,
@@ -73,9 +72,6 @@ export default function App() {
   const calculatedAt = useMemo(() => new Date().toLocaleString(), [results])
 
   const handleAssumptionsChange = (updated) => {
-    if (updated.tcjaSunset) {
-      updated = { ...updated, federalEstateExemption: 7_000_000 }
-    }
     setAssumptions(updated)
   }
 

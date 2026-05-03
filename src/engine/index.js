@@ -3,7 +3,7 @@ import {
   getProbDeathInYear,
   get7520AnnuityFactor,
 } from '../data/mortalityTable';
-import { CURRENT_EXEMPTION, TCJA_SUNSET_EXEMPTION, getMarginalEstateTax } from '../data/estateTaxRates';
+import { CURRENT_EXEMPTION, getMarginalEstateTax } from '../data/estateTaxRates';
 import { validateNoteRate as validateNoteRateRaw } from '../data/afrRates';
 import { getStateEstateTax } from '../data/stateEstateTax';
 
@@ -81,7 +81,6 @@ export function calculateNPV_Gift(params) {
     discountRate,
     federalEstateTaxRate,
     maxYears,
-    tcjaSunset = false,
     state = null,
     totalGrantorEstate = 0,
     beneficiaryFedLtcg = 0,
@@ -118,12 +117,10 @@ export function calculateNPV_Gift(params) {
   const estateTaxImpactWithAsset = calculateEstateTaxImpact({
     taxableEstate: totalGrantorEstate + projectedEstate,
     state,
-    useSunsetExemption: Boolean(tcjaSunset),
   });
   const estateTaxImpactWithoutAsset = calculateEstateTaxImpact({
     taxableEstate: totalGrantorEstate,
     state,
-    useSunsetExemption: Boolean(tcjaSunset),
   });
 
   // Projected estate tax savings if the asset is removed from the estate via gift.
@@ -156,12 +153,10 @@ export function calculateNPV_Gift(params) {
     const estateTaxImpactWithAssetAtT = calculateEstateTaxImpact({
       taxableEstate: totalGrantorEstate + valueAtT,
       state,
-      useSunsetExemption: Boolean(tcjaSunset),
     });
     const estateTaxImpactWithoutAssetAtT = calculateEstateTaxImpact({
       taxableEstate: totalGrantorEstate,
       state,
-      useSunsetExemption: Boolean(tcjaSunset),
     });
 
     const estateTaxSavingsIfDeathThisYear =
@@ -506,7 +501,6 @@ export function calculateOptimalSwapYear(params) {
  * @param {object} params - Inputs:
  *   - taxableEstate: number (gross estate before exemption)
  *   - state: string (USPS code)
- *   - useSunsetExemption: boolean
  * @returns {{federalTax: number, stateTax: number, effectiveRate: number, totalTax: number}}
  *
  * Source: IRC §2001(c) progressive brackets and state estate tax schedules.
@@ -517,10 +511,10 @@ export function calculateEstateTaxImpact(params) {
     throw new TypeError('params must be an object');
   }
 
-  const { taxableEstate, state, useSunsetExemption } = params;
+  const { taxableEstate, state } = params;
   assertNumber('taxableEstate', taxableEstate);
 
-  const exemption = useSunsetExemption ? TCJA_SUNSET_EXEMPTION : CURRENT_EXEMPTION;
+  const exemption = CURRENT_EXEMPTION;
   const taxable = Math.max(0, taxableEstate - exemption);
 
   const effectiveRate = getMarginalEstateTax(taxable);

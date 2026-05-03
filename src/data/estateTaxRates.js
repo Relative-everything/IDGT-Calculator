@@ -2,12 +2,10 @@
 // Source: IRC §2001(c); TCJA §11061 (AMT repeal, rate schedule)
 
 /**
- * Current law exemption amounts (indexed).
+ * Current law exemption amount (indexed).
  * - CURRENT_EXEMPTION: 2025 indexed unified credit equivalent.
- * - TCJA_SUNSET_EXEMPTION: Projected post-2025 exemption per §2010(c)(3)(C) inflation adjustment.
  */
 export const CURRENT_EXEMPTION = 13_990_000; // 2025 indexed amount
-export const TCJA_SUNSET_EXEMPTION = 7_000_000; // projected 2026 (estimate, subject to inflation adjustment)
 
 // IRC §2001(c) estate tax rate brackets (marginal)
 // Data is expressed as an array of bracket thresholds with corresponding marginal rates.

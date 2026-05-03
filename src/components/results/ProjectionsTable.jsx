@@ -23,7 +23,6 @@ export default function ProjectionsTable({ asset, grantor, assumptions, hasCalcu
       discountRate: assumptions.discountRate / 100,
       federalEstateTaxRate: 0.4,
       maxYears: assumptions.maxYears,
-      tcjaSunset: assumptions.tcjaSunset,
       state: grantor.state,
       beneficiaryFedLtcg: assumptions.beneficiaryFedLtcg / 100,
       beneficiaryStateLtcg: assumptions.beneficiaryStateLtcg / 100,
