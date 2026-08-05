@@ -38,8 +38,6 @@ benchmarked against Holistiplan and Tax Status. Future enterprise migration plan
 - Secondary outputs: optimal swap timing, mechanism comparison, sensitivity analysis
 - Key technical dependencies: IRC §§671–679 (grantor trust), §2036/2038 (estate inclusion),
   §7520 (AFR hurdle), §2001 (progressive estate tax), SSA 2021 mortality tables
-- TCJA sunset (projected 2026) is the highest-impact legislative scenario — must be
-  a one-click toggle that re-runs all calculations
 
 ## Conflict Handling
 If you encounter an irreconcilable trade-off between calculation accuracy and

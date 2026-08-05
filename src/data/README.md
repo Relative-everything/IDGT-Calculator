@@ -12,7 +12,6 @@ This folder contains static reference tables used by the IDGT calculator engine.
 - `estateTaxRates.js`
   - Source: IRC §2001(c) progressive estate/gift tax brackets (current law).
   - Provides `getMarginalEstateTax()` to compute effective estate tax rates based on the correct bracket schedule.
-  - Constants included for TCJA sunset exemption projections.
 
 - `afrRates.js`
   - Source: IRS Revenue Ruling (monthly AFR tables).

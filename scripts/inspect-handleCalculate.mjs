@@ -16,7 +16,6 @@ const assumptions = {
   taxInflationRate: 2,
   totalGrantorEstate: 10_000_000,
   federalEstateExemption: 13_610_000,
-  tcjaSunset: false,
   beneficiaryFedLtcg: 20,
   beneficiaryStateLtcg: 5,
   yearsPostDeath: 1,

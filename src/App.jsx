@@ -28,8 +28,8 @@ const DEFAULT_ASSET = {
   fmv: 1_000_000,
   discount: 0,
   basis: 200_000,
-  growthRate: 0.07,
-  incomeYield: 0.02,
+  growthRate: 7,
+  incomeYield: 2,
   saleYear: 0,
   transferMechanism: 'gift',
   exemptionAlreadyExhausted: false,
@@ -41,7 +41,6 @@ const DEFAULT_ASSUMPTIONS = {
   totalGrantorEstate: 10_000_000,
   federalEstateTaxRate: 40,
   federalEstateExemption: 13_610_000,
-  tcjaSunset: false,
   beneficiaryFedLtcg: 20,
   beneficiaryStateLtcg: 5,
   yearsPostDeath: 1,
@@ -73,9 +72,6 @@ export default function App() {
   const calculatedAt = useMemo(() => new Date().toLocaleString(), [results])
 
   const handleAssumptionsChange = (updated) => {
-    if (updated.tcjaSunset) {
-      updated = { ...updated, federalEstateExemption: 7_000_000 }
-    }
     setAssumptions(updated)
   }
 
@@ -97,10 +93,10 @@ export default function App() {
               const baseParams = {
                 assetFMV: asset.fmv,
                 costBasis: asset.basis,
-                annualGrowthRate: asset.growthRate,
-                annualIncomeYield: asset.incomeYield,
+                annualGrowthRate: asset.growthRate / 100,
+                annualIncomeYield: asset.incomeYield / 100,
                 saleYearInIDGT: asset.saleYear,
-                valuationDiscountPct: asset.discount,
+                valuationDiscountPct: asset.discount / 100,
                 grantorAge: grantor.age,
                 gender: (grantor.gender || '').toLowerCase(),
                 discountRate: assumptions.discountRate / 100,
@@ -215,6 +211,7 @@ export default function App() {
       case 'Asset Inputs':
         return (
           <div className="space-y-6">
+            <GrantorInputPanel grantor={grantor} onGrantorChange={setGrantor} />
             <AssetInputPanel
               assets={assets}
               onAssetsChange={setAssets}
@@ -226,6 +223,21 @@ export default function App() {
               onAssumptionsChange={handleAssumptionsChange}
               grantorState={grantor.state}
             />
+            <div className="space-y-3" ref={resultsRef}>
+              <button
+                className="rounded bg-indigo-600 px-6 py-3 text-base font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+                onClick={handleCalculate}
+                disabled={isCalculating}
+              >
+                {isCalculating ? 'Calculating...' : 'Calculate'}
+              </button>
+              {hasCalculated ? (
+                <>
+                  <p className="text-xs text-slate-500">Last calculated: {calculatedAt}</p>
+                  <ResultsTable results={results} calculatedAt={calculatedAt} />
+                </>
+              ) : null}
+            </div>
           </div>
         )
       case 'Transfer Mechanism':

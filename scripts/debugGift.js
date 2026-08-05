@@ -10,7 +10,6 @@ const params = {
   discountRate: 0.04,
   federalEstateTaxRate: 0.4,
   maxYears: 35,
-  tcjaSunset: false,
   state: 'NY',
   totalGrantorEstate: 10_000_000,
   beneficiaryFedLtcg: 0.2,
