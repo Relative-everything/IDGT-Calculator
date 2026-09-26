@@ -46,6 +46,10 @@ inclusion, whether a scheduled sale also happens when the asset is kept).
   The assumed-death-year mode is independent of the table.
 - Exclusion amounts and rates: sources and confidence in `src/data/`.
 
+## Roadmap
+The execution plan for everything below — phased, sized per session, with prerequisites, model
+extensions, golden-value gates and a kickoff prompt — is [`docs/ROADMAP.md`](docs/ROADMAP.md).
+
 ## Not modelled (deferred)
 Installment sale, GRAT, SLAT, state estate/inheritance tax, Table 2010CM / §7520 products, UHNW
 mortality adjustment, Monte Carlo, promissory-note swap consideration, DSUE/GST tracking,

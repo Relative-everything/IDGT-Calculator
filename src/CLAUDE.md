@@ -68,5 +68,7 @@ Do not resolve silently.
 See docs/changes/2026-09-26-idgt-rebuild/handback.md
 
 ## NEXT SESSIONS ROADMAP
-- Verify the SSA life table (replace src/data/mortalityTable.js, set verified: true)
-- Installment sale (freeze model) → GRAT (needs Table 2010CM) → state estate tax (verified 2026 table)
+Follow docs/ROADMAP.md phase by phase (Phase 1: verify the SSA life table; Phase 2: installment
+sale; Phase 3: GRAT — term-certain §7520 factor, no Table 2010CM needed; Phase 4: state tax with a
+verified 2026 table; then SLAT/DSUE, sensitivity/exports, CI, UX polish). Each phase runs under the
+sdlc-loop: plan accepted and golden values builder-confirmed before source edits.

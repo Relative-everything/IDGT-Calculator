@@ -200,8 +200,19 @@ None.
 - **N8 — Planning used a multi-agent workflow** although the sdlc skill's standing rule prefers a
   single thread; the session's ultracode setting was treated as the opt-in. The build itself was
   single-threaded; the review used a workflow again.
+- **N9 — Older open PR #1 is superseded.** `claude/fix-calculator-compute-IcIjX` → `main`
+  ("Fix: make Calculate reachable and fix asset % input convention", May 2026) patches the legacy
+  `App.jsx` / `AssetInputPanel.jsx` that this rebuild deleted; merging it after this branch would
+  conflict and reintroduce removed code. Recommendation: merge this branch, then close PR #1 as
+  superseded (your action — not done here).
+- **N10 — Merge readiness (checked 2026-09-26 from a fresh clone of the pushed branch):** branch
+  contains `main` (`8aa4f19`), fast-forward mergeable, merge dry-run clean; `npm ci` → 384
+  packages; 97 tests green; lint 0; build OK; `homepage`/`base` aligned with the `gh-pages`
+  deploy (`npm run deploy`); no CI workflows exist yet (Phase 7 of `docs/ROADMAP.md`).
 
 ## Next session should
+The phased, session-sized plan for all remaining work is `docs/ROADMAP.md` (kickoff prompt at the
+top). In order:
 1. Verify the mortality table (read `src/data/mortalityTable.js` and flag N1 above first): replace
    the l_x column from SSA, set `verified: true`, run `npm test`, and note the vintage in the
    Methodology "Data status" line (it reads from `MORTALITY_TABLE_META`).
