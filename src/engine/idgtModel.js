@@ -258,8 +258,19 @@ export function evaluateAsset(inp) {
   const effGT = (npv) => (G > 0 ? npv / G : null);
   if (!(Ug > 0)) allWarnings.push({ code: 'ZERO_TAXABLE_GIFT', message: 'Taxable gift value is zero (annual exclusions cover the gift); efficiency per gift dollar is undefined.' });
   if (inp.S > N) allWarnings.push({ code: 'SALE_BEYOND_HORIZON', message: `Sale year ${inp.S} is beyond the mortality horizon (${N} years) and is treated as never.` });
-  const illiquid = best.sim.rows.some((r) => r.Es < 0) || none.rows.some((r) => r.Es < 0);
-  if (illiquid) allWarnings.push({ code: 'GRANTOR_ILLIQUID', message: 'The other estate goes negative (gift tax and/or income-tax burn exceed it); arithmetic continues. Consider a discretionary tax-reimbursement clause (Rev. Rul. 2004-64).' });
+  // Liquidity: report the first year the other estate is exhausted and how likely the grantor is to reach it.
+  const firstNegative = (rows) => rows.find((r) => r.Es < 0);
+  const negNone = firstNegative(none.rows);
+  const negOpt = best.s > 0 ? firstNegative(best.sim.rows) : null;
+  const neg = negNone && negOpt ? (negOpt.t <= negNone.t ? negOpt : negNone) : (negNone ?? negOpt);
+  if (neg) {
+    const survival = q.slice(neg.t - 1).reduce((a, b) => a + b, 0);
+    const scenario = neg === negOpt && negOpt !== negNone ? `with the year-${best.s} swap` : 'without a swap';
+    allWarnings.push({
+      code: 'GRANTOR_ILLIQUID',
+      message: `The other estate is exhausted from year ${neg.t} (age ${inp.age + neg.t}; probability of surviving to that year ${(survival * 100).toFixed(1)}%) ${scenario}: the income-tax burn${G > 0 ? ' and gift tax' : ''} exceed it. Arithmetic continues with a negative balance; consider a discretionary tax-reimbursement clause (Rev. Rul. 2004-64) or a smaller gift.`,
+    });
+  }
 
   const attach = (sim) => sim.rows.map((r, i) => ({ ...r, q: q[i], wPV: q[i] * r.PV }));
   const rowsOpt = attach(best.sim);

@@ -1,99 +1,28 @@
-import { useState } from 'react';
-
-export default function AppShell({
-  activeTab,
-  setActiveTab,
-  onNewScenario,
-  onExportPDF,
-  onExportExcel,
-  children,
-}) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-
-  const tabs = [
-    'Asset Inputs',
-    'Transfer Mechanism',
-    'Gift vs. Death Analysis',
-    'Projections',
-    'Scenario Compare',
-    'Monte Carlo',
-  ];
-
+export default function AppShell({ actions, sidebar, children }) {
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="flex items-center justify-between bg-white border-b border-slate-200 px-4 py-3 shadow-sm">
-        <div className="flex items-center gap-3">
-          <button
-            className="text-slate-600 hover:text-slate-900"
-            onClick={() => setIsSidebarOpen((v) => !v)}
-            aria-label="Toggle sidebar"
-          >
-            <span className="sr-only">Toggle navigation</span>
-            <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
-          <h1 className="text-lg font-semibold">IDGT Asset Optimizer</h1>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            className="rounded bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800"
-            onClick={onNewScenario}
-          >
-            New Scenario
-          </button>
-          <div className="relative">
-            <button
-              className="rounded border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-              type="button"
-            >
-              Export ▼
-            </button>
-            <div className="absolute right-0 mt-1 w-44 rounded bg-white shadow-lg">
-              <button
-                className="w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
-                onClick={onExportPDF}
-              >
-                PDF Report
-              </button>
-              <button
-                className="w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
-                onClick={onExportExcel}
-              >
-                Excel Export
-              </button>
-            </div>
+    <div className="min-h-screen bg-page text-ink">
+      <header className="sticky top-0 z-20 border-b border-line bg-surface/95 backdrop-blur">
+        <div className="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-3 px-4 py-3">
+          <div>
+            <h1 className="text-lg font-semibold leading-tight">IDGT Asset Analyzer</h1>
+            <p className="text-xs text-ink-2">Gift-to-IDGT heir-wealth ranking with optimal swap timing · federal, 2026 law</p>
           </div>
+          <div className="flex flex-wrap items-center gap-2">{actions}</div>
         </div>
       </header>
 
-      <div className="flex">
-        <aside
-          className={`flex flex-col border-r border-slate-200 bg-white transition-all ${
-            isSidebarOpen ? 'w-72' : 'w-0 overflow-hidden'
-          }`}
-        >
-          <nav className="flex flex-col gap-1 p-3">
-            {tabs.map((tab) => (
-              <button
-                key={tab}
-                className={`rounded px-3 py-2 text-left text-sm font-medium transition-colors ${
-                  activeTab === tab
-                    ? 'bg-slate-900 text-white'
-                    : 'text-slate-700 hover:bg-slate-50'
-                }`}
-                onClick={() => setActiveTab(tab)}
-              >
-                {tab}
-              </button>
-            ))}
-          </nav>
+      <div className="mx-auto grid max-w-[1400px] grid-cols-1 gap-5 px-4 py-5 lg:grid-cols-[380px_minmax(0,1fr)]">
+        <aside className="space-y-4 lg:sticky lg:top-[68px] lg:max-h-[calc(100vh-84px)] lg:overflow-y-auto lg:pr-1">
+          {sidebar}
         </aside>
-
-        <main className="flex-1 p-4">
-          {children}
-        </main>
+        <main className="min-w-0 space-y-5">{children}</main>
       </div>
+
+      <footer className="mx-auto max-w-[1400px] px-4 pb-8 pt-2 text-xs text-muted">
+        Illustrative model for planning discussion — not tax, legal or investment advice. Federal transfer tax only;
+        state estate and inheritance taxes are not modelled in this version. Methodology and authorities are documented
+        on this page; verify every input against the client's facts and current law.
+      </footer>
     </div>
   );
 }
