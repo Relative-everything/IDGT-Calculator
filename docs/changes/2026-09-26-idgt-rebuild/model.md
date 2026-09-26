@@ -1,6 +1,6 @@
 # Model contract: IDGT gift heir-wealth ledger (v1)
 From: audit workflow (3 designs → judge → 7 verifiers), corrections applied. Date: 2026-09-26.
-Status: draft — becomes the implementation contract for `src/engine/idgtModel.js` on acceptance.
+Status: accepted 2026-09-26 — implementation contract for `src/engine/idgtModel.js`.
 
 ## 0. Principles
 

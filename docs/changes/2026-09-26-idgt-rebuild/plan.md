@@ -1,6 +1,6 @@
 # Plan: IDGT calculator full rebuild (v1 — gift mechanism)
 From: spec.md + model.md. Date: 2026-09-26. Tier: Full.
-Status: draft — awaiting builder acceptance. No source file is edited before acceptance.
+Status: accepted by builder on 2026-09-26 (scope: v1 gift-only; mortality: repo table provisional + banner; fixtures A–H confirmed; conventions C-1…C-9 and the CLAUDE.md amendment accepted).
 
 ## Reads (Gate 0)
 - `src/CLAUDE.md` — governance: engine pure / data static / components no math / no localStorage / no stubs / cite IRC; TCJA-toggle mandate (stale post-OBBBA); commit ref stale (7168bd8 vs HEAD 8aa4f19).
@@ -40,7 +40,7 @@ Common inputs unless stated: FMV 1,000,000; basis 200,000; g 7%; y 2%; no sale; 
 r_E 3%; X_0 15,000,000; π 2% (X_1 = 15,000,000, X_2 = 15,300,000, X_3 = 15,606,000); P 0;
 swap consideration = cash-like default (basis 100%, growth 0, gross yield 3%/(1−0.458) = 5.5350553…%
 taxed at 45.8%). Money tolerance 0.005; ratios 1e-9. Confidence M (hand-derived from primary-source
-rules; arithmetic machine-checked). Status: **pending builder confirmation**.
+rules; arithmetic machine-checked). Status: **confirmed by builder on 2026-09-26** (all rows; the mortality row remains characterization).
 
 | Fixture | Scenario | Expected |
 |---|---|---|
@@ -118,4 +118,4 @@ is stepped up; the trust holds cash 1,295,029 (basis equal); estate tax unchange
 Installment sale (freeze model: note at AFR, no grantor interest income per Rev. Rul. 85-13, note balance in estate, §7872 term validation) · GRAT (§2702, §7520 term-certain factor, §2036 inclusion by P(death in term)) · SLAT (spousal access, split gifts, joint-life mortality) · state estate/inheritance tax (verified 2026 table, NY cliff and 3-year add-back, CT gift tax, §2058) · Table 2010CM import · UHNW mortality adjustment (needs SOA source) · Monte Carlo · promissory-note swap consideration · DSUE · GST exemption tracking · multi-asset joint optimisation · post-death non-grantor trust taxation · PDF/Excel export · sensitivity tables · SSA table verification (blocked network) · vitest upgrade.
 
 ## Departures from plan
-(empty at acceptance)
+- 2026-09-26: steps 1 (data layer) and 2 (engine) are committed together — stripping the helpers from `mortalityTable.js` and deleting the AFR/state tables breaks the legacy engine's imports, so a separate step-1 commit would not build. Files touched are exactly those named for steps 1–2.

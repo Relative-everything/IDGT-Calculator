@@ -1,5 +1,5 @@
 # Intent: IDGT calculator full rebuild (v1 — gift mechanism)
-Author: Jared (builder), captured by Claude. Date: 2026-09-26. Status: draft.
+Author: Jared (builder), captured by Claude. Date: 2026-09-26. Status: accepted 2026-09-26.
 
 ## Problem
 The calculator exists in two generations and neither computes a defensible number. The original

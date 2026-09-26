@@ -1,5 +1,5 @@
 # Spec: IDGT calculator full rebuild (v1 — gift mechanism)
-From: intent.md, model.md. Date: 2026-09-26. Status: draft.
+From: intent.md, model.md. Date: 2026-09-26. Status: accepted 2026-09-26.
 
 ## Requirements
 R1. `simulate(inputs, s)` returns the per-year ledger of model.md §4–§7 for HOLD and GIFT[s];
