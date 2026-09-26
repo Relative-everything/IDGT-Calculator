@@ -1,12 +1,12 @@
 // State → engine → results. The only place the UI calls the engine.
 import { useDeferredValue, useMemo } from 'react';
-import { evaluateAsset } from '../engine/idgtModel.js';
+import { evaluateAsset, resolveSwapProfile } from '../engine/idgtModel.js';
 import { validateInputs } from '../engine/validate.js';
 import { rankAssets } from '../engine/ranking.js';
 import { buildEngineInputs, FIELD_LABELS } from './buildInputs.js';
 
 /**
- * @returns {{ perAsset: object[], ranked: object[], remainingExclusion: number|null, isStale: boolean }}
+ * @returns {{ perAsset: object[], ranked: object[], remainingExclusion: number|null, neutralSwapYieldPct: string|null, isStale: boolean }}
  */
 export function useIdgtModel({ grantor, estate, settings, assets }) {
   const deferred = useDeferredValue({ grantor, estate, settings, assets });
@@ -30,7 +30,15 @@ export function useIdgtModel({ grantor, estate, settings, assets }) {
     const ok = perAsset.filter((a) => a.result);
     const remainingExclusion = ok.length ? ok[0].result.derived.R : null;
     const ranked = rankAssets(ok, { key: s.rankKey === 'none' ? 'none' : 'opt', remainingExclusion: remainingExclusion ?? Infinity });
-    return { perAsset, ranked, remainingExclusion };
+    // Gross yield of the default (return-neutral, cash-like) swap consideration, for the settings panel.
+    let neutralSwapYieldPct = null;
+    if (perAsset[0]) {
+      const { rE, tauOrd } = perAsset[0].inputs;
+      if (Number.isFinite(rE) && Number.isFinite(tauOrd) && tauOrd < 1) {
+        neutralSwapYieldPct = (resolveSwapProfile({ rE, tauOrd }).ySw * 100).toFixed(2);
+      }
+    }
+    return { perAsset, ranked, remainingExclusion, neutralSwapYieldPct };
   }, [deferred]);
 
   return { ...model, isStale };

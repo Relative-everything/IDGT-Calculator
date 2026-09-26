@@ -50,7 +50,7 @@ export default function App() {
   const [notice, setNotice] = useState(null);
   const fileRef = useRef(null);
 
-  const { perAsset, ranked, remainingExclusion, isStale } = useIdgtModel({ grantor, estate, settings, assets });
+  const { perAsset, ranked, remainingExclusion, neutralSwapYieldPct, isStale } = useIdgtModel({ grantor, estate, settings, assets });
 
   const errorsById = useMemo(() => {
     const out = {};
@@ -60,12 +60,6 @@ export default function App() {
   const sharedErrors = useMemo(() => (perAsset[0] ? errorsById[perAsset[0].id] : {}), [perAsset, errorsById]);
   const invalid = perAsset.filter((a) => a.errors.length);
   const selected = ranked.find((r) => r.id === selectedId) ?? ranked[0] ?? null;
-  const neutralYieldPct = useMemo(() => {
-    const rE = parseNum(estate.otherEstateGrowth) / 100;
-    const tauOrd = (parseNum(grantor.fedOrd) + parseNum(grantor.stateOrd) + parseNum(grantor.niit)) / 100;
-    const v = (rE / (1 - tauOrd)) * 100;
-    return Number.isFinite(v) ? v.toFixed(2) : null;
-  }, [estate.otherEstateGrowth, grantor.fedOrd, grantor.stateOrd, grantor.niit]);
 
   const reset = () => { setGrantor(DEFAULT_GRANTOR); setEstate(DEFAULT_ESTATE); setSettings(DEFAULT_SETTINGS); setAssets(DEFAULT_ASSETS()); setSelectedId(null); setNotice('Inputs reset to defaults.'); };
   const exportJson = () => download('idgt-scenario.json', serializeScenario({ grantor, estate, settings, assets }), 'application/json');
@@ -97,7 +91,7 @@ export default function App() {
       <GrantorPanel grantor={grantor} onChange={setGrantor} errors={sharedErrors} />
       <EstatePanel estate={estate} onChange={setEstate} errors={sharedErrors} />
       <AssetsPanel assets={assets} onChange={setAssets} errorsById={errorsById} />
-      <ModelSettingsPanel settings={settings} onChange={setSettings} errors={sharedErrors} neutralYieldPct={neutralYieldPct} />
+      <ModelSettingsPanel settings={settings} onChange={setSettings} errors={sharedErrors} neutralYieldPct={neutralSwapYieldPct} />
     </>
   );
 
