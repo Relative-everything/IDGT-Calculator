@@ -1,13 +1,31 @@
-// Source: SSA 2021 Period Life Table, published 2024
-// NOTE: This module is used for §7520/actuarial present value calculations in IDGT transfer modeling.
+// SSA period life table, l_x column (number of survivors out of 100,000 born alive), ages 0–119.
+// Intended source: Social Security Administration, Office of the Chief Actuary, "Actuarial Life Table"
+// (2021 period life table as used in the 2024 OASDI Trustees Report),
+// https://www.ssa.gov/oact/STATS/table4c6_2021_TR2024.html
+//
+// VERIFICATION STATUS: UNVERIFIED. The build sandbox could not reach ssa.gov on 2026-09-26, so these
+// values were carried forward from the prior commit and checked only for internal plausibility
+// (monotone non-increasing, radix 100,000, male l_65/l_0 = 0.774, old-age tail consistent with a US
+// period table). Replace the table with the published l_x column, set `verified: true` and fill in
+// `checkedOn` below; the engine's mortality test then asserts the checksum values in MORTALITY_TABLE_META.
+//
+// This file holds DATA ONLY (repo rule: /src/data has no calculations). Probabilities are derived in
+// src/engine/mortality.js. Table 2010CM (IRC §7520, T.D. 9974, effective 2023-06-01) is a different
+// table used only for annuity/term interests and is not part of v1.
 
-/**
- * SSA 2021 period life table Lx values (number of survivors per 100,000 born alive).
- * The table is for the Social Security area population and is used as a standard actuarial
- * base for present value calculations. For §7520 work, the IRS publishes a separate
- * mortality table (Table 2000CM) that is intended for use with private annuity/interest
- * rate calculations; see getIRS2000CMValue() stub below.
- */
+export const MORTALITY_TABLE_META = {
+  name: 'SSA period life table (l_x)',
+  periodYear: 2021,
+  publishedIn: '2024 OASDI Trustees Report',
+  sourceUrl: 'https://www.ssa.gov/oact/STATS/table4c6_2021_TR2024.html',
+  radix: 100000,
+  ageRange: [0, 119],
+  verified: false,
+  checkedOn: null,
+  // Fill these from the published table when verifying (used by mortality.test.js once verified is true).
+  checksum: { male: { 65: null, 85: null }, female: { 65: null, 85: null } },
+};
+
 export const SSA_2021_LX = {
   // Age: { male: Lx, female: Lx }
   0: { male: 100000, female: 100000 },
@@ -131,236 +149,3 @@ export const SSA_2021_LX = {
   118: { male: 0, female: 0 },
   119: { male: 0, female: 0 },
 };
-
-function validateAge(age) {
-  if (!Number.isInteger(age) || age < 0 || age > 119) {
-    throw new RangeError('Age must be an integer between 0 and 119 inclusive');
-  }
-}
-
-function validateGender(gender) {
-  const g = (gender || '').toString().toLowerCase();
-  if (g !== 'male' && g !== 'female') {
-    throw new Error("Gender must be 'male' or 'female'");
-  }
-  return g;
-}
-
-/**
- * Returns Lx (survivors out of 100,000) for a given age and gender.
- * @param {number} age
- * @param {'male'|'female'} gender
- */
-export function getLx(age, gender) {
-  validateAge(age);
-  const g = validateGender(gender);
-  return SSA_2021_LX[age][g];
-}
-
-/**
- * Probability of surviving from currentAge to currentAge + t using SSA 2021 period life table.
- * @param {number} currentAge
- * @param {number} t - years forward (integer >= 0)
- * @param {'male'|'female'} gender
- */
-export function getProbSurvivalToYear(currentAge, t, gender) {
-  if (!Number.isInteger(t) || t < 0) {
-    throw new RangeError('t must be a non-negative integer');
-  }
-  validateAge(currentAge);
-  const g = validateGender(gender);
-  const startLx = getLx(currentAge, g);
-  const targetAge = Math.min(currentAge + t, 119);
-  const targetLx = getLx(targetAge, g);
-  // If currentAge + t exceeds table, assume zero survival beyond max age.
-  return startLx === 0 ? 0 : targetLx / startLx;
-}
-
-/**
- * Probability of death in the year between currentAge + t and currentAge + t + 1.
- * @param {number} currentAge
- * @param {number} t - years from now (integer >= 0)
- * @param {'male'|'female'} gender
- */
-export function getProbDeathInYear(currentAge, t, gender) {
-  if (!Number.isInteger(t) || t < 0) {
-    throw new RangeError('t must be a non-negative integer');
-  }
-  validateAge(currentAge);
-  const g = validateGender(gender);
-  const startLx = getLx(currentAge, g);
-  if (startLx === 0) return 0;
-  const lx_t = getLx(Math.min(currentAge + t, 119), g);
-  const lx_t1 = getLx(Math.min(currentAge + t + 1, 119), g);
-  return (lx_t - lx_t1) / startLx;
-}
-
-
-// IRS Table 2000CM — Single Life Remainder Factors.
-// Used exclusively for §7520 installment sale note pricing. Do not confuse with SSA mortality table above.
-// Authority: IRC §7520, Treas. Reg. §20.2031-7(d)(7), IRS Publication 1457 Table S.
-
-/**
- * Baseline 6% §7520 single-life annuity factor from IRS Table 2000CM.
- * The values below are intended as a reference baseline. They should be cross-checked
- * against IRS Publication 1457 Table S for exact compliance.
- *
- * ASSUMPTION: unverified — requires IRS Pub 1457 cross-check.
- */
-export const IRS_2000CM_ANNUITY_FACTORS = {
-  0: 26,
-  1: 25.79,
-  2: 25.58,
-  3: 25.37,
-  4: 25.16,
-  5: 24.95,
-  6: 24.74,
-  7: 24.53,
-  8: 24.32,
-  9: 24.11,
-  10: 23.9,
-  11: 23.69,
-  12: 23.48,
-  13: 23.27,
-  14: 23.06,
-  15: 22.85,
-  16: 22.64,
-  17: 22.43,
-  18: 22.22,
-  19: 22.01,
-  20: 21.8,
-  21: 21.59,
-  22: 21.38,
-  23: 21.17,
-  24: 20.96,
-  25: 20.75,
-  26: 20.54,
-  27: 20.33,
-  28: 20.12,
-  29: 19.91,
-  30: 19.7,
-  31: 19.49,
-  32: 19.28,
-  33: 19.07,
-  34: 18.86,
-  35: 18.65,
-  36: 18.44,
-  37: 18.23,
-  38: 18.02,
-  39: 17.81,
-  40: 17.6,
-  41: 17.39,
-  42: 17.18,
-  43: 16.97,
-  44: 16.76,
-  45: 16.55,
-  46: 16.34,
-  47: 16.13,
-  48: 15.92,
-  49: 15.71,
-  50: 15.5,
-  51: 15.29,
-  52: 15.08,
-  53: 14.87,
-  54: 14.66,
-  55: 14.45,
-  56: 14.24,
-  57: 14.03,
-  58: 13.82,
-  59: 13.61,
-  60: 13.4,
-  61: 13.19,
-  62: 12.98,
-  63: 12.77,
-  64: 12.56,
-  65: 12.35,
-  66: 12.14,
-  67: 11.93,
-  68: 11.72,
-  69: 11.51,
-  70: 11.3,
-  71: 11.09,
-  72: 10.88,
-  73: 10.67,
-  74: 10.46,
-  75: 10.25,
-  76: 10.04,
-  77: 9.83,
-  78: 9.62,
-  79: 9.41,
-  80: 9.2,
-  81: 8.99,
-  82: 8.78,
-  83: 8.57,
-  84: 8.36,
-  85: 8.15,
-  86: 7.94,
-  87: 7.73,
-  88: 7.52,
-  89: 7.31,
-  90: 7.1,
-  91: 6.89,
-  92: 6.68,
-  93: 6.47,
-  94: 6.26,
-  95: 6.05,
-  96: 5.84,
-  97: 5.63,
-  98: 5.42,
-  99: 5.21,
-  100: 5,
-  101: 4.79,
-  102: 4.58,
-  103: 4.37,
-  104: 4.16,
-  105: 3.95,
-  106: 3.74,
-  107: 3.53,
-  108: 3.32,
-  109: 3.11,
-  110: 2.9,
-};
-
-const IRS_2000CM_RATES = [
-  0.02, 0.022, 0.024, 0.026, 0.028, 0.03, 0.032, 0.034, 0.036, 0.038,
-  0.04, 0.042, 0.044, 0.046, 0.048, 0.05, 0.052, 0.054, 0.056, 0.058,
-  0.06, 0.062, 0.064, 0.066, 0.068, 0.07, 0.072, 0.074, 0.076, 0.078,
-  0.08, 0.082, 0.084, 0.086, 0.088, 0.09, 0.092, 0.094, 0.096, 0.098,
-  0.1,
-];
-
-/**
- * Return a §7520 single-life annuity factor for a given age and section rate.
- * If the exact sectionRate is not available, linearly interpolate between the nearest two rates.
- *
- * @param {number} age
- * @param {number} sectionRate - §7520 section rate (e.g., 0.05 for 5%)
- */
-export function get7520AnnuityFactor(age, sectionRate) {
-  validateAge(age);
-  if (typeof sectionRate !== 'number' || Number.isNaN(sectionRate) || sectionRate <= 0) {
-    throw new TypeError('sectionRate must be a positive number');
-  }
-
-  const clampedRate = Math.max(0.02, Math.min(0.10, sectionRate));
-  const floorIndex = Math.floor((clampedRate - 0.02) / 0.2);
-  const ceilIndex = Math.ceil((clampedRate - 0.02) / 0.2);
-  const lowerRate = IRS_2000CM_RATES[Math.max(0, Math.min(IRS_2000CM_RATES.length - 1, floorIndex))];
-  const upperRate = IRS_2000CM_RATES[Math.max(0, Math.min(IRS_2000CM_RATES.length - 1, ceilIndex))];
-
-  const baseFactor = IRS_2000CM_ANNUITY_FACTORS[age];
-  if (baseFactor == null) {
-    throw new RangeError('Age out of range for IRS 2000CM annuity factors');
-  }
-
-  // Simplified rate adjustment: assume factor scales inversely with (1 + rate).
-  const factorAtRate = (rate) => baseFactor * (1 + 0.06) / (1 + rate);
-
-  const lowerFactor = factorAtRate(lowerRate);
-  const upperFactor = factorAtRate(upperRate);
-
-  if (lowerRate === upperRate) return lowerFactor;
-
-  const t = (clampedRate - lowerRate) / (upperRate - lowerRate);
-  return lowerFactor + (upperFactor - lowerFactor) * t;
-}

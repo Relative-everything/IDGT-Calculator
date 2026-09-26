@@ -10,18 +10,22 @@ benchmarked against Holistiplan and Tax Status. Future enterprise migration plan
 ### Folder Responsibilities (Strict Separation)
 - /src/engine/     → Pure calculation functions ONLY. No React imports. No UI logic.
                      Every function: inputs in, numbers out.
-- /src/data/       → Static reference tables ONLY (SSA mortality, §2001 rates, AFR).
-                     No calculations. No UI.
-- /src/components/ → React UI ONLY. Components call engine functions.
-                     Components contain ZERO calculation logic.
-- /src/hooks/      → State management ONLY. Wire components to engine.
+- /src/data/       → Static reference tables ONLY (SSA mortality, §2001 rates, exclusion amounts).
+                     No calculations. No UI. Every table carries a source, a checked-on date and
+                     a confidence/verification flag.
+- /src/components/ → React UI ONLY. Components call engine functions through hooks.
+                     Components contain ZERO calculation logic (formatting only).
+- /src/hooks/      → State management ONLY. Wire components to engine (`useIdgtModel`,
+                     `buildInputs`, `scenarioIO`).
 
 ### Absolute Prohibitions
 - NEVER put calculation logic inside a component file
 - NEVER put UI rendering inside an engine file
 - NEVER use a single mega-component — decompose into focused pieces
 - NEVER use localStorage (not supported in this environment)
-- NEVER truncate or stub code — every function must be fully implemented
+- NEVER truncate or stub code — every function must be fully implemented; unbuilt features are
+  listed in the in-app "Not modelled" panel, not left as dead code or "coming soon" tabs
+- NEVER present a reference table as IRS/SSA data unless it was loaded from the published source
 
 ### Code Standards
 - Every engine function must have an inline comment citing its IRC section,
@@ -29,26 +33,42 @@ benchmarked against Holistiplan and Tax Status. Future enterprise migration plan
 - All calculation assumptions must be explicit constants with named variables,
   never magic numbers
 - Input validation must reject values that would produce IRC non-compliant results
-  (e.g., installment note rate below AFR must flag, not silently compute)
+- Expected values in tests are hand-derived and builder-confirmed before they are asserted
+  (see docs/changes/*/plan.md "Golden values"); sign/typeof checks are not verification
 
 ## Domain Knowledge
-- This calculator evaluates assets for transfer to an IDGT via gift, installment sale,
-  GRAT, SLAT, or hybrid mechanisms
-- Primary output: ranked asset table by transfer efficiency
-- Secondary outputs: optimal swap timing, mechanism comparison, sensitivity analysis
-- Key technical dependencies: IRC §§671–679 (grantor trust), §2036/2038 (estate inclusion),
-  §7520 (AFR hurdle), §2001 (progressive estate tax), SSA 2021 mortality tables
-- TCJA sunset (projected 2026) is the highest-impact legislative scenario — must be
-  a one-click toggle that re-runs all calculations
+- This calculator evaluates assets for transfer to an IDGT. v1 models the outright gift with the
+  §675(4)(C) swap; installment sale, GRAT, SLAT and state taxes are documented deferrals
+- Primary output: ranked asset table by NPV per dollar of taxable gift value (exclusion-equivalent)
+- Secondary outputs: optimal swap timing, exact NPV decomposition, per-death-year ledger
+- Modelling convention: return-neutral heir-wealth ledger — HOLD vs GIFT[s] simulated per death
+  year; no benefit is ever added to NPV, every component is derived from the ledger. Contract:
+  docs/changes/2026-09-26-idgt-rebuild/model.md
+- Key technical dependencies: IRC §§671–679 (grantor trust), §675(4)(C) (swap), §1014/§1015 and
+  Rev. Rul. 2023-2 (basis), §2001(b)/(c) with flat 40% above the exclusion, §2010(c) as amended by
+  OBBBA §70106 ($15,000,000 for 2026, indexed after), Reg. §20.2010-1(c) (anti-clawback), §2035(b),
+  Rev. Rul. 85-13, SSA period life table (provisional until verified)
+- Legislative scenarios are modelled by editing the basic exclusion amount (X_0) and its indexing
+  rate (π). OBBBA fixed the 2026 exclusion at $15,000,000 with no sunset; there is no TCJA toggle
 
 ## Conflict Handling
 If you encounter an irreconcilable trade-off between calculation accuracy and
 implementation complexity, surface it explicitly with your recommended resolution.
 Do not resolve silently.
 
+## Things Claude gets wrong here
+- Fabricating reference tables and presenting them as IRS data (a synthetic "Table 2000CM" factor
+  grid shipped once). Load published values or mark the table UNVERIFIED.
+- Presenting sign/typeof tests as verification of financial math.
+- Leaving UI inputs unwired to the engine. `src/hooks/__tests__/buildInputs.test.js` asserts every
+  input moves an output; extend it when adding a field.
+- Summing "benefit buckets" measured against different baselines (double counting). Use the ledger.
+
 ## Current commit
-7168bd8
+See docs/changes/2026-09-26-idgt-rebuild/handback.md
 
 ## NEXT SESSIONS ROADMAP
-- Golden reference test suite (only after core calc confirmed working end-to-end in live site)
-
+Follow docs/ROADMAP.md phase by phase (Phase 1: verify the SSA life table; Phase 2: installment
+sale; Phase 3: GRAT — term-certain §7520 factor, no Table 2010CM needed; Phase 4: state tax with a
+verified 2026 table; then SLAT/DSUE, sensitivity/exports, CI, UX polish). Each phase runs under the
+sdlc-loop: plan accepted and golden values builder-confirmed before source edits.

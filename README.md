@@ -1,16 +1,72 @@
-# React + Vite
+# IDGT Asset Analyzer
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Ranks candidate assets for a gift to an **intentionally defective grantor trust (IDGT)** by the
+probability-weighted, discounted gain in heir wealth versus keeping the asset until death, and finds
+the best year to exercise the §675(4)(C) swap power. Federal transfer tax, 2026 law (OBBBA:
+$15,000,000 basic exclusion, indexed after 2026). Live at
+https://relative-everything.github.io/IDGT-Calculator/.
 
-Currently, two official plugins are available:
+Illustrative planning model — not tax, legal or investment advice.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## What it computes
 
-## React Compiler
+For each asset and each possible year of death, one simulator runs two worlds year by year:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| | Keep (baseline) | Gift to IDGT (optional swap in year *s*) |
+|---|---|---|
+| Asset | in the estate, §1014 step-up at death | in the trust, §1015 carryover basis (Rev. Rul. 2023-2) |
+| Income tax on its yield | grantor pays, from the other estate | grantor pays, from the other estate (§§671–677) |
+| Estate tax | on other estate + asset, less the full exclusion | on other estate + adjusted taxable gift (§2001(b)), flat 40% above the exclusion |
+| Swap at end of year *s* | — | asset back in the estate (stepped up); cash-like consideration in the trust (Rev. Rul. 85-13, 2008-22) |
 
-## Expanding the ESLint configuration
+NPV = Σ over death years of P(death in year t) × discount factor × (heirs' wealth with the gift −
+heirs' wealth without it). The five reported components — freeze, tax burn, gift tax, residual,
+step-up — are read off the same ledger and sum exactly to the NPV. Assets are ranked by NPV per
+dollar of taxable gift value (exclusion-equivalent consumed), with the optimal swap year by default.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Full contract: [`docs/changes/2026-09-26-idgt-rebuild/model.md`](docs/changes/2026-09-26-idgt-rebuild/model.md).
+Why the previous builds were wrong and what changed: [`plan.md`](docs/changes/2026-09-26-idgt-rebuild/plan.md)
+and [`handback.md`](docs/changes/2026-09-26-idgt-rebuild/handback.md) in the same folder.
+
+## Inputs that matter most
+Grantor age/sex (or an assumed death year), other estate and its after-tax growth, basic exclusion
+and indexing, prior taxable gifts **and the year they were made**, tax-rate stacks (grantor ordinary
+and capital-gain; heirs' capital-gain incl. NIIT), per asset: FMV, basis, appreciation, yield,
+valuation discount, annual exclusions, a scheduled sale year with post-sale returns. Model settings
+expose the conventions (return-neutral reinvestment, cash-like consideration, discount-at-death
+inclusion, whether a scheduled sale also happens when the asset is kept).
+
+## Verification status
+- Engine: golden fixtures A–H (hand-derived, builder-confirmed 2026-09-26), §2001(c) cross-check
+  against the bracket schedule, model invariants (decomposition sums, Σq = 1, neutrality, swap
+  properties), input-wiring test — `npm test`.
+- **Mortality table: UNVERIFIED.** `src/data/mortalityTable.js` carries an SSA 2021 period life
+  table that could not be checked against ssa.gov from the build environment. Replace it with the
+  published l_x column and set `MORTALITY_TABLE_META.verified = true` to enable the checksum test.
+  The assumed-death-year mode is independent of the table.
+- Exclusion amounts and rates: sources and confidence in `src/data/`.
+
+## Roadmap
+The execution plan for everything below — phased, sized per session, with prerequisites, model
+extensions, golden-value gates and a kickoff prompt — is [`docs/ROADMAP.md`](docs/ROADMAP.md).
+
+## Not modelled (deferred)
+Installment sale, GRAT, SLAT, state estate/inheritance tax, Table 2010CM / §7520 products, UHNW
+mortality adjustment, Monte Carlo, promissory-note swap consideration, DSUE/GST tracking,
+multi-asset joint optimisation, PDF/Excel export. Reasons are shown in-app under "Not modelled in
+this version".
+
+## Development
+```
+npm ci
+npm run dev        # Vite dev server
+npm test           # vitest
+npm run lint       # eslint
+npm run build      # production build to dist/
+npm run deploy     # gh-pages
+```
+Stack: React 19, Vite 8, Tailwind CSS 4, Vitest. No server, no localStorage; scenarios move as JSON
+files and the ranking exports as CSV.
+
+Layout: `src/engine/` pure calculation (cites its authorities inline) · `src/data/` static tables
+with provenance · `src/hooks/` state → engine · `src/components/` UI only.
