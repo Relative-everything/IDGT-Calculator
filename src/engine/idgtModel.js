@@ -187,7 +187,7 @@ export function simulate(inp, swapYear, N) {
 
     const DF = Math.pow(v, t);
     rows.push({
-      t, Xt, Y, V, burn, burnSw, CGb, CGs, Bb, Bs, Eb, Es, W, WB, Tself, swapped, swapEvent, incl,
+      t, age: inp.age + t, Xt, Y, V, burn, burnSw, CGb, CGs, Bb, Bs, Eb, Es, W, WB, Tself, swapped, swapEvent, incl,
       TEb, baseB, ETb, SUb, Hb, T, TB, add2035, TEs, baseS, ETs, BIG, SUs, Hs,
       dH, dTW, dTWgt, dTWsw, dET, dSU, freeze, burnC, giftTaxC, resid, stepUp,
       DF, PV: dH * DF,
@@ -231,7 +231,7 @@ export function evaluateAsset(inp) {
   const mort = deathProbabilities({ lx: inp.lx, age: inp.age, deathYearOverride: inp.deathYearOverride ?? null });
   const { q, N, omega } = mort;
   const allWarnings = [...warnings];
-  mort.warnings.forEach((code) => allWarnings.push({ code, message: 'Mortality table does not reach zero survivors; residual mass assigned to its final year.' }));
+  mort.warnings.forEach((code) => allWarnings.push({ code, data: {} }));
 
   const none = simulate(inp, 0, N);
   const noneAgg = aggregate(none.rows, q);
@@ -256,8 +256,8 @@ export function evaluateAsset(inp) {
   const { Ug, G } = none.derived;
   const eff = (npv) => (Ug > 0 ? npv / Ug : null);
   const effGT = (npv) => (G > 0 ? npv / G : null);
-  if (!(Ug > 0)) allWarnings.push({ code: 'ZERO_TAXABLE_GIFT', message: 'Taxable gift value is zero (annual exclusions cover the gift); efficiency per gift dollar is undefined.' });
-  if (inp.S > N) allWarnings.push({ code: 'SALE_BEYOND_HORIZON', message: `Sale year ${inp.S} is beyond the mortality horizon (${N} years) and is treated as never.` });
+  if (!(Ug > 0)) allWarnings.push({ code: 'ZERO_TAXABLE_GIFT', data: {} });
+  if (inp.S > N) allWarnings.push({ code: 'SALE_BEYOND_HORIZON', data: { S: inp.S, N } });
   // Liquidity: report the first year the other estate is exhausted and how likely the grantor is to reach it.
   const firstNegative = (rows) => rows.find((r) => r.Es < 0);
   const negNone = firstNegative(none.rows);
@@ -265,10 +265,10 @@ export function evaluateAsset(inp) {
   const neg = negNone && negOpt ? (negOpt.t <= negNone.t ? negOpt : negNone) : (negNone ?? negOpt);
   if (neg) {
     const survival = q.slice(neg.t - 1).reduce((a, b) => a + b, 0);
-    const scenario = neg === negOpt && negOpt !== negNone ? `with the year-${best.s} swap` : 'without a swap';
+    const inSwapScenario = neg === negOpt && negOpt !== negNone;
     allWarnings.push({
       code: 'GRANTOR_ILLIQUID',
-      message: `The other estate is exhausted from year ${neg.t} (age ${inp.age + neg.t}; probability of surviving to that year ${(survival * 100).toFixed(1)}%) ${scenario}: the income-tax burn${G > 0 ? ' and gift tax' : ''} exceed it. Arithmetic continues with a negative balance; consider a discretionary tax-reimbursement clause (Rev. Rul. 2004-64) or a smaller gift.`,
+      data: { year: neg.t, age: inp.age + neg.t, survival, swapYear: inSwapScenario ? best.s : 0, giftTaxPaid: G > 0 },
     });
   }
 

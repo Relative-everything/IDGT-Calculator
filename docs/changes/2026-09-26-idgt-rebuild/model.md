@@ -53,7 +53,7 @@ Status: accepted 2026-09-26 — implementation contract for `src/engine/idgtMode
 
 ## 2. Derived constants (once per asset)
 
-- U_g = FMV·(1−δ) − A_ex — adjusted taxable gift (§2001(b)(1)(B), frozen at gift-date value, §2001(f)).
+- U_g = max(0, FMV·(1−δ) − A_ex) — adjusted taxable gift (§2001(b)(1)(B), frozen at gift-date value, §2001(f)); annual exclusions cannot exceed the gift (§2503(b)).
 - used_prior = min(P, X_P); R = max(0, X_0 − used_prior); U_c = min(U_g, R) — exclusion consumed.
 - G = τ_e · max(0, U_g − R) — gift tax paid from E at t = 0 (tax-exclusive, §2502(c)).
 - B^T_0 = B_0 + G · max(0, U_g − B_0)/U_g — trust basis (§1015(a) carryover + §1015(d)(6) increase); B^b_0 = B_0.
@@ -156,7 +156,8 @@ Cost O(N²) per asset (≈ 190 ms for 10 assets × 112 candidates × 111 years).
 ## 9. Efficiency and ranking
 
 - Eff(s) = NPV(s) / U_g — NPV per dollar of taxable gift value = per dollar of exclusion-equivalent
-  consumed (U_c + G/τ_e = U_g). Continuous as R → 0.
+  consumed (U_c + G/τ_e = U_g). Continuous as R → 0. U_g = 0 (fully covered by annual exclusions):
+  Eff is undefined; the asset ranks first if NPV > 0 (it consumes no exclusion) and last otherwise.
 - Also displayed: U_c, G, NPV/G when G > 0 ("per dollar of gift tax paid"), NPV/FMV, s*, NPV(none),
   NPV(s*), NPV_PF, expected death year, cumulative exclusion used in rank order (greedy fill).
 - Default rank key Eff(s*); toggle to Eff(none).
@@ -170,9 +171,10 @@ Cost O(N²) per asset (≈ 190 ms for 10 assets × 112 candidates × 111 years).
 5. Exclusion exhausted: U_c = 0, G = τ_e U_g, §1015(d)(6) bump, ranking continues on NPV/U_g.
 6. Valuation discount affects U_g, U_c, G, B^T_0 only; economic value is FMV; consideration = incl_s.
 7. B_0 > FMV: BIG floored at 0 (§1015 dual basis; loss basis = U_g); warn "harvest the loss first".
-8. Validation: FMV > 0; 0 ≤ δ < 1; 1+g+y > 0; 1+g_r+y_r > 0; 1+g_sw+y_sw > 0; r_E > −1; P ≥ 0;
-   0 ≤ τ_ord, τ_cg, τ_bene, τ_sw < 1; 0 < τ_e < 1; d > −1; k ≥ 0; integer S ≥ 0, t_D ≥ 1; E_0 ≥ 0;
-   min_t X_t ≥ 1,000,000; l non-increasing; l_x > 0; age within table.
+8. Validation: FMV > 0; 0 ≤ δ < 1; 1+g+y > 0; 1+g_r+y_r > 0; 1+g_sw+y_sw > 0 on the resolved profile; r_E > −1;
+   P ≥ 0; 0 ≤ τ_ord, τ_cg, τ_bene, τ_sw < 1; 0 < τ_e < 1; d > −1; k ≥ 0; integer S ≥ 0; integer 1 ≤ t_D ≤ 120 and
+   age ≤ 120 in deterministic mode; E_0 ≥ 0; X_t ≥ 1,000,000 for every t ≤ N (N = t_D or ω − x); l non-increasing;
+   l_x > 0; age within table — all reported as field errors, never thrown.
 9. S > N → treated as never (warn); s ≥ S → "post-sale swap not modelled" (excluded, not executed).
 10. E^s_t < 0 → warn "grantor cannot fund; consider a discretionary reimbursement clause
     (Rev. Rul. 2004-64)"; arithmetic continues; swap years with E^s_s < cons are infeasible.

@@ -1,0 +1,58 @@
+// Import/export hardening: untrusted JSON is coerced, ids regenerated, CSV formula cells neutralised.
+import { describe, it, expect } from 'vitest';
+import { parseScenario, csvCell, rankingToCsv, MAX_IMPORT_ASSETS, SCENARIO_VERSION } from '../scenarioIO.js';
+
+const defaults = {
+  grantor: { age: '65', sex: 'male', useDeathYear: false, deathYear: '20', fedOrd: '37', stateOrd: '5', niit: '3.8', fedLtcg: '20', stateLtcg: '5' },
+  estate: { otherEstate: '20000000', priorExclusionMode: 'year', beneNiit: true },
+  settings: { rankKey: 'opt', discountAtDeath: false, saleAppliesToBaseline: true, swapCustom: false },
+  asset: { name: 'Asset 1', fmv: '1000000', basis: '200000' },
+};
+
+describe('parseScenario', () => {
+  it('coerces field types: object names fall back, string booleans are ignored, numbers become strings', () => {
+    const s = parseScenario(JSON.stringify({ version: SCENARIO_VERSION, grantor: { useDeathYear: 'false', age: 70, sex: 'other' }, assets: [{ name: { x: 1 }, fmv: 2_500_000 }] }), defaults);
+    expect(s.grantor.useDeathYear).toBe(false);
+    expect(s.grantor.age).toBe('70');
+    expect(s.grantor.sex).toBe('male');
+    expect(s.assets[0].name).toBe('Asset 1');
+    expect(s.assets[0].fmv).toBe('2500000');
+    expect(s.assets[0].basis).toBe('200000');
+  });
+  it('drops non-object asset entries, regenerates ids, caps the list, and reports what was dropped', () => {
+    const many = Array.from({ length: MAX_IMPORT_ASSETS + 3 }, (_, i) => ({ id: 'same', name: `A${i}` }));
+    const s = parseScenario(JSON.stringify({ assets: [null, 5, ...many] }), defaults);
+    expect(s.assets.length).toBe(MAX_IMPORT_ASSETS);
+    expect(new Set(s.assets.map((a) => a.id)).size).toBe(MAX_IMPORT_ASSETS);
+    expect(s.assets.every((a) => a.id !== 'same')).toBe(true);
+    expect(s.dropped).toBe(5);
+  });
+  it('rejects non-JSON, non-objects, unsupported versions and oversized text', () => {
+    expect(() => parseScenario('nope', defaults)).toThrow(/valid JSON/);
+    expect(() => parseScenario('[1,2,3]', defaults)).toThrow(/scenario object/);
+    expect(() => parseScenario(JSON.stringify({ version: 99 }), defaults)).toThrow(/version/);
+    expect(() => parseScenario('x'.repeat(3 * 1024 * 1024), defaults)).toThrow(/too large/);
+  });
+  it('does not pollute Object.prototype', () => {
+    parseScenario('{"__proto__":{"polluted":1},"grantor":{"__proto__":{"polluted":1}}}', defaults);
+    expect({}.polluted).toBeUndefined();
+  });
+});
+
+describe('csv', () => {
+  it('neutralises formula-leading text and keeps numbers raw', () => {
+    expect(csvCell('=HYPERLINK("x")')).toBe('"\'=HYPERLINK(""x"")"');
+    expect(csvCell('+1')).toBe('"\'+1"');
+    expect(csvCell('-Family LP')).toBe('"\'-Family LP"');
+    expect(csvCell('@SUM(1)')).toBe('"\'@SUM(1)"');
+    expect(csvCell('a\rb')).toBe('"a\rb"');
+    expect(csvCell(-115086.29)).toBe('-115086.29');
+    expect(csvCell('Growth stock')).toBe('Growth stock');
+  });
+  it('rankingToCsv emits one line per row with the neutralised name', () => {
+    const row = { rank: 1, name: '=1+1', cumulativeTaxableGift: 1, result: { derived: { Ug: 1, Uc: 1, G: 0, expectedDeathYear: 2 }, npvNone: 1, sStar: 0, npvOpt: 1, eff: { opt: 1, none: 1 }, effPerFMV: { opt: 1 }, npvPF: 1, components: { opt: { freeze: 0, burn: 0, giftTax: 0, resid: 0, stepUp: 0 } } } };
+    const lines = rankingToCsv([row]).split('\n');
+    expect(lines.length).toBe(2);
+    expect(lines[1].startsWith('1,"\'=1+1",')).toBe(true);
+  });
+});

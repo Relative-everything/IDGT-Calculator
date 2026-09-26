@@ -29,6 +29,9 @@ describe('Fixture A — death end of year 3 certain', () => {
     expectMoney(r.SUs, 247_468.028846);
     expectMoney(r.Hs, 19_984_154.107954);
     expectMoney(r.Tself, 1_262_653.614737);
+    // Attribution pins (plan.md derivation): freeze = 40% × (self-taxed trust − taxable gift), burn = 40% × (trust − self-taxed trust)
+    expectMoney(r.freeze, 105_061.445895);
+    expectMoney(r.burnC, 12_950.154105);
   });
   it('swap years 1, 2, 3 and the optimum', () => {
     expectMoney(curveNpv(res, 1).npv, 76099.376264);
@@ -114,9 +117,10 @@ describe('Fixture E2 — as E, death in year 4 (outside §2035(b))', () => {
   const res = evaluateAsset(FIXTURES.E2);
   it('NPV turns positive; gift-tax component shows the tax-exclusive advantage', () => {
     expectMoney(res.npvNone, 87338.955157);
+    expectMoney(res.components.none.giftTax, 111020.160933);
+    // reference-derived (fixtures-ref.out), not in the builder-confirmed table:
     expectMoney(res.components.none.freeze, 124707.907579);
     expectMoney(res.components.none.burn, 16020.766493);
-    expectMoney(res.components.none.giftTax, 111020.160933);
     expectMoney(res.components.none.stepUp, -164409.879848);
     expectRatio(res.effPerGiftTax.none, 0.218347387892);
     expectMoney(res.rows.none[3].add2035, 0);
@@ -132,11 +136,12 @@ describe('Fixture F — prior gifts measured against the 2025 exclusion; partial
     expectMoney(res.derived.G, 396_000);
     expectMoney(res.derived.BT0, 716_800);
     expectMoney(res.npvNone, -182058.405939);
+    expectRatio(res.eff.none, -0.091029202970);
+    // reference-derived (fixtures-ref.out), not in the builder-confirmed table:
     expectMoney(res.components.none.freeze, 186798.485674);
     expectMoney(res.components.none.burn, 23025.279688);
     expectMoney(res.components.none.giftTax, -19586.310167);
     expectMoney(res.components.none.stepUp, -372295.861134);
-    expectRatio(res.eff.none, -0.091029202970);
     expectRatio(res.effPerGiftTax.none, -0.459743449342);
   });
 });
@@ -145,7 +150,7 @@ describe('Fixture G — beneficiary rate includes NIIT (28.8%)', () => {
   const res = evaluateAsset(FIXTURES.G);
   it('step-up cost grows; deathbed swap unchanged', () => {
     expectMoney(res.npvNone, -148526.016684);
-    expectMoney(res.components.none.stepUp, -253437.899365);
+    expectMoney(res.components.none.stepUp, -253437.899365); // reference-derived, not in the confirmed table
     expectMoney(curveNpv(res, 3).npv, 104911.882681);
   });
 });

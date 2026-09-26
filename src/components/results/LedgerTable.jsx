@@ -3,7 +3,7 @@ import { fmtMoney, fmtPct } from '../format.js';
 
 const COLS = [
   ['t', 'Year', (r) => r.t],
-  ['age', 'Age', (r, age) => age + r.t],
+  ['age', 'Age', (r) => r.age],
   ['q', 'P(death)', (r) => fmtPct(r.q, 2)],
   ['V', 'Asset value', (r) => fmtMoney(r.V)],
   ['T', 'Trust holds', (r) => fmtMoney(r.T)],
@@ -19,10 +19,10 @@ const COLS = [
 ];
 
 /** Per-death-year ledger; the NPV is the sum of the last column. Truncated to the display horizon. */
-export default function LedgerTable({ rowsNone, rowsOpt, sStar, age, maxYears, shareBeyondDisplay }) {
+export default function LedgerTable({ rowsNone, rowsOpt, sStar, maxYears, shareBeyondDisplay }) {
   const [view, setView] = useState(sStar > 0 ? 'opt' : 'none');
   const rows = view === 'opt' ? rowsOpt : rowsNone;
-  const shown = rows.slice(0, Math.max(1, maxYears || rows.length));
+  const shown = rows.slice(0, Number.isInteger(maxYears) && maxYears > 0 ? maxYears : rows.length);
   const hidden = rows.length - shown.length;
   return (
     <div>
@@ -44,7 +44,7 @@ export default function LedgerTable({ rowsNone, rowsOpt, sStar, age, maxYears, s
             {shown.map((r) => (
               <tr key={r.t} className={`border-b border-line ${r.swapped && r.swapEvent ? 'bg-accent-soft/40' : ''}`}>
                 {COLS.map(([k, , get]) => (
-                  <td key={k} className={`whitespace-nowrap px-2 py-1 ${k === 't' || k === 'age' ? 'text-left' : 'text-right'} ${(k === 'dH' || k === 'PV' || k === 'wPV') && r[k] < 0 ? 'text-bad' : ''}`}>{get(r, age)}</td>
+                  <td key={k} className={`whitespace-nowrap px-2 py-1 ${k === 't' || k === 'age' ? 'text-left' : 'text-right'} ${(k === 'dH' || k === 'PV' || k === 'wPV') && r[k] < 0 ? 'text-bad' : ''}`}>{get(r)}</td>
                 ))}
               </tr>
             ))}

@@ -1,11 +1,13 @@
 import Card from '../ui/Card.jsx';
 import NumberField from '../ui/NumberField.jsx';
 import Button from '../ui/Button.jsx';
+import { newId, MAX_IMPORT_ASSETS } from '../../hooks/scenarioIO.js';
+import { parseNum } from '../../hooks/buildInputs.js';
 
 function AssetCard({ asset, index, errors, onChange, onRemove, onDuplicate, canRemove }) {
   const set = (field) => (value) => onChange({ ...asset, [field]: value });
   const err = (f) => errors?.[f];
-  const hasSale = Number(String(asset.saleYear).replace(/[^\d.-]/g, '')) > 0;
+  const hasSale = parseNum(asset.saleYear) > 0;
   return (
     <div className="rounded-lg border border-line bg-surface-2/60 p-3">
       <div className="flex items-center gap-2">
@@ -20,21 +22,21 @@ function AssetCard({ asset, index, errors, onChange, onRemove, onDuplicate, canR
         <Button variant="danger" onClick={onRemove} disabled={!canRemove} title="Remove">✕</Button>
       </div>
       <div className="mt-2 grid grid-cols-2 gap-3">
-        <NumberField id={`fmv-${asset.id}`} label="Fair market value" value={asset.fmv} onChange={set('fmv')} prefix="$" error={err('FMV')} />
-        <NumberField id={`basis-${asset.id}`} label="Cost basis" value={asset.basis} onChange={set('basis')} prefix="$" error={err('B0')} />
-        <NumberField id={`growth-${asset.id}`} label="Appreciation" value={asset.growth} onChange={set('growth')} suffix="%/yr" error={err('g')} />
-        <NumberField id={`yield-${asset.id}`} label="Income yield" value={asset.yield} onChange={set('yield')} suffix="%/yr" error={err('y')}
+        <NumberField id={`fmv-${asset.id}`} label="Fair market value" value={asset.fmv} onChange={set('fmv')} prefix="$" error={err('fmv') ?? err('FMV')} />
+        <NumberField id={`basis-${asset.id}`} label="Cost basis" value={asset.basis} onChange={set('basis')} prefix="$" error={err('basis') ?? err('B0')} />
+        <NumberField id={`growth-${asset.id}`} label="Appreciation" value={asset.growth} onChange={set('growth')} suffix="%/yr" error={err('growth') ?? err('g')} />
+        <NumberField id={`yield-${asset.id}`} label="Income yield" value={asset.yield} onChange={set('yield')} suffix="%/yr" error={err('yield') ?? err('y')}
           tip="Taxable yield on the asset's value each year, reinvested gross; the grantor pays the tax from the other estate in both scenarios." />
-        <NumberField id={`discount-${asset.id}`} label="Valuation discount" value={asset.discount} onChange={set('discount')} suffix="%" error={err('delta')}
+        <NumberField id={`discount-${asset.id}`} label="Valuation discount" value={asset.discount} onChange={set('discount')} suffix="%" error={err('discount') ?? err('delta')}
           tip="Lack-of-control / marketability discount on the gifted interest. Reduces the taxable gift (exclusion used); economic value is unchanged." />
         <NumberField id={`annualExclusions-${asset.id}`} label="Annual exclusions applied" value={asset.annualExclusions} onChange={set('annualExclusions')} prefix="$" error={err('annualExclusions')}
           tip="§2503(b) exclusions available for this gift (e.g. Crummey powers), 2026: $19,000 per donee. Subtracted from the taxable gift only." />
-        <NumberField id={`saleYear-${asset.id}`} label="Sale year (0 = never)" value={asset.saleYear} onChange={set('saleYear')} suffix="yr" error={err('S')}
+        <NumberField id={`saleYear-${asset.id}`} label="Sale year (0 = never)" value={asset.saleYear} onChange={set('saleYear')} suffix="yr" error={err('saleYear') ?? err('S')}
           tip="Year the holding is sold (inside the trust, or by the grantor if already swapped back). Gain on carryover basis is taxed to the grantor." />
         {hasSale && (
           <>
-            <NumberField id={`postSaleGrowth-${asset.id}`} label="Post-sale appreciation" value={asset.postSaleGrowth} onChange={set('postSaleGrowth')} suffix="%/yr" error={err('gr')} />
-            <NumberField id={`postSaleYield-${asset.id}`} label="Post-sale yield" value={asset.postSaleYield} onChange={set('postSaleYield')} suffix="%/yr" error={err('yr')} />
+            <NumberField id={`postSaleGrowth-${asset.id}`} label="Post-sale appreciation" value={asset.postSaleGrowth} onChange={set('postSaleGrowth')} suffix="%/yr" error={err('postSaleGrowth') ?? err('gr')} />
+            <NumberField id={`postSaleYield-${asset.id}`} label="Post-sale yield" value={asset.postSaleYield} onChange={set('postSaleYield')} suffix="%/yr" error={err('postSaleYield') ?? err('yr')} />
           </>
         )}
       </div>
@@ -46,16 +48,17 @@ export default function AssetsPanel({ assets, onChange, errorsById }) {
   const update = (id, next) => onChange(assets.map((a) => (a.id === id ? next : a)));
   const remove = (id) => onChange(assets.filter((a) => a.id !== id));
   const duplicate = (asset) => {
-    const copy = { ...asset, id: crypto.randomUUID(), name: `${asset.name} (copy)` };
+    if (assets.length >= MAX_IMPORT_ASSETS) return;
+    const copy = { ...asset, id: newId(), name: `${asset.name} (copy)` };
     const i = assets.findIndex((a) => a.id === asset.id);
     onChange([...assets.slice(0, i + 1), copy, ...assets.slice(i + 1)]);
   };
-  const add = () => onChange([...assets, {
-    id: crypto.randomUUID(), name: `Asset ${assets.length + 1}`, fmv: '1000000', discount: '0', basis: '200000',
+  const add = () => assets.length < MAX_IMPORT_ASSETS && onChange([...assets, {
+    id: newId(), name: `Asset ${assets.length + 1}`, fmv: '1000000', discount: '0', basis: '200000',
     growth: '7', yield: '2', saleYear: '0', postSaleGrowth: '6', postSaleYield: '1.5', annualExclusions: '0',
   }]);
   return (
-    <Card title="Candidate assets" subtitle="Each asset is evaluated on its own against the estate above." aside={<Button variant="primary" onClick={add}>+ Add asset</Button>}>
+    <Card title="Candidate assets" subtitle="Each asset is evaluated on its own against the estate above." aside={<Button variant="primary" onClick={add} disabled={assets.length >= MAX_IMPORT_ASSETS}>+ Add asset</Button>}>
       <div className="space-y-3">
         {assets.map((asset, i) => (
           <AssetCard key={asset.id} asset={asset} index={i} errors={errorsById?.[asset.id]}

@@ -16,7 +16,7 @@ function Tile({ label, value, sub, negative }) {
   );
 }
 
-export default function AssetDetail({ entry, age, maxYears }) {
+export default function AssetDetail({ entry }) {
   if (!entry?.result) return null;
   const r = entry.result;
   const d = r.derived;
@@ -53,7 +53,7 @@ export default function AssetDetail({ entry, age, maxYears }) {
       <div className="mt-5">
         <h3 className="text-sm font-semibold text-ink">Per-death-year ledger</h3>
         <p className="mb-2 text-xs text-muted">What heirs receive if the grantor dies at the end of each year, keeping the asset versus having gifted it.</p>
-        <LedgerTable rowsNone={r.rows.none} rowsOpt={r.rows.opt} sStar={r.sStar} age={age} maxYears={maxYears} shareBeyondDisplay={r.shareBeyondDisplay} />
+        <LedgerTable rowsNone={r.rows.none} rowsOpt={r.rows.opt} sStar={r.sStar} maxYears={entry.inputs?.NDisp} shareBeyondDisplay={r.shareBeyondDisplay} />
       </div>
     </Card>
   );

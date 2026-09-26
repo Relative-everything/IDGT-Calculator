@@ -22,7 +22,9 @@ const scenarios = [
   ['discount at death', { ...BASE, delta: 0.3, discountAtDeath: true }],
 ];
 
-describe('decomposition sums exactly to ΔH_t (Level A and Level B) for every year and swap year', () => {
+// Identity smoke test: the Level A/B sums telescope to ΔH_t by construction, so this guards the plumbing
+// (every field present and finite), not the attribution itself — the golden fixtures pin b1/b3.
+describe('decomposition sums exactly to ΔH_t (Level A and Level B) for every year and swap year — identity smoke test', () => {
   for (const [name, inp] of scenarios) {
     it(name, () => {
       const res = evaluateAsset(inp);
@@ -105,6 +107,23 @@ describe('validation', () => {
     expect(w).toContain('NON_NEUTRAL_SWAP');
     expect(w).toContain('PRE_OBBBA_EXCLUSION');
   });
+  it('bounds the deterministic horizon and validates the resolved consideration profile', () => {
+    expect(validateInputs({ ...BASE, deathYearOverride: 121 }).errors.map((e) => e.field)).toContain('deathYearOverride');
+    expect(validateInputs({ ...BASE, deathYearOverride: 120 }).errors).toEqual([]);
+    expect(validateInputs({ ...BASE, gSw: -1.5 }).errors.map((e) => e.field)).toContain('gSw');
+  });
+  it('reports table-range problems on the age field instead of throwing', () => {
+    const tableMode = { ...BASE, deathYearOverride: null, lx: male };
+    expect(validateInputs({ ...tableMode, age: 117 }).errors.map((e) => e.field)).toContain('age');
+    expect(validateInputs({ ...tableMode, age: 125 }).errors.map((e) => e.field)).toContain('age');
+    expect(validateInputs({ ...tableMode, lx: [1000, 1100, 0], age: 0 }).errors.map((e) => e.field)).toContain('lx');
+    expect(validateInputs({ ...tableMode, age: 65 }).errors).toEqual([]);
+  });
+  it('checks a negative indexing rate against the actual horizon, not a fixed 120 years', () => {
+    const tableMode = { ...BASE, deathYearOverride: null, lx: male, age: 65 };
+    expect(validateInputs({ ...tableMode, pi: -0.03 }).errors).toEqual([]); // X_46 ≈ $3.8M
+    expect(validateInputs({ ...tableMode, pi: -0.06 }).errors.map((e) => e.field)).toContain('pi'); // X_46 ≈ $0.9M
+  });
 });
 
 describe('ranking', () => {
@@ -117,5 +136,13 @@ describe('ranking', () => {
     expect(rows[1].rank).toBe(2);
     expect(rows[0].exceedsRemainingExclusion).toBe(false);
     expect(rows[1].exceedsRemainingExclusion).toBe(true);
+  });
+  it('an asset fully covered by annual exclusions ranks first when its NPV is positive, last when not', () => {
+    const covered = evaluateAsset({ ...BASE, deathYearOverride: null, lx: male, age: 65, FMV: 36_000, B0: 5_000, annualExclusions: 38_000 });
+    expect(covered.eff.opt).toBeNull();
+    expect(covered.warnings.some((w) => w.code === 'ZERO_TAXABLE_GIFT')).toBe(true);
+    const normal = evaluateAsset({ ...BASE, deathYearOverride: null, lx: male, age: 65 });
+    const rows = rankAssets([{ id: 'n', name: 'normal', result: normal }, { id: 'c', name: 'covered', result: covered }]);
+    expect(rows[0].name).toBe(covered.npvOpt > 0 ? 'covered' : 'normal');
   });
 });

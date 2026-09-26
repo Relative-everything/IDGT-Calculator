@@ -1,26 +1,47 @@
 // Input validation for the IDGT engine (model.md §10.8). Pure, no React.
-// Returns field-level errors (block the run) and warnings (run continues, shown in the UI).
+// Returns field-level errors (block the run) and warnings ({code, data}; the UI composes the text).
 
-import { MIN_EXCLUSION_FOR_FLAT_RATE } from './constants.js';
+import { MIN_EXCLUSION_FOR_FLAT_RATE, MAX_PROJECTION_YEARS, MAX_GRANTOR_AGE } from './constants.js';
 import { exclusionAt } from './fedTax.js';
+import { validateLx } from './mortality.js';
+import { BASIC_EXCLUSION_2026 } from '../data/exclusionAmounts.js';
 
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 const isInt = (v) => Number.isInteger(v);
 
+/** Projection horizon implied by the inputs (deterministic year, or ω − age from the table). */
+export function horizonYears(inp) {
+  if (inp.deathYearOverride != null) return inp.deathYearOverride;
+  if (!Array.isArray(inp.lx) || !isInt(inp.age)) return MAX_PROJECTION_YEARS;
+  let omega = inp.lx.findIndex((v, i) => i > inp.age && v === 0);
+  if (omega === -1) omega = inp.lx.length;
+  return Math.max(1, omega - inp.age);
+}
+
 /**
  * @param {object} inp - flat engine inputs (decimals)
- * @returns {{ errors: {field:string, message:string}[], warnings: {code:string, message:string}[] }}
+ * @returns {{ errors: {field:string, message:string}[], warnings: {code:string, data:object}[] }}
  */
 export function validateInputs(inp) {
   const errors = [];
   const warnings = [];
   const err = (field, message) => errors.push({ field, message });
-  const warn = (code, message) => warnings.push({ code, message });
+  const warn = (code, data = {}) => warnings.push({ code, data });
 
-  // Grantor
-  if (!isInt(inp.age) || inp.age < 0) err('age', 'Age must be a non-negative integer.');
-  if (inp.deathYearOverride != null && (!isInt(inp.deathYearOverride) || inp.deathYearOverride < 1)) {
-    err('deathYearOverride', 'Assumed death year must be a positive integer.');
+  // Grantor and horizon
+  if (!isInt(inp.age) || inp.age < 0) err('age', 'Age must be a whole number of years, zero or more.');
+  const deterministic = inp.deathYearOverride != null;
+  if (deterministic) {
+    if (!isInt(inp.deathYearOverride) || inp.deathYearOverride < 1) err('deathYearOverride', 'Assumed death year must be a whole number, 1 or more.');
+    else if (inp.deathYearOverride > MAX_PROJECTION_YEARS) err('deathYearOverride', `Assumed death year cannot exceed ${MAX_PROJECTION_YEARS}.`);
+    if (isInt(inp.age) && inp.age > MAX_GRANTOR_AGE) err('age', `Age cannot exceed ${MAX_GRANTOR_AGE}.`);
+  } else {
+    const problems = Array.isArray(inp.lx) ? validateLx(inp.lx) : ['no mortality table supplied'];
+    if (problems.length) err('lx', `Mortality table: ${problems[0]}.`);
+    else if (isInt(inp.age) && inp.age >= 0) {
+      if (inp.age >= inp.lx.length) err('age', `Age is beyond the mortality table (last age ${inp.lx.length - 1}); use an assumed death year.`);
+      else if (!(inp.lx[inp.age] > 0)) err('age', `The mortality table has no survivors at age ${inp.age}; use an assumed death year.`);
+    }
   }
 
   // Rates
@@ -38,7 +59,7 @@ export function validateInputs(inp) {
 
   // Exclusion and prior gifts
   if (!isNum(inp.X0) || inp.X0 < MIN_EXCLUSION_FOR_FLAT_RATE) {
-    err('X0', `Basic exclusion must be at least $${MIN_EXCLUSION_FOR_FLAT_RATE.toLocaleString('en-US')} (flat-rate reduction).`);
+    err('X0', `Basic exclusion must be at least $${MIN_EXCLUSION_FOR_FLAT_RATE} (the flat-rate reduction of §2001(c) requires it).`);
   }
   if (!isNum(inp.P) || inp.P < 0) err('P', 'Prior taxable gifts cannot be negative.');
   if (inp.XP != null && (!isNum(inp.XP) || inp.XP < 0)) err('XP', 'Prior-gift exclusion cannot be negative.');
@@ -52,46 +73,38 @@ export function validateInputs(inp) {
   if (!isNum(inp.annualExclusions) || inp.annualExclusions < 0) err('annualExclusions', 'Annual exclusions cannot be negative.');
   if (!isNum(inp.g) || !isNum(inp.y) || 1 + inp.g + inp.y <= 0) err('g', 'Growth plus yield must exceed -100%.');
   if (isNum(inp.y) && inp.y < 0) err('y', 'Income yield cannot be negative.');
-  if (!isInt(inp.S) || inp.S < 0) err('S', 'Sale year must be 0 (never) or a positive integer.');
+  if (!isInt(inp.S) || inp.S < 0) err('S', 'Sale year must be 0 (never) or a whole number of years.');
   if (inp.S > 0) {
     if (!isNum(inp.gr) || !isNum(inp.yr) || 1 + inp.gr + inp.yr <= 0) err('gr', 'Post-sale growth plus yield must exceed -100%.');
     if (isNum(inp.yr) && inp.yr < 0) err('yr', 'Post-sale yield cannot be negative.');
   }
 
-  // Swap consideration (nulls mean "derive the neutral default")
+  // Swap consideration: nulls mean "derive the neutral default"; validate the RESOLVED profile.
   if (inp.bSw != null && (!isNum(inp.bSw) || inp.bSw < 0)) err('bSw', 'Consideration basis % cannot be negative.');
   if (inp.gSw != null && !isNum(inp.gSw)) err('gSw', 'Consideration growth must be a number.');
   if (inp.ySw != null && (!isNum(inp.ySw) || inp.ySw < 0)) err('ySw', 'Consideration yield cannot be negative.');
   if (inp.tauSw != null) rateIn('tauSw', inp.tauSw, 0, 1, 'Grantor rate on consideration yield');
-  if (isNum(inp.gSw) && isNum(inp.ySw) && 1 + inp.gSw + inp.ySw <= 0) err('gSw', 'Consideration growth plus yield must exceed -100%.');
 
   if (errors.length) return { errors, warnings };
 
-  // Cross-field warnings (model.md §10)
-  if (inp.B0 > inp.FMV) {
-    warn('BUILT_IN_LOSS', 'Basis exceeds FMV: §1015 dual-basis rule — the loss is not usable by the trust (loss basis = gift value) and would be stepped DOWN at death if held. Consider harvesting the loss before gifting.');
+  const gSw = inp.gSw ?? 0;
+  const tauSw = inp.tauSw ?? inp.tauOrd;
+  const ySw = inp.ySw ?? inp.rE / (1 - inp.tauOrd);
+  if (1 + gSw + ySw <= 0) err('gSw', 'Consideration growth plus yield must exceed -100%.');
+
+  // Exclusion must stay >= $1M in every projection year (matters only when pi < 0).
+  if (inp.pi < 0 && exclusionAt({ X0: inp.X0, pi: inp.pi }, horizonYears(inp)) < MIN_EXCLUSION_FOR_FLAT_RATE) {
+    err('pi', 'A negative indexing rate drives the exclusion below $1,000,000 within the projection horizon.');
   }
-  if (inp.X0 < 15_000_000) {
-    warn('PRE_OBBBA_EXCLUSION', 'Basic exclusion below the 2026 statutory $15,000,000 (OBBBA §70106); treat as a legislative scenario.');
-  }
-  if (inp.P > 0 && inp.XP != null && inp.P > inp.XP) {
-    warn('PRIOR_GIFT_TAX', 'Prior gifts exceeded that year\'s exclusion: gift tax is assumed to have been paid at the current rate and is credited under §2001(b)(2).');
-  }
+  if (errors.length) return { errors, warnings };
+
+  // Cross-field warnings (model.md §10); text is composed by the UI from `data`.
+  if (inp.B0 > inp.FMV) warn('BUILT_IN_LOSS', { basis: inp.B0, fmv: inp.FMV });
+  if (inp.X0 < BASIC_EXCLUSION_2026) warn('PRE_OBBBA_EXCLUSION', { X0: inp.X0, statutory: BASIC_EXCLUSION_2026 });
+  if (inp.P > 0 && inp.XP != null && inp.P > inp.XP) warn('PRIOR_GIFT_TAX', { P: inp.P, XP: inp.XP });
   if (inp.gSw != null || inp.ySw != null || inp.tauSw != null) {
-    const gSw = inp.gSw ?? 0;
-    const tauSw = inp.tauSw ?? inp.tauOrd;
-    const ySw = inp.ySw ?? inp.rE / (1 - inp.tauOrd);
     const afterTax = gSw + (1 - tauSw) * ySw;
-    if (Math.abs(afterTax - inp.rE) > 1e-9) {
-      warn('NON_NEUTRAL_SWAP', `Swap consideration earns ${(afterTax * 100).toFixed(2)}% after tax vs ${(inp.rE * 100).toFixed(2)}% for the other estate; the difference is booked in the "residual" component, not as a tax benefit.`);
-    }
-  }
-  // Exclusion must stay >= $1M in every projection year (matters only when pi < 0)
-  if (inp.pi < 0) {
-    const horizon = inp.deathYearOverride ?? 120;
-    if (exclusionAt({ X0: inp.X0, pi: inp.pi }, horizon) < MIN_EXCLUSION_FOR_FLAT_RATE) {
-      err('pi', 'A negative indexing rate drives the exclusion below $1,000,000 within the horizon.');
-    }
+    if (Math.abs(afterTax - inp.rE) > 1e-9) warn('NON_NEUTRAL_SWAP', { afterTaxReturn: afterTax, rE: inp.rE });
   }
   return { errors, warnings };
 }

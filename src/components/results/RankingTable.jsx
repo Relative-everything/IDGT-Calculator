@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import Card from '../ui/Card.jsx';
 import { fmtMoney, fmtRatio, fmtYear } from '../format.js';
+import { describeWarning } from '../warnings.js';
 
 const COLUMNS = [
   { key: 'rank', label: '#', get: (r) => r.rank, align: 'right' },
@@ -68,7 +69,7 @@ export default function RankingTable({ ranked, selectedId, onSelect, rankKey, re
                         {c.key === 'name' ? (
                           <span className="flex items-center gap-1.5">
                             <span className="font-medium text-ink">{text}</span>
-                            {warn > 0 && <span className="rounded bg-warn-soft px-1 text-[10px] text-warn" title={r.result.warnings.map((w) => w.message).join('\n')}>⚠ {warn}</span>}
+                            {warn > 0 && <span className="rounded bg-warn-soft px-1 text-[10px] text-warn" title={r.result.warnings.map(describeWarning).join('\n')}>⚠ {warn}</span>}
                             {r.exceedsRemainingExclusion && <span className="rounded bg-warn-soft px-1 text-[10px] text-warn" title="Cumulative taxable gifts in rank order exceed the remaining exclusion; gift tax would apply from here.">exclusion</span>}
                           </span>
                         ) : text}

@@ -1,6 +1,6 @@
 // Every UI field reaches the engine input and moves at least one output (spec R7).
 import { describe, it, expect } from 'vitest';
-import { buildEngineInputs, parseNum, priorGiftExclusion } from '../buildInputs.js';
+import { buildEngineInputs, parseNum, priorGiftExclusion, validateUiFields } from '../buildInputs.js';
 import { evaluateAsset } from '../../engine/idgtModel.js';
 import { validateInputs } from '../../engine/validate.js';
 
@@ -25,6 +25,18 @@ describe('buildEngineInputs', () => {
     expect(priorGiftExclusion({ priorExclusionMode: 'year', priorGiftYear: '2025' })).toBe(13_990_000);
     expect(priorGiftExclusion({ priorExclusionMode: 'custom', priorGiftExclusion: '12,000,000' })).toBe(12_000_000);
     expect(parseNum('')).toBeNaN();
+  });
+  it('non-integer age, death year and sale year are not rounded — they fail validation at the field', () => {
+    const inp = buildEngineInputs({ grantor: { ...grantor, age: '65.5' }, estate, settings, asset });
+    expect(inp.age).toBeNaN();
+    const ui = validateUiFields({ grantor: { ...grantor, age: '65.5' }, estate, settings, asset: { ...asset, saleYear: '0.5' } });
+    expect(ui.map((e) => e.field)).toEqual(['age', 'saleYear']);
+    expect(ui[0].message).toMatch(/whole number/);
+  });
+  it('blank or non-numeric UI fields are reported on the field itself', () => {
+    const ui = validateUiFields({ grantor: { ...grantor, stateOrd: '' }, estate: { ...estate, beneStateLtcg: 'x' }, settings, asset });
+    expect(ui.map((e) => e.field)).toEqual(['stateOrd', 'beneStateLtcg']);
+    expect(validateUiFields({ grantor, estate, settings, asset })).toEqual([]);
   });
   it('deterministic death year replaces the table', () => {
     const inp = buildEngineInputs({ grantor: { ...grantor, useDeathYear: true, deathYear: '12' }, estate, settings, asset });

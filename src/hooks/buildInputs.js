@@ -17,10 +17,49 @@ export function parseNum(v) {
 }
 
 const pct = (v) => parseNum(v) / 100;
+/** Whole numbers only: a typed 65.5 is NaN here so validation reports it instead of silently rounding. */
 const int = (v) => {
   const n = parseNum(v);
-  return Number.isFinite(n) ? Math.round(n) : NaN;
+  return Number.isInteger(n) ? n : NaN;
 };
+
+/** UI field labels for validation messages. */
+export const UI_LABELS = {
+  age: 'Age', deathYear: 'Assumed death year', fedOrd: 'Federal ordinary rate', stateOrd: 'State ordinary rate', niit: 'NIIT',
+  fedLtcg: 'Federal LTCG rate', stateLtcg: 'State LTCG rate',
+  otherEstate: 'Other estate', otherEstateGrowth: 'Other-estate growth', exclusion: 'Basic exclusion', exclusionIndexing: 'Exclusion indexing',
+  priorGifts: 'Prior taxable gifts', priorGiftExclusion: 'Prior-gift exclusion', estateTaxRate: 'Estate tax rate',
+  beneFedLtcg: "Heirs' federal LTCG rate", beneStateLtcg: "Heirs' state LTCG rate", yearsToSale: 'Years until heirs sell',
+  discountRate: 'Discount rate', maxYears: 'Table display horizon',
+  swapBasisPct: 'Consideration basis', swapGrowth: 'Consideration growth', swapYield: 'Consideration yield', swapTaxRate: 'Rate on consideration yield',
+  fmv: 'Fair market value', discount: 'Valuation discount', basis: 'Cost basis', growth: 'Appreciation', yield: 'Income yield',
+  saleYear: 'Sale year', postSaleGrowth: 'Post-sale appreciation', postSaleYield: 'Post-sale yield', annualExclusions: 'Annual exclusions',
+};
+
+/**
+ * Field-level checks on the raw UI values (blank / non-numeric / non-integer) so the error lands on the
+ * input the user typed in; engine validation covers ranges and cross-field rules.
+ * @returns {{field:string, label:string, message:string}[]}
+ */
+export function validateUiFields({ grantor, estate, settings, asset }) {
+  const errors = [];
+  const need = (section, field, { integer = false } = {}) => {
+    const n = parseNum(section[field]);
+    if (!Number.isFinite(n)) errors.push({ field, label: UI_LABELS[field], message: `${UI_LABELS[field]} is required.` });
+    else if (integer && !Number.isInteger(n)) errors.push({ field, label: UI_LABELS[field], message: `${UI_LABELS[field]} must be a whole number.` });
+  };
+  need(grantor, 'age', { integer: true });
+  if (grantor.useDeathYear) need(grantor, 'deathYear', { integer: true });
+  for (const f of ['fedOrd', 'stateOrd', 'niit', 'fedLtcg', 'stateLtcg']) need(grantor, f);
+  for (const f of ['otherEstate', 'otherEstateGrowth', 'exclusion', 'exclusionIndexing', 'priorGifts', 'estateTaxRate', 'beneFedLtcg', 'beneStateLtcg', 'yearsToSale', 'discountRate']) need(estate, f);
+  need(estate, 'maxYears', { integer: true });
+  if (parseNum(estate.priorGifts) > 0 && estate.priorExclusionMode === 'custom') need(estate, 'priorGiftExclusion');
+  if (settings.swapCustom) for (const f of ['swapBasisPct', 'swapGrowth', 'swapYield', 'swapTaxRate']) need(settings, f);
+  for (const f of ['fmv', 'discount', 'basis', 'growth', 'yield', 'annualExclusions']) need(asset, f);
+  need(asset, 'saleYear', { integer: true });
+  if (parseNum(asset.saleYear) > 0) for (const f of ['postSaleGrowth', 'postSaleYield']) need(asset, f);
+  return errors;
+}
 
 export function lxFor(sex) {
   const key = sex === 'female' ? 'female' : 'male';

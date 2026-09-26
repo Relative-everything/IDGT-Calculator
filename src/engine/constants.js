@@ -8,6 +8,12 @@ export const SECTION_2035_WINDOW_YEARS = 3;
 // flat-rate reduction (engine/fedTax.js) would no longer be exact.
 export const MIN_EXCLUSION_FOR_FLAT_RATE = 1_000_000;
 
+// Longest projection the engine accepts: the SSA table spans ages 0–119, so no life-table horizon
+// exceeds 120 years; the deterministic death-year mode is capped at the same span (the swap search is
+// O(N²) and runs synchronously in the browser).
+export const MAX_PROJECTION_YEARS = 120;
+export const MAX_GRANTOR_AGE = 120;
+
 // Tolerances (model.md §10.11).
 export const MONEY_TOLERANCE = 0.005;
 export const RATIO_TOLERANCE = 1e-9;

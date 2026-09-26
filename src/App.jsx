@@ -9,9 +9,9 @@ import AssetDetail from './components/results/AssetDetail.jsx';
 import MethodologyPanel from './components/panels/MethodologyPanel.jsx';
 import DeferredPanel from './components/panels/DeferredPanel.jsx';
 import Button from './components/ui/Button.jsx';
+import ErrorBoundary from './components/ui/ErrorBoundary.jsx';
 import { useIdgtModel } from './hooks/useIdgtModel.js';
-import { parseNum } from './hooks/buildInputs.js';
-import { serializeScenario, parseScenario, rankingToCsv } from './hooks/scenarioIO.js';
+import { serializeScenario, parseScenario, rankingToCsv, newId, MAX_IMPORT_BYTES } from './hooks/scenarioIO.js';
 import { MORTALITY_TABLE_META } from './data/mortalityTable.js';
 import { BASIC_EXCLUSION_2026 } from './data/exclusionAmounts.js';
 
@@ -23,7 +23,7 @@ const DEFAULT_ESTATE = {
 };
 const DEFAULT_SETTINGS = { rankKey: 'opt', discountAtDeath: false, saleAppliesToBaseline: true, swapCustom: false, swapBasisPct: '100', swapGrowth: '0', swapYield: '5.535', swapTaxRate: '45.8' };
 const makeAsset = (over = {}) => ({
-  id: crypto.randomUUID(), name: 'Asset 1', fmv: '1000000', discount: '0', basis: '200000', growth: '7', yield: '2',
+  id: newId(), name: 'Asset 1', fmv: '1000000', discount: '0', basis: '200000', growth: '7', yield: '2',
   saleYear: '0', postSaleGrowth: '6', postSaleYield: '1.5', annualExclusions: '0', ...over,
 });
 const DEFAULT_ASSETS = () => [
@@ -31,7 +31,7 @@ const DEFAULT_ASSETS = () => [
   makeAsset({ name: 'Family LP interest (30% discount)', fmv: '3000000', basis: '1500000', discount: '30', growth: '6', yield: '3' }),
   makeAsset({ name: 'Business interest, sale in yr 5', fmv: '5000000', basis: '500000', discount: '25', growth: '8', yield: '1', saleYear: '5', postSaleGrowth: '6', postSaleYield: '1.5' }),
 ];
-const DEFAULTS = { grantor: DEFAULT_GRANTOR, estate: DEFAULT_ESTATE, settings: DEFAULT_SETTINGS, asset: makeAsset() };
+const defaultsForImport = () => ({ grantor: DEFAULT_GRANTOR, estate: DEFAULT_ESTATE, settings: DEFAULT_SETTINGS, asset: makeAsset() });
 
 function download(name, text, type) {
   const blob = new Blob([text], { type });
@@ -50,7 +50,7 @@ export default function App() {
   const [notice, setNotice] = useState(null);
   const fileRef = useRef(null);
 
-  const { perAsset, ranked, remainingExclusion, neutralSwapYieldPct, isStale } = useIdgtModel({ grantor, estate, settings, assets });
+  const { perAsset, ranked, remainingExclusion, neutralSwapYield, isStale } = useIdgtModel({ grantor, estate, settings, assets });
 
   const errorsById = useMemo(() => {
     const out = {};
@@ -65,12 +65,14 @@ export default function App() {
   const exportJson = () => download('idgt-scenario.json', serializeScenario({ grantor, estate, settings, assets }), 'application/json');
   const exportCsv = () => download('idgt-ranking.csv', rankingToCsv(ranked), 'text/csv');
   const importJson = (file) => {
+    if (file.size > MAX_IMPORT_BYTES) { setNotice(`Could not load ${file.name}: the file is too large to be a scenario.`); return; }
     const reader = new FileReader();
+    reader.onerror = () => setNotice(`Could not read ${file.name}.`);
     reader.onload = () => {
       try {
-        const s = parseScenario(String(reader.result), DEFAULTS);
+        const s = parseScenario(String(reader.result), defaultsForImport());
         setGrantor(s.grantor); setEstate(s.estate); setSettings(s.settings); setAssets(s.assets); setSelectedId(null);
-        setNotice(`Loaded ${file.name}.`);
+        setNotice(`Loaded ${file.name}.${s.dropped > 0 ? ` ${s.dropped} asset entr${s.dropped === 1 ? 'y was' : 'ies were'} skipped (not an object, or beyond the ${s.assets.length}-asset limit).` : ''}`);
       } catch (err) { setNotice(`Could not load ${file.name}: ${err.message}`); }
     };
     reader.readAsText(file);
@@ -91,7 +93,7 @@ export default function App() {
       <GrantorPanel grantor={grantor} onChange={setGrantor} errors={sharedErrors} />
       <EstatePanel estate={estate} onChange={setEstate} errors={sharedErrors} />
       <AssetsPanel assets={assets} onChange={setAssets} errorsById={errorsById} />
-      <ModelSettingsPanel settings={settings} onChange={setSettings} errors={sharedErrors} neutralYieldPct={neutralSwapYieldPct} />
+      <ModelSettingsPanel settings={settings} onChange={setSettings} errors={sharedErrors} neutralYield={neutralSwapYield} />
     </>
   );
 
@@ -107,12 +109,14 @@ export default function App() {
           <strong>Mortality table unverified.</strong> The bundled SSA {MORTALITY_TABLE_META.periodYear} period life table could not be checked against ssa.gov when this build was made. Probability-weighted results depend on it; switch to an assumed death year for a table-independent result.
         </div>
       )}
-      <div className={isStale ? 'opacity-70 transition-opacity' : 'transition-opacity'}>
-        <RankingTable ranked={ranked} selectedId={selected?.id} onSelect={setSelectedId} rankKey={settings.rankKey} remainingExclusion={remainingExclusion} invalid={invalid} />
-        <div className="mt-5">
-          <AssetDetail entry={selected} age={parseNum(grantor.age)} maxYears={parseNum(estate.maxYears)} />
+      <ErrorBoundary>
+        <div className={isStale ? 'opacity-70 transition-opacity' : 'transition-opacity'}>
+          <RankingTable ranked={ranked} selectedId={selected?.id} onSelect={setSelectedId} rankKey={settings.rankKey} remainingExclusion={remainingExclusion} invalid={invalid} />
+          <div className="mt-5">
+            <AssetDetail entry={selected} />
+          </div>
         </div>
-      </div>
+      </ErrorBoundary>
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
         <MethodologyPanel />
         <DeferredPanel />
