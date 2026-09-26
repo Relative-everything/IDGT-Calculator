@@ -1,6 +1,6 @@
 # Plan: publish `main` to GitHub Pages from CI (ROADMAP Phase 7, CI half)
 From: direct request ("why won't it deploy the newly built version? fix if possible"). Date: 2026-09-26.
-Tier: Lite. Status: draft — awaiting builder acceptance and decisions D1, D2.
+Tier: Lite. Status: accepted 2026-09-26 — D1: GitHub Actions → Pages; D2: remove `npm run deploy`.
 
 ## Reads
 - `src/CLAUDE.md` — no CI or deploy rule; later sessions follow `docs/ROADMAP.md` under sdlc-loop.

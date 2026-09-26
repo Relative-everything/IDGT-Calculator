@@ -1,0 +1,111 @@
+# Lint, test and build every branch push; publish main to GitHub Pages.
+#
+# Needs Settings → Pages → Build and deployment → Source: "GitHub Actions". Pushing dist/ to a
+# gh-pages branch from here would not publish: GitHub starts no Pages build for commits pushed with
+# the workflow's GITHUB_TOKEN. Evidence and decisions: docs/changes/2026-09-26-ci-deploy/plan.md.
+name: Build and deploy
+
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A newer push to a branch cancels that branch's older run; runs on main queue so a deploy is never cut off.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  build:
+    name: Lint, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      index_sha256: ${{ steps.build.outputs.index_sha256 }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test -- --run
+      - name: Build
+        id: build
+        run: |
+          npm run build
+          echo "index_sha256=$(sha256sum dist/index.html | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+      - name: Upload site
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Require the GitHub Actions Pages source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          build_type=$(gh api "repos/${GITHUB_REPOSITORY}/pages" --jq .build_type)
+          if [ "$build_type" != "workflow" ]; then
+            echo "::error title=Pages source::Pages builds from a branch (build_type=${build_type}). Set Settings → Pages → Build and deployment → Source to \"GitHub Actions\", then re-run this job."
+            exit 1
+          fi
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v5
+      - name: Check the live site serves this build
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+          EXPECTED_SHA256: ${{ needs.build.outputs.index_sha256 }}
+        run: |
+          if [ -z "$EXPECTED_SHA256" ]; then
+            echo "::error::The build job did not report the hash of dist/index.html."
+            exit 1
+          fi
+          url="${PAGE_URL%/}/"
+          origin=$(printf '%s' "$url" | grep -oE '^https?://[^/]+')
+          # The query string bypasses CDN copies of the previous index.html.
+          for attempt in $(seq 1 12); do
+            if curl -fsSL --max-time 30 "${url}?v=${GITHUB_RUN_ID}-${attempt}" -o live.html &&
+              [ "$(sha256sum live.html | cut -d' ' -f1)" = "$EXPECTED_SHA256" ]; then
+              break
+            fi
+            if [ "$attempt" -eq 12 ]; then
+              echo "::error::${url} is not serving this build's index.html after 2 minutes."
+              exit 1
+            fi
+            sleep 10
+          done
+          # A wrong `base` in vite.config.js deploys fine but leaves a blank page: every asset 404s.
+          paths=$(grep -oE '(src|href)="/[^/"][^"]*"' live.html | cut -d'"' -f2) || true
+          if [ -z "$paths" ]; then
+            echo "::error::${url} references no site-absolute assets."
+            exit 1
+          fi
+          for path in $paths; do
+            status=$(curl -sSL --max-time 30 -o /dev/null -w '%{http_code}' "${origin}${path}") || true
+            echo "${status} ${path}"
+            if [ "$status" != "200" ]; then
+              echo "::error::${origin}${path} returned HTTP ${status}; check base in vite.config.js."
+              exit 1
+            fi
+          done
