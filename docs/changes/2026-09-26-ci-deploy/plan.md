@@ -1,6 +1,7 @@
 # Plan: publish `main` to GitHub Pages from CI (ROADMAP Phase 7, CI half)
 From: direct request ("why won't it deploy the newly built version? fix if possible"). Date: 2026-09-26.
-Tier: Lite. Status: accepted 2026-09-26 — D1: GitHub Actions → Pages; D2: remove `npm run deploy`.
+Tier: Lite. Status: implemented 2026-09-26 (accepted same day — D1: GitHub Actions → Pages; D2: remove
+`npm run deploy`). Handback: `handback.md`.
 
 ## Reads
 - `src/CLAUDE.md` — no CI or deploy rule; later sessions follow `docs/ROADMAP.md` under sdlc-loop.
@@ -98,3 +99,14 @@ and is the version that passed locally (22.22.2). Action majors are from each re
 - GitHub: this branch's push runs `build` green and skips `deploy`.
 
 ## Departures from plan
+- Step 2: `curl --max-time 30` and `timeout-minutes: 15` on both jobs. Needed for the step's "up to
+  2 minutes" bound to hold; without them a hung request could hold the job for the 6-hour default.
+- Step 2: the live check fails at once if the build job reported no hash, instead of polling for
+  2 minutes against an empty value.
+- Proof: the live check ran against local static servers rooted at `/IDGT-Calculator/` rather than
+  `vite preview`, which cannot serve the stale and wrong-base cases; `vite preview` served the
+  Playwright check. Scripts ran under `/usr/bin/bash -e`, the runner's shell per run 36270892227,
+  after a first pass under `-eo pipefail` was found not to match it; results were the same.
+- Bug-fix order: the regression check (live page equals build) was committed with the fix, since it
+  runs only inside the deploy job. The failing state is recorded in Reads above (`7ffb455`) and was
+  reproduced against the March build (exit 1 after 111 s).
