@@ -24,7 +24,7 @@ designed. Remaining: B1 and B2; the first run on `main` is the first real execut
   stale site (today's failure) and a blank page from a wrong base path (the March failure).
 - `npm run deploy` is gone. Manual redeploy: Actions → Build and deploy → Run workflow on `main`.
 - The calculator itself is unchanged: its JavaScript is byte-identical to `main`'s build; the
-  stylesheet gained one unused rule (Flag N2).
+  stylesheet gained two unused rules (Flag N2).
 
 ## What to watch for
 - After B1 and B2: Actions → "Build and deploy" on `main` shows both jobs green, and the deploy job's
@@ -78,7 +78,8 @@ designed. Remaining: B1 and B2; the first run on `main` is the first real execut
   Analyzer", 91 table rows, unverified-mortality banner present, 0 console errors, 0 HTTP failures.
 - Forensics: building `a8e6d32` yields `index-GOFK661_.js` with git blob `da68e3d`, identical to the
   deployed file; `5ddb1b5` → `index-D0PK9j1b.js`, `6564d38` → `index-i203tRMO.js`.
-- Build diff, `main@f09a5f2` vs this branch: JS byte-identical; CSS differs by `.contents{display:contents}`.
+- Build diff, `main@f09a5f2` vs this branch's final commit: JS byte-identical; CSS 22.39 → 22.45 kB, adding only
+  `.contents{display:contents}` and `.visible{visibility:visible}` (asset names above are from `c5bc7e6`).
 - GitHub permission tables (github/docs `src/github-apps/data/fpt-2026-03-10`): GET `/repos/{o}/{r}/pages`
   needs `pages:read`; POST `…/pages/deployments` needs `pages:write`; PUT `…/pages` (changing the
   source) needs `pages:write` plus `administration:write`, which a workflow token cannot be granted.
@@ -144,8 +145,8 @@ None.
 - **N1 — Environment rule.** The `github-pages` environment dates from the branch-source era and may
   only allow `gh-pages`; not inspectable from this session. Symptom and fix under "What to watch for".
 - **N2 — Tailwind scans docs and YAML (pre-existing, out of scope).** `src/index.css` imports Tailwind
-  with no `source(...)` limit, so text such as `contents: read` in this workflow emitted an unused
-  `.contents` rule and changed both asset hashes. Harmless, but any doc edit can change the bundle.
+  with no `source(...)` limit, so `contents: read` in this workflow and the word "visible" in this
+  file emitted unused `.contents` and `.visible` rules and changed both asset hashes. Harmless, but any doc edit can change the bundle.
   Proposal for the toolchain session: limit detection to `src/` with `source(...)` on the import and
   check the CSS returns to 22.39 kB (syntax to verify against Tailwind v4 docs; M).
 - **N3 — `npm audit` (pre-existing).** 14 advisories, all dev tooling (1 critical: vitest 0.34.6);
