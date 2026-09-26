@@ -63,8 +63,11 @@ npm run dev        # Vite dev server
 npm test           # vitest
 npm run lint       # eslint
 npm run build      # production build to dist/
-npm run deploy     # gh-pages
 ```
+Deploy: every push runs lint, tests and the build ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml));
+a push to `main` also publishes `dist/` to GitHub Pages. Requires Settings → Pages → Source:
+**GitHub Actions**. Redeploy by hand: Actions → Build and deploy → Run workflow on `main`.
+
 Stack: React 19, Vite 8, Tailwind CSS 4, Vitest. No server, no localStorage; scenarios move as JSON
 files and the ranking exports as CSV.
 
