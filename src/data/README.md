@@ -26,7 +26,8 @@ everything it needs in `src/engine/`.
 
 ## Maintenance
 - Life tables: to add one, put its published columns in a new file under `lifeTables/`, add a registry entry with its
-  source, check date, `verified` and three published checksum survivors per sex; `mortality.test.js` and the eval
-  suite pick it up. Keep `docs/sources/` copies of anything supplied by hand (file + SHA-256 + extraction script).
+  source, check date, `verified` and three published checksum survivors per sex; `mortality.test.js` checks the
+  checksums automatically. For the eval suite's value-by-value and sweep checks, also add its source to the oracle and
+  the generator (`evals/README.md`, "Extending"). Keep `docs/sources/` copies of anything supplied by hand (file + SHA-256 + extraction script).
   Refresh the SSA table when a newer Trustees Report is preferred.
 - Exclusion: add each year's amount when the IRS publishes the inflation-adjustment revenue procedure.

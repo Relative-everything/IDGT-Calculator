@@ -91,6 +91,7 @@ independently. Table in `evals/README.md`.
 1. **Confirm the golden values** HC-M1…M10 and HC-L1…L6 (`evals/scenarios/handcalc.js`, mirrored in
    `married.test.js`) — hand-derived and reproduced by engine and oracle; repo rule is builder confirmation.
 2. Keep or retire the **legacy 2021 table** (unverified; kept only to reproduce earlier results).
-3. **Next tables:** hand over the source file (PDF/CSV) for each; adding one is a data file plus a registry entry,
-   and the suite checks it automatically (module = source, checksums, death-year probabilities at every age).
+3. **Next tables:** hand over the source file (PDF/CSV) for each. Adding one is a data file and a registry entry for
+   the app, plus one oracle source line and one generator line for the eval suite (`evals/README.md`, "Extending");
+   it then gets the same value-by-value, every-age and sweep checks as the SSA 2023 table.
 4. Optional: choose an actuarial source for a **UHNW mortality adjustment** (e.g. SOA annuitant/select tables).

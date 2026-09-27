@@ -114,5 +114,8 @@ got a hand case or persona, and the mutation was re-run to confirm it is now cau
 Add a hand case to `scenarios/handcalc.js` for any new mechanism before building it; add its inputs to the generator's
 archetypes or toggles; add a control row to `CONTROLS` in `suite.js` for any new UI field (on a state where it must
 matter, and one where it must not); add a mutation to `mutation.mjs` for the defect you most fear in it. A new life
-table needs no suite change: add it to the registry (`src/data/lifeTables/`) with its source file in `docs/sources/`;
-for a q-basis table give the oracle its source (`oracle/lives.js`) so the value-by-value and every-age checks cover it.
+table goes in the registry (`src/data/lifeTables/`) with its source file in `docs/sources/`; the registry checks
+(source, check date, verification flag) and `mortality.test.js`'s checksums then cover it automatically. To bring it
+into the value-by-value, every-age and sweep checks, also give the oracle its source (`oracle/lives.js`, and the table
+map in `oracle/ui.js`) and add it to the generator's table draw (`scenarios/generator.js`); until then the suite does
+not exercise it.
