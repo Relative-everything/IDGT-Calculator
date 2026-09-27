@@ -28,6 +28,30 @@ Full contract: [`docs/changes/2026-09-26-idgt-rebuild/model.md`](docs/changes/20
 Why the previous builds were wrong and what changed: [`plan.md`](docs/changes/2026-09-26-idgt-rebuild/plan.md)
 and [`handback.md`](docs/changes/2026-09-26-idgt-rebuild/handback.md) in the same folder.
 
+## ING trust comparison
+For every asset the ranking also shows the NPV of placing it in an **ING** (incomplete non-grantor trust —
+NING/DING/WING) instead, and which vehicle leaves heirs more. The ING is a third world on the same ledger:
+no gift and no exclusion used; the trust pays its own income tax (federal top rates + NIIT + the state rate it
+actually bears) and its trustee cost; it stays in the estate and is stepped up at death (§1014(b)(9)).
+
+- **Burn share** (IDGT input): the share of the trust's income tax the grantor actually pays; the trustee
+  reimburses the rest under a discretionary clause (Rev. Rul. 2004-64). 100% reproduces v1 exactly.
+- **Comparison card** (selected asset): ING minus IDGT at its best swap year and with no swap; a bridge
+  from the IDGT's five components to the ING's four (location, state-rate saving, administration cost,
+  step-up); heir-wealth gain by year of death for both; three breakevens — the burn share the grantor must
+  bear, the grantor's state rate, and the other-estate size at which the two tie — and a state-rate ×
+  burn-share grid with the frontier drawn. Each reading states which side the ING wins on.
+- **What it usually shows:** in a clearly taxable estate the IDGT's freeze dominates any state-tax
+  saving, so no burn share or state rate up to 20% makes the ING win; the breakevens bind near or below
+  the exclusion (e.g. a pre-sale business with a $12M other estate and a 13.3% state: the IDGT wins only
+  while the grantor bears at least ≈ 15% of the burn).
+- New York and California tax the grantor on an ING's income (N.Y. Tax Law §612(b)(41); Cal. R&TC §17082):
+  a switch charges that tax to the grantor, and the ING then saves no state tax.
+
+Contract: [`docs/changes/2026-09-27-ing-comparison/model.md`](docs/changes/2026-09-27-ing-comparison/model.md).
+Golden values for this module are hand-derived and reproduced by an independent reference script, but
+**not yet confirmed by the builder** (see that folder's `plan.md` and `handback.md`).
+
 ## Inputs that matter most
 Grantor age/sex (or an assumed death year), other estate and its after-tax growth, basic exclusion
 and indexing, prior taxable gifts **and the year they were made**, tax-rate stacks (grantor ordinary
@@ -40,6 +64,10 @@ inclusion, whether a scheduled sale also happens when the asset is kept).
 - Engine: golden fixtures A–H (hand-derived, builder-confirmed 2026-09-26), §2001(c) cross-check
   against the bracket schedule, model invariants (decomposition sums, Σq = 1, neutrality, swap
   properties), input-wiring test — `npm test`.
+- ING comparison: Fixtures I and J plus machine rows (reference-derived, awaiting builder
+  confirmation), a bit-identity test proving the burn-share extension leaves every v1 ledger row
+  unchanged at 100%, decomposition invariants, and breakeven tests that check the verdict flips across
+  each root.
 - **Mortality table: UNVERIFIED.** `src/data/mortalityTable.js` carries an SSA 2021 period life
   table that could not be checked against ssa.gov from the build environment. Replace it with the
   published l_x column and set `MORTALITY_TABLE_META.verified = true` to enable the checksum test.
@@ -53,7 +81,9 @@ extensions, golden-value gates and a kickoff prompt — is [`docs/ROADMAP.md`](d
 ## Not modelled (deferred)
 Installment sale, GRAT, SLAT, state estate/inheritance tax, Table 2010CM / §7520 products, UHNW
 mortality adjustment, Monte Carlo, promissory-note swap consideration, DSUE/GST tracking,
-multi-asset joint optimisation, PDF/Excel export. Reasons are shown in-app under "Not modelled in
+multi-asset joint optimisation, PDF/Excel export; for the ING comparison, toggling grantor-trust status off
+(completed-gift non-grantor trust), later completion of the ING gift, DNI distributions and throwback, a
+state fiduciary-tax table, compressed trust brackets, and the legal risk of reimbursement clauses. Reasons are shown in-app under "Not modelled in
 this version".
 
 ## Development
@@ -73,5 +103,6 @@ Actions → Build and deploy → Run workflow on `main`.
 Stack: React 19, Vite 8, Tailwind CSS 4, Vitest. No server, no localStorage; scenarios move as JSON
 files and the ranking exports as CSV.
 
-Layout: `src/engine/` pure calculation (cites its authorities inline) · `src/data/` static tables
+Layout: `src/engine/` pure calculation (cites its authorities inline; `ingModel.js` and `breakeven.js` for the
+ING comparison) · `src/data/` static tables
 with provenance · `src/hooks/` state → engine · `src/components/` UI only.

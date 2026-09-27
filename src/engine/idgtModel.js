@@ -1,4 +1,5 @@
-// IDGT gift model v1 — heir-wealth ledger (docs/changes/2026-09-26-idgt-rebuild/model.md).
+// IDGT gift model v1 — heir-wealth ledger (docs/changes/2026-09-26-idgt-rebuild/model.md), extended by the
+// burn share φ of docs/changes/2026-09-27-ing-comparison/model.md §2.
 // Pure functions, no React. Inputs are decimals; money is never rounded inside the engine.
 //
 // One simulator, two scenarios per possible death year t:
@@ -10,10 +11,15 @@
 // step-up) are derived from the ledger by telescoping on counterfactual tax bases and sum exactly.
 // Return-neutral convention (model.md §0.2): gross yield is reinvested in the holding and the income
 // tax is paid from the other estate in BOTH scenarios.
+//
+// Burn share φ (`burnShare`, default 1): the share of the trust's income tax the grantor bears; the trustee
+// reimburses 1 − φ from trust assets under a discretionary clause (Rev. Rul. 2004-64). The holding path
+// therefore splits into V^b (HOLD, row key `V`) and V^s (GIFT, row key `Vs`); with φ = 1 the two paths are
+// the same operations on the same numbers and v1 is reproduced bit for bit.
 
 import { deriveGift, makeBases, taxFromBase } from './fedTax.js';
 import { deathProbabilities, expectedDeathYear } from './mortality.js';
-import { validateInputs } from './validate.js';
+import { validateInputs, resolveIngInputs } from './validate.js';
 import { SECTION_2035_WINDOW_YEARS, SWAP_TIE_TOLERANCE } from './constants.js';
 
 export const SWAP_INFEASIBLE_POST_SALE = 'post-sale swap not modelled in v1';
@@ -37,7 +43,7 @@ export function resolveSwapProfile(inp) {
 /**
  * Run the year-by-year ledger for HOLD and GIFT[swapYear] over N years.
  *
- * @param {object} inp - flat engine inputs (see validate.js)
+ * @param {object} inp - flat engine inputs (see validate.js); `burnShare` φ defaults to 1
  * @param {number} swapYear - 0 = no swap, otherwise the end-of-year swap year
  * @param {number} N - horizon (years); death at the end of each year t ≤ N is valued
  * @returns {{ derived:object, rows:object[], infeasible:string|null, swapYear:number }}
@@ -52,6 +58,7 @@ export function simulate(inp, swapYear, N) {
   const gr = inp.gr ?? g;
   const yr = inp.yr ?? y;
   const { bSw, gSw, ySw, tauSw } = resolveSwapProfile(inp);
+  const { burnShare: phi } = resolveIngInputs(inp); // ING model.md §1: φ = 1 unless the caller sets it
   const v = 1 / (1 + d);
   const vk = Math.pow(v, k);
 
@@ -61,7 +68,8 @@ export function simulate(inp, swapYear, N) {
   const pos = (x) => Math.max(0, x);
 
   // State (end of year 0)
-  let V = FMV; // holding value (same path in both scenarios)
+  let Vb = FMV; // HOLD holding value (row key `V`)
+  let Vs = FMV; // GIFT holding value (row key `Vs`); diverges from Vb only when the trust pays part of its tax (φ < 1)
   let Bb = B0; // HOLD basis
   let Bs = BT0; // GIFT basis (trust; §1015(d)(6) bump when gift tax paid)
   let Eb = E0; // other estate, HOLD
@@ -69,7 +77,7 @@ export function simulate(inp, swapYear, N) {
   let W = 0; // swapped-in consideration value (trust)
   let WB = 0; // its basis
   let swapped = false;
-  let Tself = FMV; // display-only counterfactual: trust that paid its own income tax
+  let Tself = FMV; // counterfactual: trust that paid its own income tax at the grantor's rates (Level B pivot)
   let Bself = BT0;
   let infeasible = null;
 
@@ -79,21 +87,41 @@ export function simulate(inp, swapYear, N) {
     const gt = afterSale ? gr : g;
     const yt = afterSale ? yr : y;
 
-    // 1. growth and gross yield reinvested (both scenarios)
-    const Vprev = V;
+    // 1. growth and gross yield reinvested — HOLD
+    const Vprev = Vb;
     const Y = yt * Vprev;
-    V = Vprev * (1 + gt) + Y;
-    const burn = tauOrd * Y; // income tax on the yield, paid from E in both scenarios (§671 in GIFT)
+    Vb = Vprev * (1 + gt) + Y;
+    const burn = tauOrd * Y; // income tax on the yield, paid from E (owner)
     Bb += Y;
-    Bs += Y;
 
-    // consideration held by the trust (only after a swap)
+    // 1'. growth and gross yield — GIFT (ING model.md §2). Before the swap the trust holds the asset and the
+    //     trustee pays (1 − φ) of the tax on its yield from trust assets (Rev. Rul. 2004-64); after the swap the
+    //     grantor owns the asset and pays all of it from E. The update V^s = V^s(1+g) + Y^s − (1−φ)·τ_ord·Y^s is
+    //     evaluated in the factored form y·(1 − (1−φ)τ_ord)·V^s so that φ = 1 performs exactly the HOLD
+    //     operations (V^s ≡ V^b bit for bit) and φ = 0 exactly the T^self operations below (V^s = T^self bit
+    //     for bit without a swap, hence a burn component of exactly zero).
+    const ownerShare = swapped ? 1 : phi; // share of the tax on the asset's yield charged to E this year
+    const VsPrev = Vs;
+    const Ys = yt * VsPrev;
+    const burnS = tauOrd * Ys; // gross income tax on the GIFT holding's yield
+    const netYs = yt * (1 - (1 - ownerShare) * tauOrd) * VsPrev; // = Ys − (1 − ownerShare)·burnS
+    Vs = VsPrev * (1 + gt) + netYs;
+    Bs += netYs; // only the net reinvested cash adds basis
+    const grantorBurn = ownerShare * burnS;
+    const trustBurn = (1 - ownerShare) * burnS;
+
+    // consideration held by the trust (only after a swap); the trustee reimburses (1 − φ) of the tax on its
+    // yield as well (convention N-6)
     let burnSw = 0;
+    let grantorBurnSw = 0;
+    let trustBurnSw = 0;
     if (swapped) {
       const YW = ySw * W;
-      W = W * (1 + gSw) + YW;
-      WB += YW;
       burnSw = tauSw * YW;
+      trustBurnSw = (1 - phi) * burnSw;
+      W = W * (1 + gSw) + YW - trustBurnSw;
+      WB += YW - trustBurnSw;
+      grantorBurnSw = phi * burnSw;
       Tself *= 1 + gSw + (1 - tauSw) * ySw;
     } else {
       const yAfterTax = yt * (1 - tauOrd) * Tself;
@@ -101,20 +129,26 @@ export function simulate(inp, swapYear, N) {
       Tself = Tself * (1 + gt) + yAfterTax;
     }
 
-    // 2. other estate rolls forward and pays the burn
+    // 2. other estate rolls forward and pays the burn (all of it in HOLD; the grantor's share in GIFT)
     Eb = Eb * (1 + rE) - burn;
-    Es = Es * (1 + rE) - burn - burnSw;
+    Es = Es * (1 + rE) - grantorBurn - grantorBurnSw;
 
-    // 3. scheduled sale of the holding (t = S): gain on carryover basis, grantor pays (Rev. Rul. 85-13)
+    // 3. scheduled sale of the holding (t = S): gain on carryover basis, grantor pays (Rev. Rul. 85-13);
+    //    while the trust still holds the asset it bears (1 − φ) of the gain tax from its assets (N-6)
     let CGb = 0;
     let CGs = 0;
+    let grantorCg = 0;
+    let trustCg = 0;
     if (S > 0 && t === S) {
-      CGs = tauCg * pos(V - Bs);
-      Bs = V;
-      Es -= CGs;
+      CGs = tauCg * pos(Vs - Bs);
+      grantorCg = swapped ? CGs : phi * CGs;
+      trustCg = swapped ? 0 : (1 - phi) * CGs;
+      Es -= grantorCg;
+      Vs -= trustCg;
+      Bs = Vs;
       if (saleAppliesToBaseline) {
-        CGb = tauCg * pos(V - Bb);
-        Bb = V;
+        CGb = tauCg * pos(Vb - Bb);
+        Bb = Vb;
         Eb -= CGb;
       }
       if (!swapped) {
@@ -124,11 +158,11 @@ export function simulate(inp, swapYear, N) {
       }
     }
 
-    // 4. swap (t = s): grantor substitutes consideration of equivalent value (§675(4)(C))
+    // 4. swap (t = s): grantor substitutes consideration of equivalent value (§675(4)(C)) for the trust's holding
     const inclFactor = discountAtDeath ? 1 - delta : 1;
     let swapEvent = null;
     if (swapYear === t) {
-      const consideration = V * inclFactor;
+      const consideration = Vs * inclFactor;
       if (S > 0 && t >= S) infeasible = SWAP_INFEASIBLE_POST_SALE;
       else if (Es < consideration) infeasible = SWAP_INFEASIBLE_LIQUIDITY;
       else {
@@ -141,35 +175,36 @@ export function simulate(inp, swapYear, N) {
     }
 
     // 5. death at end of year t
-    const incl = V * inclFactor; // estate-tax inclusion value of the interest
+    const incl = Vb * inclFactor; // estate-tax inclusion value of the interest, HOLD
+    const inclS = Vs * inclFactor; // the same for the GIFT holding (included only if swapped back)
     const Xt = bases.exclusionAt(t);
 
     // HOLD
     const TEb = Eb + incl;
     const baseB = bases.baseHold(TEb, t);
     const ETb = taxFromBase(tauE, baseB);
-    const SUb = tauBene * (V - incl) * vk; // heirs' basis steps only to the included value
-    const Hb = Eb + V - ETb - SUb;
+    const SUb = tauBene * (Vb - incl) * vk; // heirs' basis steps only to the included value
+    const Hb = Eb + Vb - ETb - SUb;
 
     // GIFT
-    const T = swapped ? W : V; // trust holding
+    const T = swapped ? W : Vs; // trust holding
     const TB = swapped ? WB : Bs; // trust basis
     const add2035 = t <= SECTION_2035_WINDOW_YEARS ? G : 0; // §2035(b) gross-up of gift tax paid
-    const TEs = Es + (swapped ? incl : 0) + add2035;
+    const TEs = Es + (swapped ? inclS : 0) + add2035;
     const baseS = bases.baseGift(TEs, t);
     const ETs = taxFromBase(tauE, baseS);
     const BIG = pos(T - TB); // built-in gain in trust, no §1014
-    const SUs = tauBene * BIG * vk + (swapped ? tauBene * (V - incl) * vk : 0);
-    const Hs = Es + (swapped ? V : 0) + T - ETs - SUs;
+    const SUs = tauBene * BIG * vk + (swapped ? tauBene * (Vs - inclS) * vk : 0);
+    const Hs = Es + (swapped ? Vs : 0) + T - ETs - SUs;
 
     const dH = Hs - Hb;
 
     // Level A identity
-    const TWb = Eb + V;
-    const TWs = Es + (swapped ? V : 0) + T;
+    const TWb = Eb + Vb;
+    const TWs = Es + (swapped ? Vs : 0) + T;
     const dTW = TWs - TWb;
     const dTWgt = -G * Math.pow(1 + rE, t); // gift-tax drag on pre-tax wealth
-    const dTWsw = dTW - dTWgt; // non-neutral swap / sale differential
+    const dTWsw = dTW - dTWgt; // non-neutral swap / sale differential (and, with φ < 1, the location effect of tax paid from the trust)
     const dET = ETb - ETs;
     const dSU = SUb - SUs;
 
@@ -177,7 +212,11 @@ export function simulate(inp, swapYear, N) {
     const b0 = baseB;
     const b4 = baseS;
     const b1 = b0 - (Tself - Ug);
-    const b2 = b1 - (T - Tself);
+    // ING model.md §2 amendment to v1 §7: after a swap with discountAtDeath the consideration starts at f·V^s
+    // against an undiscounted T^self; that haircut is discount-at-death inclusion (Resid), not burn, so the
+    // counterfactual is scaled by f_sw. Burn is then exactly zero at φ = 0 for every swap year. Sum unchanged.
+    const fSw = swapped ? inclFactor : 1;
+    const b2 = b1 - (T - fSw * Tself);
     const b3 = b2 - G / tauE + dTWgt + add2035;
     const freeze = tauE * (pos(b0) - pos(b1));
     const burnC = tauE * (pos(b1) - pos(b2));
@@ -187,7 +226,10 @@ export function simulate(inp, swapYear, N) {
 
     const DF = Math.pow(v, t);
     rows.push({
-      t, age: inp.age + t, Xt, Y, V, burn, burnSw, CGb, CGs, Bb, Bs, Eb, Es, W, WB, Tself, swapped, swapEvent, incl,
+      t, age: inp.age + t, Xt, Y, V: Vb, Vs, Ys, burn, burnS, burnSw,
+      trustPaid: trustBurn + trustBurnSw + trustCg, // income tax the trust paid from its own assets this year
+      grantorPaid: grantorBurn + grantorBurnSw + grantorCg, // income tax charged to E in the GIFT scenario this year
+      CGb, CGs, Bb, Bs, Eb, Es, W, WB, Tself, swapped, swapEvent, incl, inclS,
       TEb, baseB, ETb, SUb, Hb, T, TB, add2035, TEs, baseS, ETs, BIG, SUs, Hs,
       dH, dTW, dTWgt, dTWsw, dET, dSU, freeze, burnC, giftTaxC, resid, stepUp,
       DF, PV: dH * DF,
@@ -195,7 +237,7 @@ export function simulate(inp, swapYear, N) {
   }
 
   return {
-    derived: { ...gift, swapProfile: { bSw, gSw, ySw, tauSw } },
+    derived: { ...gift, swapProfile: { bSw, gSw, ySw, tauSw }, burnShare: phi },
     rows,
     infeasible,
     swapYear,

@@ -12,10 +12,13 @@ const COLUMNS = [
   { key: 'npvNone', label: 'NPV · no swap', get: (r) => r.result.npvNone, fmt: fmtMoney },
   { key: 'sStar', label: 'Best swap', get: (r) => r.result.sStar, fmt: fmtYear },
   { key: 'npvOpt', label: 'NPV · best swap', get: (r) => r.result.npvOpt, fmt: fmtMoney },
+  { key: 'npvIng', label: 'NPV · ING', get: (r) => r.ing?.npv, fmt: fmtMoney },
+  { key: 'structure', label: 'Better vehicle', get: (r) => r.ing?.vsIdgt.verdict ?? '', align: 'left' },
   { key: 'effOpt', label: 'NPV per $ gift (swap)', get: (r) => r.result.eff.opt, fmt: fmtRatio },
   { key: 'effNone', label: 'NPV per $ gift (none)', get: (r) => r.result.eff.none, fmt: fmtRatio },
   { key: 'cum', label: 'Cum. taxable gift', get: (r) => r.cumulativeTaxableGift, fmt: fmtMoney },
 ];
+const VERDICT_TEXT = { ING: 'ING', IDGT: 'IDGT', tie: 'Tie' };
 
 export default function RankingTable({ ranked, selectedId, onSelect, rankKey, remainingExclusion, invalid }) {
   const [sort, setSort] = useState({ key: 'rank', dir: 'asc' });
@@ -43,7 +46,7 @@ export default function RankingTable({ ranked, selectedId, onSelect, rankKey, re
         </div>
       )}
       <div className="scroll-x">
-        <table className="w-full min-w-[820px] border-collapse text-[13px]">
+        <table className="w-full min-w-[980px] border-collapse text-[13px]">
           <thead>
             <tr className="border-b border-line-strong text-left text-xs uppercase tracking-wide text-muted">
               {COLUMNS.map((c) => (
@@ -63,7 +66,7 @@ export default function RankingTable({ ranked, selectedId, onSelect, rankKey, re
                   {COLUMNS.map((c) => {
                     const v = c.get(r);
                     const text = c.fmt ? c.fmt(v) : v;
-                    const neg = typeof v === 'number' && v < 0 && ['npvNone', 'npvOpt', 'effOpt', 'effNone'].includes(c.key);
+                    const neg = typeof v === 'number' && v < 0 && ['npvNone', 'npvOpt', 'effOpt', 'effNone', 'npvIng'].includes(c.key);
                     return (
                       <td key={c.key} className={`tabular whitespace-nowrap px-2 py-1.5 ${c.align === 'left' ? 'text-left' : 'text-right'} ${neg ? 'text-bad' : ''}`}>
                         {c.key === 'name' ? (
@@ -72,6 +75,8 @@ export default function RankingTable({ ranked, selectedId, onSelect, rankKey, re
                             {warn > 0 && <span className="rounded bg-warn-soft px-1 text-[10px] text-warn" title={r.result.warnings.map(describeWarning).join('\n')}>⚠ {warn}</span>}
                             {r.exceedsRemainingExclusion && <span className="rounded bg-warn-soft px-1 text-[10px] text-warn" title="Cumulative taxable gifts in rank order exceed the remaining exclusion; gift tax would apply from here.">exclusion</span>}
                           </span>
+                        ) : c.key === 'structure' ? (
+                          v ? <span className="rounded border border-line-strong px-1.5 text-[11px] font-medium text-ink" title="Higher NPV at the IDGT's optimal swap year; see the ING comparison card">{VERDICT_TEXT[v]}</span> : '—'
                         ) : text}
                       </td>
                     );
