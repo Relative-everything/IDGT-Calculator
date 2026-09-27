@@ -32,13 +32,13 @@ the breakevens.
 | Symbol | Engine field | UI field (`settings`) | Default | Notes |
 |---|---|---|---|---|
 | φ | `burnShare` | `burnShare` | 1 | share of the IDGT's income tax (on trust income) that the **grantor** bears; 1 − φ is reimbursed by the trustee from trust assets under a discretionary clause (Rev. Rul. 2004-64, Situation 3). φ = 1 reproduces v1 exactly. |
-| τ^n_fed | `ingFedOrd` | `ingFedOrd` | 0.37 | trust's federal ordinary rate. Trust brackets are compressed (§1(e)): the top rate is reached at $15,650 of taxable income for 2025 (Rev. Proc. 2024-40; ≈ $16,000 for 2026 — M, not re-fetched), so a flat top rate overstates the trust's federal ordinary tax by at most ≈ $2,000 a year, plus ≈ $600 for applying NIIT below the §1411(a)(2) threshold (≈ $2,600 in total), and the flat 20% overstates the tax on a year-S gain by at most ≈ $1,300 once (§1(h) 0%/15% trust brackets). Exact for an ESBT's S-portion (§641(c)(2)(A)). |
+| τ^n_fed | `ingFedOrd` | `ingFedOrd` | 0.37 | trust's federal ordinary rate. Trust brackets are compressed (§1(e)): the top rate is reached at $15,650 of taxable income for 2025 (Rev. Proc. 2024-40, used as a proxy — the 2026 figure in Rev. Proc. 2025-32 was not fetched; M; the figure stays in prose and never enters `src/data` or a UI value), so a flat top rate overstates the trust's federal ordinary tax by at most ≈ $2,000 a year, plus ≈ $600 for applying NIIT below the §1411(a)(2) threshold (≈ $2,600 in total), and the flat 20% overstates the tax on a year-S gain by at most ≈ $1,300 once (§1(h) 0%/15% trust brackets). Exact for an ESBT's S-portion (§641(c)(2)(A)). |
 | τ^n_fcg | `ingFedLtcg` | `ingFedLtcg` | 0.20 | trust's federal long-term capital-gain rate (§1(h)). |
 | τ^n_st | `ingStateRate` | `ingStateRate` | 0 | state income-tax rate the ING itself **actually bears**. 0 is correct only for income that only the situs state could tax — dividends, interest, gain on stock or on an entity interest with no business situs — when the trust is sitused in NV, WY, SD or AK (or DE with no resident beneficiaries). Enter a non-zero rate when (i) the asset produces income sourced to a taxing state (rental or operating income; apportioned pass-through income): the source state taxes a non-resident trust regardless of situs (e.g. N.Y. Tax Law §631; Cal. R&TC §17951 — H on the proposition); or (ii) the grantor is domiciled in a state that defines a *resident trust* by the grantor's domicile when the trust became irrevocable and taxes the trust itself on all its income (reported for CT, IL, PA, MN, NE, OH, VT, VA, DC, WI — M on the list; due-process limits apply: North Carolina Dept. of Revenue v. Kaestner, 588 U.S. ___ (2019); Fielding (Minn. 2018); Linn (Ill. App. 2013); McNeil (Pa. Cmwlth. 2013)). New York and California grantors are handled by the flag below, not by this rate. The input panel carries these three conditions as a permanent hint. |
 | — | `ingStateTaxOnGrantor` | `ingStateTaxOnGrantor` | false | **home state taxes the grantor on the ING's income as if it were a grantor trust** — New York (Tax Law §612(b)(41), tax years from 2014) and California (Rev. & Tax. Code §17082, SB 131, tax years from 2023). When true the grantor pays σ_ord / σ_cg on the trust's income and gains **from E** (§3); the trust's own stack is unchanged. The ING's rate saving then vanishes and the state tax becomes a grantor-level burn. |
 | NIIT | `niit` | (existing `niit`) | 0.038 | the grantor panel's NIIT rate passed a second time, un-summed, so the trust stacks can be built (v1 folds it into τ_ord / τ_cg). Trusts are subject to §1411 above the top-bracket threshold (§1411(a)(2)(B)(ii)). |
 | c | `ingAdminRate` | `ingAdminRate` | 0 | annual administration cost of the ING as a fraction of trust value (corporate trustee at the situs). Charged at year-end on the opening value; **not** deducted for income tax (conservative for the ING; §67(e) costs are in fact deductible). When the fee exceeds the after-tax yield the shortfall is funded by liquidating a slice of the holding with pro-rata basis and a taxable gain (§3). |
-| σ_ord, σ_cg | `stateOrd`, `stateCg` | (existing `stateOrd`, `stateLtcg`) | 0.05, 0.05 | the state components already inside τ_ord and τ_cg, passed separately so the breakeven solver can vary the grantor's state rate. |
+| σ_ord, σ_cg | `stateOrd`, `stateCg` | (existing `stateOrd`, `stateLtcg`) | — (no engine default; UI default 5%) | the state components already inside τ_ord and τ_cg, passed separately so the breakeven solver can vary the grantor's state rate. They describe the client, not the vehicle, so the engine never defaults them: evaluateIng, the breakevens and the grid require them (`validateIngInputs`), as they require `niit`. |
 
 Derived trust rates: τ^n_ord = τ^n_fed + niit + τ^n_st ; τ^n_cg = τ^n_fcg + niit + τ^n_st. Grantor-level state tax on the
 ING: σ^g_ord = σ_ord and σ^g_cg = σ_cg when `ingStateTaxOnGrantor`, else 0. τ_ord = fedOrd + σ_ord + niit and
@@ -76,7 +76,8 @@ f_sw,t = f if swapped_t else 1, so that the discount-at-death haircut on the con
 against an undiscounted T^self_s) is carried by Resid, where v1 §7 assigns "discount-at-death inclusion",
 and not by Burn. No accepted golden value moves (Fixtures A–H never combine `discountAtDeath` with a swap).
 Engine: the swap consideration, incl^s, SU^s, H^s and TW^s read V^s; incl^b, SU^b, H^b and TW^b read V^b —
-v1's shared `V`/`incl` split in two. With this, Burn_t ≡ 0 at φ = 0 for every s, and for 0 < φ < 1 the
+v1's shared `V`/`incl` split in two. With this, Burn_t ≡ 0 at φ = 0 for every s (bit-exact before the swap;
+to floating-point precision, relative 1e-12, after it), and for 0 < φ < 1 the
 **burn** component measures exactly the part of gross compounding the grantor still funds. The
 **residual** component also carries the location effect of tax paid from the trust (V^s compounds at
 g + y, E at r_E), which is not a tax benefit. Warning `BURN_REIMBURSED` whenever φ < 1: a constant
@@ -184,10 +185,15 @@ The result carries `ingWinsAbove = fHi > 0` so the UI composes the sentence from
 
 ## 7. Breakeven grid (for the selected asset only)
 
-Δ_opt evaluated on σ ∈ {0, 0.02, …, 0.14} (8 columns: grantor's state rate, applied to both stacks as in
-§6.2) × φ ∈ {1, 0.8, 0.6, 0.4, 0.2, 0} (6 rows: share of the burn the grantor bears). Each cell is a full
-evaluation (≈ 2–5 ms; ≤ 0.25 s for the grid). The cell at the input's own (σ_ord, φ) is asserted equal to
-the headline Δ_opt when σ_ord = σ_cg and σ_ord is on the grid.
+Δ_opt evaluated on σ ∈ `GRID_STATE_RATES` = {0, 2, …, 14}% (columns: the grantor's state rate, applied to both
+stacks as in §6.2) × φ ∈ `GRID_BURN_SHARES` = {100, 80, 60, 40, 20, 0}% (rows: share of the burn the grantor
+bears); both axes are built from whole percentage points ÷ 100 so the labels are exact. `comparisonGrid(inp)`
+inserts the input's own σ_ord column and φ row when they fall between lattice points (flagged
+`colInserted` / `rowInserted`) and returns `own: { row, col, …, asEntered }`; the own column is evaluated on the
+UNTRANSFORMED stacks, and every transform is an identity at the input's own value, so
+`cells[own.row][own.col]` is the headline Δ_opt bit for bit (asserted with `toBe`). When σ_ord ≠ σ_cg the own
+column is keyed by σ_ord and flagged `asEntered`. Each cell is a full evaluation (≈ 1–5 ms; measured 88 ms for
+the 6 × 9 grid at age 65 and 184 ms at age 45); the UI computes it after paint.
 
 ## 8. Validation and warnings
 
@@ -196,12 +202,15 @@ Errors (field-level, never thrown): 0 ≤ φ ≤ 1; 0 ≤ τ^n_fed, τ^n_fcg, τ
 factor must stay positive: 1 + g + (1 − τ^n_ord) y − c > 0 and, when S > 0, 1 + g_r + (1 − τ^n_ord) y_r − c > 0
 (v1's 1 + g + y > 0 does not imply it). The new engine fields are optional (contract defaults when
 absent) so v1 fixtures keep validating.
-Warnings ({code, data}; text composed in `src/components/warnings.js`):
+Warnings ({code, data}; text composed in `src/components/warnings.js`). `validateInputs` emits only
+`BURN_REIMBURSED` (an IDGT-ledger warning, so it appears on the IDGT result); `evaluateIng` emits the other two
+into its own `warnings`; no warning is emitted by both.
 - `BURN_REIMBURSED` (φ < 1): the constant reimbursed fraction is the pattern the implied-understanding
   caveat of Rev. Rul. 2004-64 describes; the safe harbour also needs state law that keeps the trust out of
   the grantor's creditors' reach; §2036(a)(1) exposure is not priced.
-- `ING_NO_STATE_SAVING` (τ^n_st ≥ σ_ord, or `ingStateTaxOnGrantor` with τ^n_fed ≥ fedOrd): the ING bears at
-  least the grantor's rate; its only remaining effects are location and cost.
+- `ING_NO_STATE_SAVING` (τ^n_ord + σ^g_ord ≥ τ_ord: everything the family pays on a dollar of ING income is at
+  least the grantor's own rate — e.g. a source-state rate, or the NY/CA flag): the only remaining effects are
+  location and cost.
 - `ING_FEE_EXCEEDS_YIELD` (c > y (1 − τ^n_ord), or when 0 < S < N also c > y_r (1 − τ^n_ord)): the fee is
   funded by liquidation with pro-rata basis and a taxable gain (§3).
 The "0% is only right for intangibles in a no-tax situs" conditions are not a warning (they would fire on
@@ -211,15 +220,26 @@ on the comparison card whenever τ^n_st = 0 and the flag is off.
 ## 9. Output shape (pure data)
 
 ```
+IDGT row (extended; every v1 key keeps its v1 meaning and, at φ = 1, its v1 value bit for bit):
+  V ≡ V^b (HOLD path), incl ≡ V^b·f, burn ≡ τ_ord·Y^b, Bb, Eb, Hb, … as v1;  T (= V^s before a swap, W after), TB, Hs, …
+  new: Vs, Ys, inclS (= V^s·f), burnS (= τ_ord·Y^s), trustPaid (tax the trust paid from its assets this year),
+       grantorPaid (tax charged to E^s this year).  Fixture J's year-3 values are asserted on Vs / Bs.
+simulateIng(inp, N):     { rows: Row[], derived: { tauNo, tauNc, sgOrd, sgCg, feeRate, stateTaxOnGrantor } }
+  Row: t, age, Xt, Vn, Bn, Yn, taxN, feeN (the year's fee), gainL, CGL, gainS, CGn, grantorStateTax, Vsame, Vrate,
+       En, inclN, TEn, baseN, ETn, SUn, Hn, HOLD echoes (V, Eb, ETb, SUb, Hb), dH, dTW, dET, dSU,
+       loc, ss, fee (the cumulative wealth part — distinct from feeN), locNet, ssNet, feeNet, stepUp, DF, PV,
+       and ledger aliases T = Vn, ETs = ETn, SUs = SUn, Hs = Hn
 evaluateIng(inp, idgt):  { npv, npvPerFMV, components: {locNet, ssNet, feeNet, stepUp},
-                           rows: Row[]  // t, age, q, Xt, Vn, Bn, Yn, taxN, fee, gainL, CGn, Vsame, Vrate, En, inclN, TEn, baseN, ETn, SUn, Hn,
-                                        // Hb, dH, dTW, dET, dSU, loc, ss, fee, locNet, ssNet, feeNet, stepUpC, DF, PV, wPV,
-                                        // plus dHIdgt (ΔH^{s*}_t) for the crossover
-                           vsIdgt: { deltaOpt, deltaNone, verdict, ingLeadsYears: number[], firstIngYear: number|null },
-                           warnings: [{code, data}] }
+                           rows: Row[] + { q, wPV, dHIdgt (ΔH^{s*}_t) },
+                           vsIdgt: { deltaOpt, deltaNone, verdict, ingLeadsYears: number[], firstIngYear: number|null,
+                                     bridge: { start: NPV(s*), sStar, steps: [{ key, side, value, from, to }], end: NPV^n } },
+                           derived: { ...simulateIng.derived, zeroStateRateAssumption }, warnings: [{code, data}] }
+  bridge steps in drawing order: IDGT freeze, burn, giftTax, resid, stepUp (each entered negatively, reaching 0),
+  then ING locNet, ssNet, feeNet, stepUp; cumulative from/to computed in the engine so the chart only draws.
 breakevens(inp):         { burnShare: R, stateRate: R, otherEstate: R }
-                         with R = { value, fAtValue, iterations, fLo, fHi, crossings, ingWinsAbove } | { value: null, reason, fLo, fHi, crossings, ingWinsAbove }
-comparisonGrid(inp):     { stateRates: number[], burnShares: number[], cells: number[][] /* [row φ][col σ] = Δ_opt */, verdicts: string[][] }
+                         with R = { value, fAtValue, iterations, fLo, fHi, crossings, ingWinsAbove, bracket }
+                                | { value: null, reason: ING_ALWAYS | IDGT_ALWAYS | NOT_EVALUABLE, fLo, fHi, crossings, ingWinsAbove }
+comparisonGrid(inp):     { stateRates, burnShares, cells: (number|null)[][] /* [row φ][col σ] = Δ_opt */, verdicts, own }
 ```
 
 ## 10. Authorities relied on (in addition to v1 §12)
@@ -270,3 +290,8 @@ of the ING gift (release of the retained powers); DNI distributions and state th
 §17745); the trust's compressed brackets and §642(b) exemption; state-by-state fiduciary income-tax
 residency rules (the rate is an input); IDGT trustee costs; §2036 risk pricing for reimbursement
 patterns; §2702/§2036 exposure of the ING's own committee structure.
+
+## 13. Persistence
+`SCENARIO_VERSION` stays 1. `burnShare`, `ingFedOrd`, `ingFedLtcg`, `ingStateRate`, `ingAdminRate` are string
+fields and `ingStateTaxOnGrantor` a boolean field of the UI `settings` section, added to the scenario whitelist
+and to `validateUiFields`; a file without them loads with the §1 defaults (φ = 100% → the v1 numbers).

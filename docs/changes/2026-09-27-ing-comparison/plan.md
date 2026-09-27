@@ -129,17 +129,19 @@ in the taxable estate, so estate tax is 400 higher (2,672,736 vs 2,672,336) and 
 trust is stepped up (§1014(b)(9)), so no capital-gains cost. Attribution: location 0 in year 1 (the
 same 9,160 paid from either pool has not compounded yet), state saving 1,000 → net 600.
 Year 2: yield 21,636.80; tax 8,827.8144; value 1,170,377.7856; basis 224,648.9856; other estate
-21,218,000. HOLD: value 1,188,100, other estate 21,198,580.80. Family wealth difference 1,696.9856 =
-location −465.6944 (the year-1 tax of 9,160 would have grown 3% in the estate but 9% in the trust:
-9,160 × (1.09 − 1.03) = −549.60, plus the yield-base effect) + state saving 2,162.68 (1,000 × 1.09 +
-0.05 × 21,636.80 = 1,090 + 1,081.84 − 9.16 … exact figure from the ledger). Exclusion 15,300,000;
-estate tax 2,835,351.11424 vs 2,834,672.32; heirs +1,018.19136 = 0.6 × 1,696.9856.
+21,218,000. HOLD: value 1,188,100, other estate 21,198,580.80. A trust paying the grantor's own 45.8%
+would hold 1,168,215.1056 (v1's T^self). State saving 2,162.68 = the year-1 saving grown inside the
+trust, 1,000 × (1.07 + 0.02 × 0.592) = 1,081.84, plus this year's, 5% × 2% × 1,080,840 = 1,080.84.
+Location −465.6944 = (21,218,000 − 21,198,580.80) + (1,168,215.1056 − 1,188,100): the year-1 tax of
+9,160 compounds at 3% in the estate but would have compounded at 9% inside the trust. Family wealth
++1,696.9856; exclusion 15,300,000; estate tax 2,835,351.11424 vs 2,834,672.32; heirs +1,018.19136 =
+0.6 × 1,696.9856.
 Year 3: yield 23,407.555712; tax 9,550.282730; value 1,266,161.503574; basis 238,506.258582; other
 estate 21,854,540; a trust paying the grantor's own 45.8% would hold 1,262,653.614737 (v1's T^self),
 so the state saving is 3,507.888837 and the location effect (21,854,540 − 21,823,655.228) +
-(1,262,653.614737 − 1,295,029) = −1,490.613263. Family wealth +2,017.275574; exclusion 15,606,000;
+(1,262,653.614737 − 1,295,029) = −1,490.613263. Family wealth +2,017.275573; exclusion 15,606,000;
 estate tax 3,005,880.601429 vs 3,005,073.6912 (+806.910229); heirs +1,210.365344 = 0.6 ×
-2,017.275574. Discounted three years at 4% (÷ 1.124864): +1,076.010384 = −795.089858 (location) +
+2,017.275573. Discounted three years at 4% (÷ 1.124864): +1,076.010384 = −795.089858 (location) +
 1,871.100242 (state saving). Against Fixture A: the IDGT without a swap loses 115,086.29 (mostly the
 lost step-up), so the ING is 116,162.30 better; with the deathbed swap the IDGT gains 104,911.88, so
 the IDGT is 103,835.87 better — verdict IDGT.
