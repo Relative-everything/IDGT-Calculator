@@ -13,10 +13,11 @@ export function simulateIdgt(inp, swapYear) {
   const {
     FMV, B0, g, y, S = 0, gr = g, yr = y, delta = 0,
     tauOrd, tauCg, tauBene, tauE, d, rE, pi, X0, P = 0, XP = X0, E0, k = 1,
-    bSw = 1, discountAtDeath = false, saleAppliesToBaseline = true, N,
+    discountAtDeath = false, saleAppliesToBaseline = true, N,
     annualExclusions = 0, burnShare = 1,
   } = inp;
   const phi = burnShare;
+  const bSw = inp.bSw ?? 1; // null means "use the default", as in the contract (model.md v1 §1)
   const gSw = inp.gSw ?? 0;
   const ySw = inp.ySw ?? rE / (1 - tauOrd);
   const tauSw = inp.tauSw ?? tauOrd;
@@ -79,7 +80,7 @@ export function simulateIdgt(inp, swapYear) {
     let CGb = 0, CGs = 0;
     if (S > 0 && t === S) {
       CGs = tauCg * pos(Vs - Bs);
-      if (!swapped) { Es -= phi * CGs; Vs -= (1 - phi) * CGs; } else { Es -= CGs; }
+      if (!swapped) { Es -= phi * CGs; Vs -= (1 - phi) * CGs; grantorPaid += phi * CGs; trustPaid += (1 - phi) * CGs; } else { Es -= CGs; grantorPaid += CGs; }
       Bs = Vs;
       if (saleAppliesToBaseline) { CGb = tauCg * pos(Vb - Bb); Bb = Vb; Eb -= CGb; }
       if (!swapped) { const cgSelf = tauCg * pos(Tself - Bself); Tself -= cgSelf; Bself = Tself; }
