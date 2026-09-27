@@ -78,7 +78,8 @@ Do not resolve silently.
 
 ## Current commit
 See docs/changes/2026-09-27-ing-comparison/handback.md (latest model change: ING comparison),
-docs/changes/2026-09-26-ci-deploy/handback.md (deploy pipeline) and
+docs/changes/2026-09-27-pages-branch-source/handback.md and docs/changes/2026-09-26-ci-deploy/handback.md
+(deploy pipeline) and
 docs/changes/2026-09-26-idgt-rebuild/handback.md (model and engine rebuild)
 
 ## NEXT SESSIONS ROADMAP

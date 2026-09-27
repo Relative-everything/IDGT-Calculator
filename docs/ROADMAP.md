@@ -44,9 +44,9 @@ them. Work on branch <branch-name>; commit per step; push; write handback.md; do
 Status of the branch `claude/admiring-carson-qxka1z` at handback: contains `main`, fast-forward
 mergeable, no conflicts; fresh clone → `npm ci`, 97 tests green, lint 0, build OK.
 1. Merge the branch into `main` (fast-forward or merge commit; both are clean).
-2. Deploy: superseded by `docs/changes/2026-09-26-ci-deploy`. Once Settings → Pages → Source is
-   **GitHub Actions**, every push to `main` publishes itself. `npm run deploy` was removed: it pushed
-   to the `gh-pages` branch, which the Actions source does not serve.
+2. Deploy: superseded by `docs/changes/2026-09-26-ci-deploy` and
+   `docs/changes/2026-09-27-pages-branch-source`. Every push to `main` publishes itself under either
+   Pages source (`gh-pages` branch or GitHub Actions). `npm run deploy` stays removed; CI writes `gh-pages`.
 3. Smoke-check the live site: ranking renders, the mortality banner shows, "Download CSV" works.
 Acceptance: live URL shows the v1 build; `main` == the handback commit or its merge.
 
@@ -187,10 +187,10 @@ with a seed (deterministic tests on the sample mean); PDF: print stylesheet + `w
 equal direct re-evaluation; Monte Carlo mean within tolerance of the analytic mean.
 
 ## Phase 7 — Toolchain and CI (Lite)
-CI half done in `docs/changes/2026-09-26-ci-deploy`: test + lint + build on every push, and `main`
-deploys through the GitHub Actions Pages source, GitHub's documented flow for a build step (GitHub's
-docs say `GITHUB_TOKEN` pushes to `gh-pages` start no Pages build; popular push actions report
-otherwise, so treat that as unsettled). Remaining: `vitest` 5.x (drops the embedded Vite 5),
+CI half done in `docs/changes/2026-09-26-ci-deploy` and `docs/changes/2026-09-27-pages-branch-source`:
+test + lint + build on every push, and `main` publishes through the configured Pages source: the
+GitHub Actions source (`deploy-pages`) or the `gh-pages` branch (commit, then an API build request,
+since GitHub's docs say `GITHUB_TOKEN` pushes start no Pages build). Remaining: `vitest` 5.x (drops the embedded Vite 5),
 `vite` ≥ 8.0.16, `npm audit` clean, optional Playwright smoke screenshot artifact. Acceptance: green
 workflow on `main`, site updated by CI.
 

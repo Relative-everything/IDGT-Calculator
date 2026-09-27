@@ -95,10 +95,15 @@ npm run lint       # eslint
 npm run build      # production build to dist/
 ```
 Deploy: every push runs lint, tests and the build ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml));
-a push to `main` also publishes `dist/` to GitHub Pages. Requires Settings → Pages → Source:
-**GitHub Actions**; skip the workflow templates that page suggests, since this workflow already
-publishes the site and a template would publish the unbuilt repository root. Redeploy by hand:
-Actions → Build and deploy → Run workflow on `main`.
+a push to `main` also publishes `dist/` to GitHub Pages through the source set under Settings →
+Pages → Build and deployment, with no settings change needed:
+- **Deploy from a branch**, `gh-pages` / (root) (the setting as of 2026-09-27): CI commits the build
+  to `gh-pages` and requests a Pages build.
+- **GitHub Actions**: CI deploys the build directly. Skip the workflow templates that page suggests;
+  a template would publish the unbuilt repository root.
+
+Any other source fails the "Pages source" job on every push. After deploying, CI checks that the live
+page is this build. Redeploy by hand: Actions → Build and deploy → Run workflow on `main`.
 
 Stack: React 19, Vite 8, Tailwind CSS 4, Vitest. No server, no localStorage; scenarios move as JSON
 files and the ranking exports as CSV.
