@@ -1,13 +1,15 @@
 # Lint, test and build every branch push; publish main to GitHub Pages.
 #
-# Needs Settings → Pages → Build and deployment → Source: "GitHub Actions". Pushing dist/ to a
-# gh-pages branch from here would not publish: GitHub starts no Pages build for commits pushed with
-# the workflow's GITHUB_TOKEN. Evidence and decisions: docs/changes/2026-09-26-ci-deploy/plan.md.
+# Needs Settings → Pages → Build and deployment → Source: "GitHub Actions", GitHub's documented flow for
+# a site with a build step; the deploy job gets pages/id-token scopes only, never repository write. (GitHub's
+# docs also say GITHUB_TOKEN pushes to a gh-pages branch start no Pages build, although popular push actions
+# report otherwise.) Evidence and decisions: docs/changes/2026-09-26-ci-deploy/plan.md and review.md.
 name: Build and deploy
 
 on:
   push:
-    branches: ['**']
+    # gh-pages holds built files only (no package.json), so a push there has nothing to build.
+    branches: ['**', '!gh-pages']
   workflow_dispatch:
 
 permissions:
@@ -64,9 +66,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          build_type=$(gh api "repos/${GITHUB_REPOSITORY}/pages" --jq .build_type)
+          build_type=$(gh api "repos/${GITHUB_REPOSITORY}/pages" --jq .build_type) || {
+            echo "::error title=Pages source::Could not read the Pages settings. Check that Pages is enabled under Settings → Pages."
+            exit 1
+          }
           if [ "$build_type" != "workflow" ]; then
-            echo "::error title=Pages source::Pages builds from a branch (build_type=${build_type}). Set Settings → Pages → Build and deployment → Source to \"GitHub Actions\", then re-run this job."
+            echo "::error title=Pages source::Pages is not set to build from GitHub Actions (build_type=${build_type}). Set Settings → Pages → Build and deployment → Source to \"GitHub Actions\" and skip the suggested templates, then use \"Re-run all jobs\": the uploaded site expires after one day."
             exit 1
           fi
       - name: Deploy
@@ -81,16 +86,20 @@ jobs:
             echo "::error::The build job did not report the hash of dist/index.html."
             exit 1
           fi
+          if [ -z "$PAGE_URL" ]; then
+            echo "::error::deploy-pages did not report the page URL."
+            exit 1
+          fi
           url="${PAGE_URL%/}/"
           origin=$(printf '%s' "$url" | grep -oE '^https?://[^/]+')
-          # The query string bypasses CDN copies of the previous index.html.
+          # The query string, unique per attempt and per re-run, bypasses CDN copies of the previous index.html.
           for attempt in $(seq 1 12); do
-            if curl -fsSL --max-time 30 "${url}?v=${GITHUB_RUN_ID}-${attempt}" -o live.html &&
+            if curl -fsSL --max-time 30 "${url}?v=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${attempt}" -o live.html &&
               [ "$(sha256sum live.html | cut -d' ' -f1)" = "$EXPECTED_SHA256" ]; then
               break
             fi
             if [ "$attempt" -eq 12 ]; then
-              echo "::error::${url} is not serving this build's index.html after 2 minutes."
+              echo "::error::${url} is not serving this build's index.html after 12 attempts."
               exit 1
             fi
             sleep 10

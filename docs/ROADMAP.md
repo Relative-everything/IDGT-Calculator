@@ -172,8 +172,9 @@ equal direct re-evaluation; Monte Carlo mean within tolerance of the analytic me
 
 ## Phase 7 — Toolchain and CI (Lite)
 CI half done in `docs/changes/2026-09-26-ci-deploy`: test + lint + build on every push, and `main`
-deploys through the GitHub Actions Pages source (not a `gh-pages` push: GitHub starts no Pages build
-for commits pushed with `GITHUB_TOKEN`). Remaining: `vitest` 5.x (drops the embedded Vite 5),
+deploys through the GitHub Actions Pages source, GitHub's documented flow for a build step (GitHub's
+docs say `GITHUB_TOKEN` pushes to `gh-pages` start no Pages build; popular push actions report
+otherwise, so treat that as unsettled). Remaining: `vitest` 5.x (drops the embedded Vite 5),
 `vite` ≥ 8.0.16, `npm audit` clean, optional Playwright smoke screenshot artifact. Acceptance: green
 workflow on `main`, site updated by CI.
 
