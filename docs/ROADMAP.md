@@ -44,9 +44,9 @@ them. Work on branch <branch-name>; commit per step; push; write handback.md; do
 Status of the branch `claude/admiring-carson-qxka1z` at handback: contains `main`, fast-forward
 mergeable, no conflicts; fresh clone → `npm ci`, 97 tests green, lint 0, build OK.
 1. Merge the branch into `main` (fast-forward or merge commit; both are clean).
-2. Deploy: `npm ci && npm run build && npm run deploy` publishes `dist/` to the `gh-pages` branch
-   (package.json `homepage` and `vite.config.js` `base: '/IDGT-Calculator/'` are already aligned).
-   Alternatively let Phase 7 add a GitHub Actions deploy so `main` publishes itself.
+2. Deploy: superseded by `docs/changes/2026-09-26-ci-deploy`. Once Settings → Pages → Source is
+   **GitHub Actions**, every push to `main` publishes itself. `npm run deploy` was removed: it pushed
+   to the `gh-pages` branch, which the Actions source does not serve.
 3. Smoke-check the live site: ranking renders, the mortality banner shows, "Download CSV" works.
 Acceptance: live URL shows the v1 build; `main` == the handback commit or its merge.
 
@@ -187,9 +187,12 @@ with a seed (deterministic tests on the sample mean); PDF: print stylesheet + `w
 equal direct re-evaluation; Monte Carlo mean within tolerance of the analytic mean.
 
 ## Phase 7 — Toolchain and CI (Lite)
-`vitest` 5.x (drops the embedded Vite 5), `vite` ≥ 8.0.16, `npm audit` clean; GitHub Actions:
-test + lint + build on every push, deploy `dist/` to `gh-pages` on `main`, optional Playwright
-smoke screenshot artifact. Acceptance: green workflow on `main`, site updated by CI.
+CI half done in `docs/changes/2026-09-26-ci-deploy`: test + lint + build on every push, and `main`
+deploys through the GitHub Actions Pages source, GitHub's documented flow for a build step (GitHub's
+docs say `GITHUB_TOKEN` pushes to `gh-pages` start no Pages build; popular push actions report
+otherwise, so treat that as unsettled). Remaining: `vitest` 5.x (drops the embedded Vite 5),
+`vite` ≥ 8.0.16, `npm audit` clean, optional Playwright smoke screenshot artifact. Acceptance: green
+workflow on `main`, site updated by CI.
 
 ## Phase 8 — UX polish backlog (Lite; pick items)
 - Ranking/ledger tables: sticky first column and a "fit to width" density toggle.

@@ -77,10 +77,12 @@ Do not resolve silently.
   grantor-domicile resident-trust states and the NY/CA grantor-level rules change it.
 
 ## Current commit
-See docs/changes/2026-09-27-ing-comparison/handback.md (previous: docs/changes/2026-09-26-idgt-rebuild/handback.md)
+See docs/changes/2026-09-27-ing-comparison/handback.md (latest model change: ING comparison),
+docs/changes/2026-09-26-ci-deploy/handback.md (deploy pipeline) and
+docs/changes/2026-09-26-idgt-rebuild/handback.md (model and engine rebuild)
 
 ## NEXT SESSIONS ROADMAP
 Follow docs/ROADMAP.md phase by phase (Phase 1: verify the SSA life table; Phase 2: installment
 sale; Phase 3: GRAT — term-certain §7520 factor, no Table 2010CM needed; Phase 4: state tax with a
-verified 2026 table; then SLAT/DSUE, sensitivity/exports, CI, UX polish). Each phase runs under the
+verified 2026 table; then SLAT/DSUE, sensitivity/exports, toolchain upgrade, UX polish). Each phase runs under the
 sdlc-loop: plan accepted and golden values builder-confirmed before source edits.
