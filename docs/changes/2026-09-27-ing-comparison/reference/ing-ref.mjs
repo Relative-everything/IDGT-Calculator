@@ -116,7 +116,8 @@ export function simulateIdgt(inp, swapYear) {
     const dET = ETb - ETs;
     const dSU = SUb - SUs;
     const b1 = b0 - (Tself - Ug);
-    const b2 = b1 - (T - Tself);
+    const fSw = swapped ? f : 1; // model.md §2 amendment to v1 §7: discount haircut on the consideration goes to Resid
+    const b2 = b1 - (T - fSw * Tself);
     const b3 = b2 - (tauE > 0 ? G / tauE : 0) + dTWgt + add2035;
     const freeze = tauE * (pos(b0) - pos(b1));
     const burnC = tauE * (pos(b1) - pos(b2));
@@ -131,7 +132,8 @@ export function simulateIdgt(inp, swapYear) {
   return { Ug, R, Uc, G, BT0, rows, infeasible };
 }
 
-/** One self-taxed trust path (model.md §3 recursion) with rates (tauO, tauC) and fee c. */
+/** One self-taxed trust path (model.md §3 recursion) with rates (tauO, tauC) and fee c.
+ *  A fee beyond the after-tax yield liquidates a slice with pro-rata basis (Reg. §1.61-6(a)) and a taxable gain. */
 function trustPath(inp, tauO, tauC, c) {
   const { FMV, B0, g, y, S = 0, gr = g, yr = y, N } = inp;
   let V = FMV, B = B0;
@@ -142,11 +144,20 @@ function trustPath(inp, tauO, tauC, c) {
     const Y = yt * V;
     const tax = tauO * Y;
     const fee = c * V;
-    V = V * (1 + gt) + Y - tax - fee;
-    B += Y - tax - fee;
-    let CG = 0;
-    if (S > 0 && t === S) { CG = tauC * pos(V - B); V -= CG; B = V; }
-    out.push({ t, V, B, Y, tax, fee, CG });
+    const Vpre = V * (1 + gt) + Y;
+    const D = Y - tax - fee;
+    let gainL = 0, CGL = 0;
+    if (D >= 0) { V = Vpre - tax - fee; B += D; }
+    else {
+      const L = -D;
+      gainL = L * Math.max(0, 1 - B / Vpre);
+      CGL = tauC * gainL;
+      B = B * (1 - L / Vpre);
+      V = Vpre + D - CGL;
+    }
+    let gainS = 0, CG = 0;
+    if (S > 0 && t === S) { gainS = pos(V - B); CG = tauC * gainS; V -= CG; B = V; }
+    out.push({ t, V, B, Y, tax, fee, gainL, CGL, gainS, CG });
   }
   return out;
 }
@@ -154,23 +165,27 @@ function trustPath(inp, tauO, tauC, c) {
 /** ING scenario and decomposition (model.md §3–§4). Uses the HOLD side from simulateIdgt(inp, 0). */
 export function simulateIng(inp) {
   const { tauOrd, tauCg, tauBene, tauE, d, rE, E0, k = 1, delta = 0, discountAtDeath = false, N,
-    ingFedOrd, ingFedLtcg, ingStateRate, ingAdminRate = 0, niit } = inp;
+    ingFedOrd, ingFedLtcg, ingStateRate, ingAdminRate = 0, niit, stateOrd = 0, stateCg = 0, ingStateTaxOnGrantor = false } = inp;
   const tauNo = ingFedOrd + niit + ingStateRate;
   const tauNc = ingFedLtcg + niit + ingStateRate;
+  const sgOrd = ingStateTaxOnGrantor ? stateOrd : 0; // grantor-level home-state tax on the ING (NY §612(b)(41); CA §17082)
+  const sgCg = ingStateTaxOnGrantor ? stateCg : 0;
   const v = 1 / (1 + d);
   const vk = Math.pow(v, k);
   const f = discountAtDeath ? 1 - delta : 1;
   const hold = simulateIdgt({ ...inp, burnShare: 1 }, 0);
-  const same = trustPath(inp, tauOrd, tauCg, 0);
+  const same = trustPath(inp, tauOrd - sgOrd, tauCg - sgCg, 0);
   const rate = trustPath(inp, tauNo, tauNc, 0);
   const ing = trustPath(inp, tauNo, tauNc, ingAdminRate);
   const usedPrior = Math.min(inp.P ?? 0, inp.XP ?? inp.X0);
   const baseB = (TE, t) => TE + (inp.P ?? 0) - Math.max(0, (inp.P ?? 0) - (inp.XP ?? inp.X0)) - Math.max(inp.X0 * Math.pow(1 + inp.pi, t - 1), usedPrior);
   const rows = [];
+  let En = E0;
   for (let t = 1; t <= N; t += 1) {
     const h = hold.rows[t - 1];
-    const En = E0 * Math.pow(1 + rE, t);
-    const Vn = ing[t - 1].V, Bn = ing[t - 1].B;
+    const r = ing[t - 1];
+    En = En * (1 + rE) - sgOrd * r.Y - sgCg * (r.gainS + r.gainL);
+    const Vn = r.V, Bn = r.B;
     const Vsame = same[t - 1].V, Vrate = rate[t - 1].V;
     const inclN = Vn * f;
     const TEn = En + inclN;
@@ -194,7 +209,7 @@ export function simulateIng(inp) {
     const feeNet = fee - tauE * (pos(c3) - pos(c2));
     const stepUp = dSU;
     const DF = Math.pow(v, t);
-    rows.push({ t, Xt: h.Xt, Vb: h.Vb, Eb: h.Eb, Hb: h.Hb, ETb: h.ETb, Yn: ing[t - 1].Y, taxN: ing[t - 1].tax, feeN: ing[t - 1].fee, CGn: ing[t - 1].CG,
+    rows.push({ t, Xt: h.Xt, Vb: h.Vb, Eb: h.Eb, Hb: h.Hb, ETb: h.ETb, Yn: r.Y, taxN: r.tax, feeN: r.fee, gainL: r.gainL, CGL: r.CGL, CGn: r.CG,
       Vn, Bn, Vsame, Vrate, En, inclN, TEn, baseN, c3check: c3 - baseN, ETn, SUn, Hn, dH, dTW, dET, dSU, loc, ss, fee, locNet, ssNet, feeNet, stepUp,
       sum: locNet + ssNet + feeNet + stepUp, DF, PV: dH * DF });
   }
@@ -233,7 +248,7 @@ export const baseInp = {
   tauOrd: 0.458, tauCg: 0.288, tauBene: 0.25, tauE: 0.40, d: 0.04, rE: 0.03, pi: 0.02,
   X0: 15_000_000, P: 0, E0: 20_000_000, k: 1, N: 3,
   stateOrd: 0.05, stateCg: 0.05, niit: 0.038,
-  ingFedOrd: 0.37, ingFedLtcg: 0.20, ingStateRate: 0, ingAdminRate: 0, burnShare: 1,
+  ingFedOrd: 0.37, ingFedLtcg: 0.20, ingStateRate: 0, ingAdminRate: 0, ingStateTaxOnGrantor: false, burnShare: 1,
 };
 
 function reportIdgt(label, inp, q, swapYears, verbose = true) {
@@ -261,7 +276,7 @@ function reportIng(label, inp, q, verbose = true) {
   const r = npvIng(inp, q);
   console.log(`-- ING rates: tau_n_ord=${f6(r.tauNo)} tau_n_cg=${f6(r.tauNc)} fee=${inp.ingAdminRate}`);
   if (verbose) for (const row of r.rows) {
-    console.log(`   t=${row.t} X_t=${f2(row.Xt)} Vb=${f6(row.Vb)} Eb=${f6(row.Eb)} | Yn=${f6(row.Yn)} taxN=${f6(row.taxN)} feeN=${f6(row.feeN)} CGn=${f6(row.CGn)} Vn=${f6(row.Vn)} Bn=${f6(row.Bn)} Vsame=${f6(row.Vsame)} Vrate=${f6(row.Vrate)} En=${f6(row.En)}`);
+    console.log(`   t=${row.t} X_t=${f2(row.Xt)} Vb=${f6(row.Vb)} Eb=${f6(row.Eb)} | Yn=${f6(row.Yn)} taxN=${f6(row.taxN)} feeN=${f6(row.feeN)} gainL=${f6(row.gainL)} CGL=${f6(row.CGL)} CGn=${f6(row.CGn)} Vn=${f6(row.Vn)} Bn=${f6(row.Bn)} Vsame=${f6(row.Vsame)} Vrate=${f6(row.Vrate)} En=${f6(row.En)}`);
     console.log(`        ING: inclN=${f6(row.inclN)} TEn=${f6(row.TEn)} baseN=${f6(row.baseN)} (c3-baseN=${row.c3check.toExponential(2)}) ETn=${f6(row.ETn)} SUn=${f6(row.SUn)} Hn=${f6(row.Hn)}  HOLD: ETb=${f6(row.ETb)} Hb=${f6(row.Hb)}`);
     console.log(`        dH=${f6(row.dH)} dTW=${f6(row.dTW)} dET=${f6(row.dET)} dSU=${f6(row.dSU)} | loc=${f6(row.loc)} ss=${f6(row.ss)} fee=${f6(row.fee)} -> locNet=${f6(row.locNet)} ssNet=${f6(row.ssNet)} feeNet=${f6(row.feeNet)} stepUp=${f6(row.stepUp)} sum=${f6(row.sum)} DF=${f6(row.DF)} PV=${f6(row.PV)}`);
   }
@@ -285,4 +300,9 @@ if (process.argv[1] && process.argv[1].endsWith('ing-ref.mjs')) {
   console.log(`   max |T - Tself| over years = ${Math.max(...J0[0].rows.map((r) => Math.abs(r.T - r.Tself))).toExponential(3)}`);
   reportIng('FIXTURE I3 (machine): ING with a 0.5% administration fee', { ...baseInp, ingAdminRate: 0.005 }, q3);
   reportIng('FIXTURE I4 (machine): ING, estate below the exclusion (E0 = 10,000,000): dH must equal dTW', { ...baseInp, E0: 10_000_000 }, q3);
+  reportIng('FIXTURE I5 (machine): ING, fee 1% beyond the after-tax yield (y 0.5%, basis 0), sale in year 3 — pro-rata basis, liquidation gain', { ...baseInp, B0: 0, y: 0.005, ingAdminRate: 0.01, S: 3, gr: 0.03, yr: 0 }, q3);
+  const I6 = reportIng('FIXTURE I6 (machine): ING with the home state taxing the grantor (NY/CA flag): ssNet must be 0, E^n carries the state burn', { ...baseInp, ingStateTaxOnGrantor: true }, q3);
+  console.log(`   max |ssNet| = ${Math.max(...I6.rows.map((r) => Math.abs(r.ssNet))).toExponential(3)}`);
+  const J3 = reportIdgt('CHECK J3: phi=0, swap s=1, delta 30% with discountAtDeath -> burn must be exactly 0 (v1 §7 b2 amendment)', { ...baseInp, burnShare: 0, delta: 0.30, discountAtDeath: true, N: 3 }, q3, [1], false);
+  console.log(`   max |burn_t| = ${Math.max(...J3[1].rows.map((r) => Math.abs(r.burnC))).toExponential(3)}; resid_3 = ${f6(J3[1].rows[2].resid)}; sum check = ${Math.max(...J3[1].rows.map((r) => Math.abs(r.sum - r.dH))).toExponential(3)}`);
 }

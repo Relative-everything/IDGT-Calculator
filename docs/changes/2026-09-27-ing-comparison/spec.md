@@ -9,8 +9,8 @@ R2. With φ = 0 and no swap the Level B burn component is exactly zero in every 
 R3. `simulateIng(inp, N)` / `evaluateIng(inp, idgt)` implement model.md §3–§5 and return the output
     shape of §9; the four net components sum to ΔH^n_t (relative 1e-9) and their NPVs sum to NPV^n.
 R4. `solveRoot` (model.md §6) never returns a value without a bracketed sign change; the three
-    breakevens return either a root at which |f| is within tolerance or a `reason`; a test proves the
-    verdict flips across each returned root.
+    breakevens return either a root at which |f| is within tolerance or a `reason`, always with fLo, fHi,
+    crossings and ingWinsAbove; a test proves the verdict flips across each returned root.
 R5. `comparisonGrid` (model.md §7) returns Δ_opt for every cell; the cell at the input's own state rate
     and φ equals the headline Δ_opt when the input lies on the lattice.
 R6. Golden Fixture I (ING; model.md §3 on the v1 Fixture A base with the grantor's state rate 5% on both
@@ -18,9 +18,9 @@ R6. Golden Fixture I (ING; model.md §3 on the v1 Fixture A base with the granto
     are hand-derived in plan.md, machine-checked by `reference/ing-ref.mjs`, and asserted in
     `ingGolden.test.js` (tolerance 0.005 money / 1e-9 ratio) with the annotation "reference-derived;
     awaiting builder confirmation".
-R7. Every new UI field (burnShare, ingFedOrd, ingFedLtcg, ingStateRate, ingAdminRate) reaches the engine
+R7. Every new UI field (burnShare, ingFedOrd, ingFedLtcg, ingStateRate, ingAdminRate, ingStateTaxOnGrantor) reaches the engine
     and moves at least one output; `buildInputs.test.js` gains a case per field. The existing
-    `stateOrd`/`stateLtcg` fields are passed to the engine additionally as `stateOrd`/`stateCg`.
+    `stateOrd`/`stateLtcg`/`niit` fields are passed to the engine additionally as `stateOrd`/`stateCg`/`niit`.
 R8. Validation rejects every out-of-range value of model.md §8 with a field-level message; the three
     warnings are emitted with `{code, data}` and the text lives in `src/components/warnings.js`.
 R9. UI: an "ING trust vs IDGT" input card; the ranking table gains "NPV · ING" and a structure badge; an

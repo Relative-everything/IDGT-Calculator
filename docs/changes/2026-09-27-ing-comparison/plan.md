@@ -60,7 +60,37 @@ deleted: none.
 8. handback.md; push `claude/ing-trust-idgt-comparison-rzas5s`. No PR.
 
 ## Design-review corrections
-(filled in after the review workflow; each line: finding → change made to model.md)
+Applied to model.md revision 2 (2026-09-27) from the adversarial review (five lenses; each finding
+verified by a skeptic — verdicts recorded in handback.md). Finding → change:
+- [tax-law, important] "0% state rate" was described as the normal ING case → §1 τ^n_st note rewritten:
+  0 only for intangibles in a no-tax situs; source-state income and grantor-domicile resident-trust
+  states (CT, IL, PA, MN, NE, OH, VT, VA, DC, WI — M) require a rate; permanent hint in the input panel
+  and an assumptions line on the card (a warning would fire on every default asset — departure from
+  the reviewer's proposed `ING_STATE_RATE_ZERO` code, recorded here).
+- [tax-law] NY §612(b)(41) / CA §17082 levy the tax on the grantor, not the trust → new boolean
+  `ingStateTaxOnGrantor`: σ_ord/σ_cg charged to E^n; V^{same} pays only the non-state part from the
+  trust; the rate saving is exactly zero (Fixture I6).
+- [tax-law] Reg. §25.2511-2(e) cited backwards → §0/§10 rest incompleteness on (b) and (c); (e) governs
+  attribution of the consent power; inclusion of the entire trust (§2038(a)(1); O'Malley); no-rule list.
+- [tax-law] §675 is not defeated by adverse consent → §0/§10: §674(a)/§677(a) by the committee,
+  §674(b)(5)(A) for the HEMS power, §675 by omitting administrative powers (no §675(4)(C)).
+- [tax-law] flat-rate overstatement figure → ≈ $2,000 (§1(e)) + ≈ $600 (NIIT threshold) a year and
+  ≈ $1,300 once at a sale (§1(h)); exact for an ESBT S-portion; N-1 amended.
+- [tax-law] Rev. Rul. 2004-64 second prong (state creditor law) and CCA 202352018 → §2, §8, §10.
+- [math, important] ING basis could go negative when the fee exceeds the after-tax yield → §3: pro-rata
+  basis on the liquidated slice (Reg. §1.61-6(a)) with a taxable gain; invariant B^n_t ≥ 0; warning
+  trigger tests both rate profiles; N-4 rewritten (Fixture I5).
+- [math] V^{same} is not v1's T^self when G > 0 and S ≥ 1 → §4: computed from (FMV, B_0), never taken
+  from the ledger's T^self row; invariant test with the G > 0 ∧ S ≥ 1 negative control.
+- [math] f(φ) is not monotone → §6: success shape carries fLo, fHi, crossings, ingWinsAbove; reason
+  labels defined on the same-sign case; readings conditional on the signs; coarse 11-point scan first.
+- [math] positivity of V^n not implied by v1's rule → §8: explicit `ingAdminRate` error
+  1 + g + (1 − τ^n_ord) y − c > 0 (both rate profiles).
+- [math] "Level A/B unchanged in form" inherited v1's single-V formula → §2 states Level A with V^b/V^s
+  and lists the engine reads that must split.
+- [math] burn ≠ 0 at φ = 0 after a swap with discountAtDeath → §2 amends v1 §7: b2 = b1 − (T − f_sw·T^self);
+  no accepted golden moves (Fixture J3 checks burn ≡ 0).
+- [math] NIIT not an engine field → §1 adds `niit` (passed un-summed for the trust stacks).
 
 ## Golden values (Gate 2 — Level B; awaiting builder confirmation)
 Derivation script and full per-year ledgers: `reference/ing-ref.mjs` and `reference/ing-ref.out`
@@ -85,6 +115,9 @@ the engine under test at build time). **Status: NOT yet confirmed by the builder
 | J2 (machine) | IDGT φ = 0.5 with the same sale | NPV(none) 19,263.263580; NPV(1) 63,944.031426 |
 | I3 (machine) | ING with a 0.5% fee | NPV^n −8,244.931766 (feeNet −9,320.942150) |
 | I4 (machine) | ING, E_0 = 10,000,000 | ΔH^n_t = ΔTW^n_t every year; NPV^n 1,793.350639 |
+| I5 (machine) | ING, basis 0, y 0.5%, fee 1% (beyond the after-tax yield), sale in year 3 (g_r 3%, y_r 0) | NPV^n 22,528.617551 (ssNet 33,141.120044; feeNet −10,524.235637; locNet −88.266856); B^n_t ≥ 0 every year |
+| I6 (machine) | ING with `ingStateTaxOnGrantor` (NY/CA) | ssNet exactly 0 every year; NPV^n −708.510938 (all location) |
+| J3 (machine) | IDGT φ = 0, swap s = 1, δ 30% with discountAtDeath | burn component exactly 0 every year (b2 amendment); NPV(1) 35,517.353498; resid_3 −139,497.901517 |
 
 Plain-English derivation, Fixture I (ING, death at the end of year 3):
 Year 1: yield 2% × 1,000,000 = 20,000. The ING pays its own tax at 40.8%: 8,160 (the grantor would have
