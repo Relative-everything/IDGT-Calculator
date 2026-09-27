@@ -1,6 +1,7 @@
 // State → engine → results. The only place the UI calls the engine.
 import { useDeferredValue, useMemo } from 'react';
 import { evaluateAsset, resolveSwapProfile } from '../engine/idgtModel.js';
+import { evaluateIng } from '../engine/ingModel.js';
 import { validateInputs } from '../engine/validate.js';
 import { rankAssets } from '../engine/ranking.js';
 import { buildEngineInputs, validateUiFields, FIELD_LABELS } from './buildInputs.js';
@@ -26,7 +27,8 @@ export function useIdgtModel({ grantor, estate, settings, assets }) {
       if (labelled.length) return { id: asset.id, name: asset.name, inputs, errors: labelled, warnings, result: null };
       try {
         const result = evaluateAsset(inputs);
-        return { id: asset.id, name: asset.name, inputs, errors: [], warnings: result.warnings, result };
+        const ing = evaluateIng(inputs, result); // ING comparison on the same ledger (ING model.md §3–§5)
+        return { id: asset.id, name: asset.name, inputs, errors: [], warnings: result.warnings, result, ing };
       } catch (err) {
         return { id: asset.id, name: asset.name, inputs, errors: [{ field: 'engine', label: 'Model', message: err.message }], warnings, result: null };
       }

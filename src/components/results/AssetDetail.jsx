@@ -52,8 +52,8 @@ export default function AssetDetail({ entry }) {
 
       <div className="mt-5">
         <h3 className="text-sm font-semibold text-ink">Per-death-year ledger</h3>
-        <p className="mb-2 text-xs text-muted">What heirs receive if the grantor dies at the end of each year, keeping the asset versus having gifted it.</p>
-        <LedgerTable rowsNone={r.rows.none} rowsOpt={r.rows.opt} sStar={r.sStar} maxYears={entry.inputs?.NDisp} shareBeyondDisplay={r.shareBeyondDisplay} />
+        <p className="mb-2 text-xs text-muted">What heirs receive if the grantor dies at the end of each year, keeping the asset versus having gifted it (or placed it in the ING trust).</p>
+        <LedgerTable rowsNone={r.rows.none} rowsOpt={r.rows.opt} rowsIng={entry.ing?.rows} sStar={r.sStar} maxYears={entry.inputs?.NDisp} shareBeyondDisplay={r.shareBeyondDisplay} />
       </div>
     </Card>
   );

@@ -1,27 +1,29 @@
 import { useState } from 'react';
 import { fmtMoney, fmtPct } from '../format.js';
 
+// Column labels per scenario; the ING rows alias T/ETs/SUs/Hs to the ING's values (engine/ingModel.js).
 const COLS = [
   ['t', 'Year', (r) => r.t],
   ['age', 'Age', (r) => r.age],
   ['q', 'P(death)', (r) => fmtPct(r.q, 2)],
-  ['V', 'Asset value', (r) => fmtMoney(r.V)],
-  ['T', 'Trust holds', (r) => fmtMoney(r.T)],
+  ['V', 'Asset value · keep', (r) => fmtMoney(r.V)],
+  ['T', { gift: 'Trust holds', ing: 'ING trust holds' }, (r) => fmtMoney(r.T)],
   ['Xt', 'Exclusion', (r) => fmtMoney(r.Xt)],
   ['ETb', 'Estate tax · keep', (r) => fmtMoney(r.ETb)],
-  ['ETs', 'Estate tax · gift', (r) => fmtMoney(r.ETs)],
-  ['SUs', "Heirs' CGT · gift", (r) => fmtMoney(r.SUs)],
+  ['ETs', { gift: 'Estate tax · gift', ing: 'Estate tax · ING' }, (r) => fmtMoney(r.ETs)],
+  ['SUs', { gift: "Heirs' CGT · gift", ing: "Heirs' CGT · ING" }, (r) => fmtMoney(r.SUs)],
   ['Hb', 'Heirs · keep', (r) => fmtMoney(r.Hb)],
-  ['Hs', 'Heirs · gift', (r) => fmtMoney(r.Hs)],
+  ['Hs', { gift: 'Heirs · gift', ing: 'Heirs · ING' }, (r) => fmtMoney(r.Hs)],
   ['dH', 'Δ heir wealth', (r) => fmtMoney(r.dH)],
   ['PV', 'PV of Δ', (r) => fmtMoney(r.PV)],
   ['wPV', 'Weighted PV', (r) => fmtMoney(r.wPV)],
 ];
+const labelFor = (label, view) => (typeof label === 'string' ? label : label[view === 'ing' ? 'ing' : 'gift']);
 
 /** Per-death-year ledger; the NPV is the sum of the last column. Truncated to the display horizon. */
-export default function LedgerTable({ rowsNone, rowsOpt, sStar, maxYears, shareBeyondDisplay }) {
+export default function LedgerTable({ rowsNone, rowsOpt, rowsIng, sStar, maxYears, shareBeyondDisplay }) {
   const [view, setView] = useState(sStar > 0 ? 'opt' : 'none');
-  const rows = view === 'opt' ? rowsOpt : rowsNone;
+  const rows = view === 'opt' ? rowsOpt : view === 'ing' && rowsIng ? rowsIng : rowsNone;
   const shown = rows.slice(0, Number.isInteger(maxYears) && maxYears > 0 ? maxYears : rows.length);
   const hidden = rows.length - shown.length;
   return (
@@ -32,12 +34,15 @@ export default function LedgerTable({ rowsNone, rowsOpt, sStar, maxYears, shareB
         <button type="button" onClick={() => setView('opt')} disabled={!(sStar > 0)} className={`rounded px-2 py-0.5 ${view === 'opt' ? 'bg-accent text-accent-ink' : 'border border-line-strong text-ink-2'} disabled:opacity-40`}>
           {sStar > 0 ? `Swap in year ${sStar}` : 'Swap (none is best)'}
         </button>
+        {rowsIng && (
+          <button type="button" onClick={() => setView('ing')} className={`rounded px-2 py-0.5 ${view === 'ing' ? 'bg-accent text-accent-ink' : 'border border-line-strong text-ink-2'}`}>ING trust</button>
+        )}
       </div>
       <div className="scroll-x max-h-[420px] overflow-y-auto">
         <table className="tabular w-full min-w-[1100px] border-collapse text-xs">
           <thead className="sticky top-0 bg-surface">
             <tr className="border-b border-line-strong text-left text-muted">
-              {COLS.map(([k, label]) => <th key={k} className={`px-2 py-1.5 font-medium ${k === 't' || k === 'age' ? 'text-left' : 'text-right'}`}>{label}</th>)}
+              {COLS.map(([k, label]) => <th key={k} className={`px-2 py-1.5 font-medium ${k === 't' || k === 'age' ? 'text-left' : 'text-right'}`}>{labelFor(label, view)}</th>)}
             </tr>
           </thead>
           <tbody>
@@ -53,7 +58,10 @@ export default function LedgerTable({ rowsNone, rowsOpt, sStar, maxYears, shareB
       </div>
       <p className="mt-2 text-xs text-muted">
         Death is valued at the end of each year; the swap (highlighted row) executes at year-end before death. Heirs' CGT is discounted from the sale k years after death.
-        {hidden > 0 && ` ${hidden} later year${hidden === 1 ? '' : 's'} hidden by the display horizon; they carry ${fmtPct(shareBeyondDisplay ?? 0, 1)} of the absolute weighted PV and are included in NPV.`}
+        {view === 'ing' && ' ING view: the trust pays its own income tax and costs, stays in the estate and is stepped up at death; Δ is ING minus keep.'}
+        {hidden > 0 && (view === 'ing'
+          ? ` ${hidden} later year${hidden === 1 ? '' : 's'} hidden by the display horizon; they are included in NPV.`
+          : ` ${hidden} later year${hidden === 1 ? '' : 's'} hidden by the display horizon; they carry ${fmtPct(shareBeyondDisplay ?? 0, 1)} of the absolute weighted PV and are included in NPV.`)}
       </p>
     </div>
   );

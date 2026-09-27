@@ -16,13 +16,13 @@ const STRING_FIELDS = {
   grantor: ['age', 'deathYear', 'fedOrd', 'stateOrd', 'niit', 'fedLtcg', 'stateLtcg'],
   estate: ['otherEstate', 'otherEstateGrowth', 'exclusion', 'exclusionIndexing', 'priorGifts', 'priorGiftYear', 'priorGiftExclusion',
     'estateTaxRate', 'beneFedLtcg', 'beneStateLtcg', 'yearsToSale', 'discountRate', 'maxYears'],
-  settings: ['swapBasisPct', 'swapGrowth', 'swapYield', 'swapTaxRate'],
+  settings: ['swapBasisPct', 'swapGrowth', 'swapYield', 'swapTaxRate', 'burnShare', 'ingFedOrd', 'ingFedLtcg', 'ingStateRate', 'ingAdminRate'],
   asset: ['name', 'fmv', 'discount', 'basis', 'growth', 'yield', 'saleYear', 'postSaleGrowth', 'postSaleYield', 'annualExclusions'],
 };
 const BOOL_FIELDS = {
   grantor: ['useDeathYear'],
   estate: ['beneNiit'],
-  settings: ['discountAtDeath', 'saleAppliesToBaseline', 'swapCustom'],
+  settings: ['discountAtDeath', 'saleAppliesToBaseline', 'swapCustom', 'ingStateTaxOnGrantor'],
   asset: [],
 };
 const ENUM_FIELDS = {
@@ -90,14 +90,19 @@ export function csvCell(v) {
 export function rankingToCsv(ranked) {
   const header = ['Rank', 'Asset', 'Taxable gift', 'Exclusion used', 'Gift tax paid', 'NPV no swap', 'Optimal swap year', 'NPV optimal swap',
     'NPV per $ taxable gift (opt)', 'NPV per $ taxable gift (none)', 'NPV per $ FMV (opt)', 'Deathbed-swap value', 'Expected death year',
-    'Cumulative taxable gift', 'Freeze (opt)', 'Tax burn (opt)', 'Gift tax (opt)', 'Residual (opt)', 'Step-up (opt)'];
+    'Cumulative taxable gift', 'Freeze (opt)', 'Tax burn (opt)', 'Gift tax (opt)', 'Residual (opt)', 'Step-up (opt)',
+    'NPV ING', 'ING minus IDGT (best swap)', 'ING minus IDGT (no swap)', 'Structure', 'ING state saving (net)', 'ING location (net)', 'ING fee (net)', 'ING step-up'];
   const lines = [header.map(csvCell).join(',')];
   for (const row of ranked) {
     const r = row.result;
     const c = r.components.opt;
     lines.push([row.rank, row.name, r.derived.Ug, r.derived.Uc, r.derived.G, r.npvNone, r.sStar === 0 ? 'none' : r.sStar, r.npvOpt,
       r.eff.opt, r.eff.none, r.effPerFMV.opt, r.npvPF, r.derived.expectedDeathYear, row.cumulativeTaxableGift,
-      c.freeze, c.burn, c.giftTax, c.resid, c.stepUp].map(csvCell).join(','));
+      c.freeze, c.burn, c.giftTax, c.resid, c.stepUp,
+      ...(row.ing
+        ? [row.ing.npv, row.ing.vsIdgt.deltaOpt, row.ing.vsIdgt.deltaNone, row.ing.vsIdgt.verdict,
+          row.ing.components.ssNet, row.ing.components.locNet, row.ing.components.feeNet, row.ing.components.stepUp]
+        : [null, null, null, null, null, null, null, null])].map(csvCell).join(','));
   }
   return lines.join('\n');
 }

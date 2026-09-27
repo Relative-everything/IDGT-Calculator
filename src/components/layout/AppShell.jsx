@@ -5,7 +5,7 @@ export default function AppShell({ actions, sidebar, children }) {
         <div className="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-3 px-4 py-3">
           <div>
             <h1 className="text-lg font-semibold leading-tight">IDGT Asset Analyzer</h1>
-            <p className="text-xs text-ink-2">Gift-to-IDGT heir-wealth ranking with optimal swap timing · federal, 2026 law</p>
+            <p className="text-xs text-ink-2">Gift-to-IDGT heir-wealth ranking with optimal swap timing and an ING-trust comparison · federal, 2026 law</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">{actions}</div>
         </div>

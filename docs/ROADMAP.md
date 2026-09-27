@@ -75,6 +75,22 @@ Acceptance: `verified: true`, checksum test green, banner gone, handback lists t
 Optional in the same session: a `mortalityAdjustment` input (multiplier on q_t or an age setback)
 only if the builder supplies an actuarial source (SOA annuitant tables); otherwise leave deferred.
 
+## Phase N — ING trust comparison (Full; engine + UI) — DONE 2026-09-27
+Shipped on branch `claude/ing-trust-idgt-comparison-rzas5s`; change folder
+`docs/changes/2026-09-27-ing-comparison/` (model, plan, handback). An ING (incomplete non-grantor trust) runs
+as a third world on the v1 ledger; the IDGT gains a burn-share input (trustee reimbursement); the selected
+asset gets a comparison card with an exact bridge, a crossover chart, three breakevens (burn share, grantor
+state rate, other estate) and a state-rate × burn-share grid.
+Open: builder confirmation of Fixtures I and J (the golden test is annotated until then).
+Follow-ups, each a candidate phase:
+- **N.1 Toggle-off year** — completed-gift non-grantor trust: grantor-trust status released at the end of
+  year τ, search τ like the swap year. The expert alternative to both vehicles; needs a regime switch in
+  `simulate` and a τ search (O(N²) → cap the grid).
+- **N.2 Distributions and DNI** — a distribution policy for the ING, beneficiaries' rates, throwback.
+- **N.3 State fiduciary-tax table** — source and resident-trust rules per state (needs builder-supplied,
+  verified data, as Phase 4).
+- **N.4 Compressed brackets** — exact §1(e)/§1(h)/§1411 trust schedules from the Rev. Proc. of the year.
+
 ## Phase 2 — Installment sale to the IDGT (Full; engine + UI)
 Goal: a second transfer mechanism per asset, on the same ledger, so gift and sale rank together.
 Model extension (write as `model.md` §S in the phase folder before code):
@@ -186,3 +202,4 @@ smoke screenshot artifact. Acceptance: green workflow on `main`, site updated by
 
 ## Phase dependency map
 0 → 1 → (2 | 3 | 5 | 6 | 8 in any order) ; 4 needs its data first ; 7 any time after 0.
+N (ING comparison) is done; N.1–N.4 follow it in any order; N.3 shares Phase 4's data prerequisite.
