@@ -1,9 +1,13 @@
 # Lint, test and build every branch push; publish main to GitHub Pages.
 #
-# Needs Settings → Pages → Build and deployment → Source: "GitHub Actions", GitHub's documented flow for
-# a site with a build step; the deploy job gets pages/id-token scopes only, never repository write. (GitHub's
-# docs also say GITHUB_TOKEN pushes to a gh-pages branch start no Pages build, although popular push actions
-# report otherwise.) Evidence and decisions: docs/changes/2026-09-26-ci-deploy/plan.md and review.md.
+# Publishes through whichever source Settings → Pages → Build and deployment → Source names, so merging
+# deploys with no settings change:
+# - "GitHub Actions" (build_type workflow): deploy-pages; that job gets pages/id-token scopes only.
+# - "Deploy from a branch", gh-pages / (root) (build_type legacy): commit the build to gh-pages, then request
+#   a Pages build through the API, since GitHub's docs say commits pushed with GITHUB_TOKEN start none.
+#   Only this job gets contents: write.
+# Any other source fails the "Pages source" job on every branch, so a pull request shows it before merge.
+# Evidence and decisions: docs/changes/2026-09-26-ci-deploy/ and docs/changes/2026-09-27-pages-branch-source/.
 name: Build and deploy
 
 on:
@@ -49,10 +53,52 @@ jobs:
         with:
           path: dist
 
+  source:
+    name: Pages source
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pages: read
+    outputs:
+      mode: ${{ steps.source.outputs.mode }}
+      page_url: ${{ steps.source.outputs.page_url }}
+    steps:
+      - name: Read the Pages source
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          site=$(gh api "repos/${GITHUB_REPOSITORY}/pages") || {
+            echo "::error title=Pages source::Could not read the Pages settings. Check that Pages is enabled under Settings → Pages."
+            exit 1
+          }
+          build_type=$(jq -r '.build_type // ""' <<<"$site")
+          branch=$(jq -r '.source.branch // ""' <<<"$site")
+          path=$(jq -r '.source.path // ""' <<<"$site")
+          page_url=$(jq -r '.html_url // ""' <<<"$site")
+          echo "build_type=${build_type} source=${branch}${path} html_url=${page_url}"
+          if [ "$build_type" = workflow ]; then
+            mode=actions
+          elif [ "$build_type" = legacy ] && [ "$branch" = gh-pages ] && [ "$path" = / ]; then
+            mode=branch
+          else
+            echo "::error title=Pages source::This workflow publishes to Source \"GitHub Actions\" or \"Deploy from a branch\" on gh-pages / (root); Pages is set to build_type=${build_type} source=${branch}${path}. Pick one of the two under Settings → Pages → Build and deployment."
+            exit 1
+          fi
+          if [ -z "$page_url" ]; then
+            echo "::error title=Pages source::The Pages API reported no html_url."
+            exit 1
+          fi
+          echo "Merging to main publishes through: ${mode}"
+          {
+            echo "mode=${mode}"
+            echo "page_url=${page_url}"
+          } >> "$GITHUB_OUTPUT"
+
   deploy:
     name: Deploy to GitHub Pages
-    needs: build
-    if: github.ref == 'refs/heads/main'
+    needs: [build, source]
+    if: github.ref == 'refs/heads/main' && needs.source.outputs.mode == 'actions'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -62,24 +108,83 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Require the GitHub Actions Pages source
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          build_type=$(gh api "repos/${GITHUB_REPOSITORY}/pages" --jq .build_type) || {
-            echo "::error title=Pages source::Could not read the Pages settings. Check that Pages is enabled under Settings → Pages."
-            exit 1
-          }
-          if [ "$build_type" != "workflow" ]; then
-            echo "::error title=Pages source::Pages is not set to build from GitHub Actions (build_type=${build_type}). Set Settings → Pages → Build and deployment → Source to \"GitHub Actions\" and skip the suggested templates, then use \"Re-run all jobs\": the uploaded site expires after one day."
-            exit 1
-          fi
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v5
+
+  publish:
+    name: Publish to the gh-pages branch
+    needs: [build, source]
+    if: github.ref == 'refs/heads/main' && needs.source.outputs.mode == 'branch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pages: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: gh-pages
+          path: site
+      # The exact files the build job tested and hashed: upload-pages-artifact's tar of dist/.
+      - uses: actions/download-artifact@v8
+        with:
+          name: github-pages
+          path: ${{ runner.temp }}/pages
+      - name: Commit the build to gh-pages
+        id: commit
+        working-directory: site
+        run: |
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          tar -xf "${RUNNER_TEMP}/pages/artifact.tar"
+          # Vite output needs no Jekyll pass; this marker makes Pages skip it.
+          touch .nojekyll
+          git add -A
+          if git diff --cached --quiet; then
+            echo "gh-pages already holds this build."
+          else
+            git -c user.name='github-actions[bot]' \
+              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              commit -q -m "Deploy ${GITHUB_SHA} (run ${GITHUB_RUN_ID})"
+            git push origin HEAD:gh-pages
+          fi
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Request a Pages build and wait for it
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.commit.outputs.sha }}
+        run: |
+          # GitHub's docs: commits pushed with GITHUB_TOKEN do not trigger a Pages build. Request one.
+          gh api -X POST "repos/${GITHUB_REPOSITORY}/pages/builds" --silent || {
+            echo "::error title=Pages build::The Pages build request was refused; gh-pages holds ${SHA} but may not be published. Switch Settings → Pages → Source to \"GitHub Actions\" (skip the suggested templates), then use \"Re-run all jobs\"."
+            exit 1
+          }
+          # The live-site check decides; this wait fails fast on a build error and otherwise only paces it.
+          for attempt in $(seq 1 60); do
+            latest=$(gh api "repos/${GITHUB_REPOSITORY}/pages/builds/latest" --jq '"\(.status) \(.commit)"') || latest=""
+            echo "attempt ${attempt}: ${latest:-no reply}"
+            if [ "$latest" = "built ${SHA}" ]; then
+              exit 0
+            fi
+            if [ "$latest" = "errored ${SHA}" ]; then
+              message=$(gh api "repos/${GITHUB_REPOSITORY}/pages/builds/latest" --jq '.error.message // ""') || true
+              echo "::error title=Pages build::The Pages build of ${SHA} failed: ${message}"
+              exit 1
+            fi
+            sleep 10
+          done
+          echo "::warning title=Pages build::The Pages API reported no finished build of ${SHA} after 60 attempts; the live-site check decides."
+
+  verify:
+    name: Check the live site
+    needs: [build, source, deploy, publish]
+    if: ${{ !cancelled() && (needs.deploy.result == 'success' || needs.publish.result == 'success') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
       - name: Check the live site serves this build
         env:
-          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+          PAGE_URL: ${{ needs.source.outputs.page_url }}
           EXPECTED_SHA256: ${{ needs.build.outputs.index_sha256 }}
         run: |
           if [ -z "$EXPECTED_SHA256" ]; then
@@ -87,19 +192,20 @@ jobs:
             exit 1
           fi
           if [ -z "$PAGE_URL" ]; then
-            echo "::error::deploy-pages did not report the page URL."
+            echo "::error::The Pages source job did not report the page URL."
             exit 1
           fi
           url="${PAGE_URL%/}/"
           origin=$(printf '%s' "$url" | grep -oE '^https?://[^/]+')
+          attempts=18
           # The query string, unique per attempt and per re-run, bypasses CDN copies of the previous index.html.
-          for attempt in $(seq 1 12); do
+          for attempt in $(seq 1 "$attempts"); do
             if curl -fsSL --max-time 30 "${url}?v=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${attempt}" -o live.html &&
               [ "$(sha256sum live.html | cut -d' ' -f1)" = "$EXPECTED_SHA256" ]; then
               break
             fi
-            if [ "$attempt" -eq 12 ]; then
-              echo "::error::${url} is not serving this build's index.html after 12 attempts."
+            if [ "$attempt" -eq "$attempts" ]; then
+              echo "::error::${url} is not serving this build's index.html after ${attempts} attempts."
               exit 1
             fi
             sleep 10
