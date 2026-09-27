@@ -56,3 +56,31 @@ describe('csv', () => {
     expect(lines[1].startsWith('1,"\'=1+1",')).toBe(true);
   });
 });
+
+describe('ING comparison fields (ING model.md §13)', () => {
+  const withIng = { ...defaults, settings: { ...defaults.settings, burnShare: '100', ingFedOrd: '37', ingFedLtcg: '20', ingStateRate: '0', ingAdminRate: '0', ingStateTaxOnGrantor: false } };
+  it('round-trips the five string fields and the flag; a v1 file without them loads with the defaults', () => {
+    const s = parseScenario(JSON.stringify({ version: 1, settings: { burnShare: '40', ingStateRate: 3.5, ingAdminRate: '0.6', ingStateTaxOnGrantor: true } }), withIng);
+    expect(s.settings.burnShare).toBe('40');
+    expect(s.settings.ingStateRate).toBe('3.5');
+    expect(s.settings.ingAdminRate).toBe('0.6');
+    expect(s.settings.ingStateTaxOnGrantor).toBe(true);
+    expect(s.settings.ingFedOrd).toBe('37');
+    const v1 = parseScenario(JSON.stringify({ version: 1, settings: { rankKey: 'none' } }), withIng);
+    expect(v1.settings.burnShare).toBe('100');
+    expect(v1.settings.ingStateTaxOnGrantor).toBe(false);
+    expect(parseScenario(JSON.stringify({ settings: { ingStateTaxOnGrantor: 'true' } }), withIng).settings.ingStateTaxOnGrantor).toBe(false);
+  });
+  it('the ranking CSV carries the ING columns and neutralises nothing numeric', () => {
+    const row = {
+      rank: 1, name: 'A', cumulativeTaxableGift: 1,
+      result: { derived: { Ug: 1, Uc: 1, G: 0, expectedDeathYear: 3 }, npvNone: 1, sStar: 0, npvOpt: 1, eff: { opt: 1, none: 1 }, effPerFMV: { opt: 1 }, npvPF: 1,
+        components: { opt: { freeze: 0, burn: 0, giftTax: 0, resid: 0, stepUp: 0 } } },
+      ing: { npv: -5.5, vsIdgt: { deltaOpt: -6.5, deltaNone: 2, verdict: 'IDGT' }, components: { ssNet: 1, locNet: -2, feeNet: 0, stepUp: 0 } },
+    };
+    const [header, line] = rankingToCsv([row]).split('\n');
+    expect(header).toContain('NPV ING');
+    expect(header.split(',').length).toBe(line.split(',').length);
+    expect(line.endsWith('-5.5,-6.5,2,IDGT,1,-2,0,0')).toBe(true);
+  });
+});

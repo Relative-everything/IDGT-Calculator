@@ -2,11 +2,13 @@
 import { describe, it, expect } from 'vitest';
 import { buildEngineInputs, parseNum, priorGiftExclusion, validateUiFields } from '../buildInputs.js';
 import { evaluateAsset } from '../../engine/idgtModel.js';
+import { evaluateIng } from '../../engine/ingModel.js';
 import { validateInputs } from '../../engine/validate.js';
 
 const grantor = { age: '65', sex: 'male', useDeathYear: false, deathYear: '20', fedOrd: '37', stateOrd: '5', niit: '3.8', fedLtcg: '20', stateLtcg: '5' };
 const estate = { otherEstate: '20,000,000', otherEstateGrowth: '3', exclusion: '15000000', exclusionIndexing: '2', priorGifts: '0', priorGiftYear: '2025', priorExclusionMode: 'year', priorGiftExclusion: '', estateTaxRate: '40', beneFedLtcg: '20', beneStateLtcg: '5', beneNiit: true, yearsToSale: '1', discountRate: '4', maxYears: '35' };
-const settings = { rankKey: 'opt', discountAtDeath: false, saleAppliesToBaseline: true, swapCustom: false, swapBasisPct: '100', swapGrowth: '0', swapYield: '5.5', swapTaxRate: '45.8' };
+const settings = { rankKey: 'opt', discountAtDeath: false, saleAppliesToBaseline: true, swapCustom: false, swapBasisPct: '100', swapGrowth: '0', swapYield: '5.5', swapTaxRate: '45.8',
+  burnShare: '100', ingFedOrd: '37', ingFedLtcg: '20', ingStateRate: '0', ingAdminRate: '0', ingStateTaxOnGrantor: false };
 const asset = { id: 'a', name: 'A', fmv: '1000000', discount: '0', basis: '200000', growth: '7', yield: '2', saleYear: '0', postSaleGrowth: '6', postSaleYield: '1.5', annualExclusions: '0' };
 
 describe('buildEngineInputs', () => {
@@ -37,6 +39,21 @@ describe('buildEngineInputs', () => {
     const ui = validateUiFields({ grantor: { ...grantor, stateOrd: '' }, estate: { ...estate, beneStateLtcg: 'x' }, settings, asset });
     expect(ui.map((e) => e.field)).toEqual(['stateOrd', 'beneStateLtcg']);
     expect(validateUiFields({ grantor, estate, settings, asset })).toEqual([]);
+  });
+  it('passes the state components and NIIT un-summed; the hook stays the single source of both stacks', () => {
+    const inp = buildEngineInputs({ grantor, estate, settings, asset });
+    expect(inp.stateOrd).toBeCloseTo(0.05, 12);
+    expect(inp.stateCg).toBeCloseTo(0.05, 12);
+    expect(inp.niit).toBeCloseTo(0.038, 12);
+    expect(inp.tauOrd - inp.stateOrd - inp.niit).toBeCloseTo(0.37, 12);
+    expect(inp.tauCg - inp.stateCg - inp.niit).toBeCloseTo(0.20, 12);
+    expect(inp.burnShare).toBe(1);
+    expect(inp.ingFedOrd).toBeCloseTo(0.37, 12);
+    expect(inp.ingStateTaxOnGrantor).toBe(false);
+  });
+  it('a blank ING field is reported on the field itself', () => {
+    const ui = validateUiFields({ grantor, estate, settings: { ...settings, burnShare: '', ingAdminRate: 'x' }, asset });
+    expect(ui.map((e) => e.field)).toEqual(['burnShare', 'ingAdminRate']);
   });
   it('deterministic death year replaces the table', () => {
     const inp = buildEngineInputs({ grantor: { ...grantor, useDeathYear: true, deathYear: '12' }, estate, settings, asset });
@@ -98,4 +115,24 @@ describe('every UI input changes an output', () => {
     expect(res.npvOpt).toBe(baseline.npvOpt);
     expect(res.shareBeyondDisplay).not.toBe(baseline.shareBeyondDisplay);
   });
+});
+
+describe('every ING comparison input changes an output', () => {
+  const base = { grantor, estate: { ...estate, otherEstate: '30000000' }, settings, asset: { ...asset, saleYear: '4' } };
+  const evalBoth = (ui) => { const inp = buildEngineInputs(ui); const idgt = evaluateAsset(inp); return { idgt, ing: evaluateIng(inp, idgt) }; };
+  const ref = evalBoth(base);
+  const outputs = ({ idgt, ing }) => [idgt.npvNone, idgt.npvOpt, ing.npv, ing.components.ssNet, ing.components.feeNet, ing.components.locNet];
+  const changed = (res) => outputs(res).some((v, i) => v !== outputs(ref)[i]);
+  const cases = [
+    ['settings.burnShare', { settings: { ...settings, burnShare: '60' } }],
+    ['settings.ingFedOrd', { settings: { ...settings, ingFedOrd: '35' } }],
+    ['settings.ingFedLtcg', { settings: { ...settings, ingFedLtcg: '15' } }],
+    ['settings.ingStateRate', { settings: { ...settings, ingStateRate: '2' } }],
+    ['settings.ingAdminRate', { settings: { ...settings, ingAdminRate: '0.5' } }],
+    ['settings.ingStateTaxOnGrantor', { settings: { ...settings, ingStateTaxOnGrantor: true } }],
+    ['grantor.stateOrd reaches the ING rate saving', { grantor: { ...grantor, stateOrd: '9' } }],
+  ];
+  for (const [name, patch] of cases) {
+    it(name, () => expect(changed(evalBoth({ ...base, ...patch })), name).toBe(true));
+  }
 });

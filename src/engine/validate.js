@@ -1,7 +1,12 @@
-// Input validation for the IDGT engine (model.md §10.8). Pure, no React.
+// Input validation for the IDGT engine (model.md §10.8) and the ING comparison module
+// (docs/changes/2026-09-27-ing-comparison/model.md §8). Pure, no React.
 // Returns field-level errors (block the run) and warnings ({code, data}; the UI composes the text).
 
-import { MIN_EXCLUSION_FOR_FLAT_RATE, MAX_PROJECTION_YEARS, MAX_GRANTOR_AGE } from './constants.js';
+import {
+  MIN_EXCLUSION_FOR_FLAT_RATE, MAX_PROJECTION_YEARS, MAX_GRANTOR_AGE,
+  DEFAULT_BURN_SHARE, DEFAULT_ING_FED_ORD, DEFAULT_ING_FED_LTCG, DEFAULT_ING_STATE_RATE, DEFAULT_ING_ADMIN_RATE,
+  DEFAULT_ING_STATE_TAX_ON_GRANTOR,
+} from './constants.js';
 import { exclusionAt } from './fedTax.js';
 import { validateLx } from './mortality.js';
 import { BASIC_EXCLUSION_2026 } from '../data/exclusionAmounts.js';
@@ -16,6 +21,47 @@ export function horizonYears(inp) {
   let omega = inp.lx.findIndex((v, i) => i > inp.age && v === 0);
   if (omega === -1) omega = inp.lx.length;
   return Math.max(1, omega - inp.age);
+}
+
+/**
+ * The ING module's engine fields resolved (ING model.md §1). The vehicle's own design fields take the contract
+ * defaults when null/undefined so v1 callers evaluate exactly as before; the client's state components and
+ * NIIT (stateOrd, stateCg, niit) are passed through as given — evaluateIng requires them (validateIngInputs).
+ * Derived stacks: τ^n_ord = τ^n_fed + niit + τ^n_st and τ^n_cg = τ^n_fcg + niit + τ^n_st (§§1(e), 1(h), 641;
+ * §1411(a)(2): a trust pays NIIT above the top-bracket threshold). Grantor-level state tax on the ING's income
+ * (σ^g) equals the grantor's own state components when the home state taxes the grantor on the ING as if it
+ * were a grantor trust (N.Y. Tax Law §612(b)(41); Cal. R&TC §17082), else 0.
+ *
+ * @param {object} inp - flat engine inputs
+ */
+export function resolveIngInputs(inp) {
+  const burnShare = inp.burnShare ?? DEFAULT_BURN_SHARE;
+  const ingFedOrd = inp.ingFedOrd ?? DEFAULT_ING_FED_ORD;
+  const ingFedLtcg = inp.ingFedLtcg ?? DEFAULT_ING_FED_LTCG;
+  const ingStateRate = inp.ingStateRate ?? DEFAULT_ING_STATE_RATE;
+  const ingAdminRate = inp.ingAdminRate ?? DEFAULT_ING_ADMIN_RATE;
+  const ingStateTaxOnGrantor = inp.ingStateTaxOnGrantor ?? DEFAULT_ING_STATE_TAX_ON_GRANTOR;
+  const { stateOrd, stateCg, niit } = inp;
+  return {
+    burnShare, ingFedOrd, ingFedLtcg, ingStateRate, ingAdminRate, ingStateTaxOnGrantor, stateOrd, stateCg, niit,
+    tauNo: ingFedOrd + niit + ingStateRate,
+    tauNc: ingFedLtcg + niit + ingStateRate,
+    sgOrd: ingStateTaxOnGrantor ? stateOrd : 0,
+    sgCg: ingStateTaxOnGrantor ? stateCg : 0,
+  };
+}
+
+/**
+ * Fields evaluateIng needs beyond validateInputs (ING model.md §8): the grantor's state components and NIIT,
+ * which have no engine default. Field-level errors, never thrown.
+ * @returns {{field:string, message:string}[]}
+ */
+export function validateIngInputs(inp) {
+  const errors = [];
+  if (!isNum(inp.stateOrd)) errors.push({ field: 'stateOrd', message: 'The state component of the grantor ordinary rate is required for the ING comparison.' });
+  if (!isNum(inp.stateCg)) errors.push({ field: 'stateCg', message: 'The state component of the grantor capital-gain rate is required for the ING comparison.' });
+  if (!isNum(inp.niit)) errors.push({ field: 'niit', message: 'The NIIT rate is required for the ING comparison.' });
+  return errors;
 }
 
 /**
@@ -57,6 +103,31 @@ export function validateInputs(inp) {
   if (!isNum(inp.rE) || inp.rE <= -1) err('rE', 'Other-estate growth must be above -100%.');
   if (!isNum(inp.pi) || inp.pi <= -1) err('pi', 'Exclusion indexing rate must be above -100%.');
 
+  // ING comparison module (ING model.md §8): the vehicle's fields are validated at their RESOLVED values (a v1
+  // caller that omits them passes on the defaults); the client's state components and NIIT only when given.
+  const ing = resolveIngInputs(inp);
+  if (!isNum(ing.burnShare) || ing.burnShare < 0 || ing.burnShare > 1) err('burnShare', 'Share of the trust tax the grantor bears must be between 0% and 100%.');
+  rateIn('ingFedOrd', ing.ingFedOrd, 0, 1, 'Trust federal ordinary rate');
+  rateIn('ingFedLtcg', ing.ingFedLtcg, 0, 1, 'Trust federal capital-gain rate');
+  rateIn('ingStateRate', ing.ingStateRate, 0, 1, 'State rate the ING bears');
+  if (!isNum(ing.ingAdminRate) || ing.ingAdminRate < 0 || ing.ingAdminRate >= 1) err('ingAdminRate', 'ING administration cost must be at least 0% and below 100% of trust value a year.');
+  if (typeof ing.ingStateTaxOnGrantor !== 'boolean') err('ingStateTaxOnGrantor', 'Home-state treatment of the ING must be on or off.');
+  if (inp.niit != null) rateIn('niit', inp.niit, 0, 1, 'NIIT rate');
+  const niitForBound = isNum(inp.niit) ? inp.niit : 0;
+  if (isNum(ing.niit) && isNum(ing.ingStateRate)) {
+    if (isNum(ing.ingFedOrd) && ing.tauNo >= 1) err('ingFedOrd', 'The trust ordinary stack (federal + NIIT + state) must be below 100%.');
+    if (isNum(ing.ingFedLtcg) && ing.tauNc >= 1) err('ingFedLtcg', 'The trust capital-gain stack (federal + NIIT + state) must be below 100%.');
+  }
+  // The state component sits inside the grantor's stack next to NIIT: 0 ≤ σ ≤ τ − niit (model.md §8).
+  if (inp.stateOrd != null) {
+    if (!isNum(inp.stateOrd) || inp.stateOrd < 0) err('stateOrd', 'State ordinary rate cannot be negative.');
+    else if (isNum(inp.tauOrd) && inp.stateOrd > inp.tauOrd - niitForBound + 1e-12) err('stateOrd', 'State ordinary rate cannot exceed the grantor ordinary rate less NIIT.');
+  }
+  if (inp.stateCg != null) {
+    if (!isNum(inp.stateCg) || inp.stateCg < 0) err('stateCg', 'State capital-gain rate cannot be negative.');
+    else if (isNum(inp.tauCg) && inp.stateCg > inp.tauCg - niitForBound + 1e-12) err('stateCg', 'State capital-gain rate cannot exceed the grantor capital-gain rate less NIIT.');
+  }
+
   // Exclusion and prior gifts
   if (!isNum(inp.X0) || inp.X0 < MIN_EXCLUSION_FOR_FLAT_RATE) {
     err('X0', `Basic exclusion must be at least $${MIN_EXCLUSION_FOR_FLAT_RATE} (the flat-rate reduction of §2001(c) requires it).`);
@@ -77,6 +148,14 @@ export function validateInputs(inp) {
   if (inp.S > 0) {
     if (!isNum(inp.gr) || !isNum(inp.yr) || 1 + inp.gr + inp.yr <= 0) err('gr', 'Post-sale growth plus yield must exceed -100%.');
     if (isNum(inp.yr) && inp.yr < 0) err('yr', 'Post-sale yield cannot be negative.');
+  }
+
+  // ING value factor must stay positive on both rate profiles (model.md §8): 1 + g + (1 − τ^n_ord) y − c > 0.
+  // v1's 1 + g + y > 0 does not imply it once the trust pays its own tax and fee.
+  if (isNum(inp.g) && isNum(inp.y) && isNum(ing.tauNo) && isNum(ing.ingAdminRate) && 1 + inp.g + (1 - ing.tauNo) * inp.y - ing.ingAdminRate <= 0) {
+    err('ingAdminRate', 'The ING would lose all its value in a year: growth plus after-tax yield less the administration cost must exceed -100%.');
+  } else if (inp.S > 0 && isNum(inp.gr) && isNum(inp.yr) && isNum(ing.tauNo) && isNum(ing.ingAdminRate) && 1 + inp.gr + (1 - ing.tauNo) * inp.yr - ing.ingAdminRate <= 0) {
+    err('ingAdminRate', 'After the sale the ING would lose all its value in a year: post-sale growth plus after-tax yield less the administration cost must exceed -100%.');
   }
 
   // Swap consideration: nulls mean "derive the neutral default"; validate the RESOLVED profile.
@@ -106,5 +185,11 @@ export function validateInputs(inp) {
     const afterTax = gSw + (1 - tauSw) * ySw;
     if (Math.abs(afterTax - inp.rE) > 1e-9) warn('NON_NEUTRAL_SWAP', { afterTaxReturn: afterTax, rE: inp.rE });
   }
+
+  // ING comparison (ING model.md §8): the IDGT-ledger warning lives here; the ING's own warnings are emitted by
+  // evaluateIng so they never appear on the IDGT result. φ < 1: a constant reimbursed fraction is the pattern
+  // the implied-understanding caveat of Rev. Rul. 2004-64 describes; the safe harbour also needs state law that
+  // keeps the trust out of the grantor's creditors' reach (§2036(a)(1) otherwise). Not priced.
+  if (ing.burnShare < 1) warn('BURN_REIMBURSED', { burnShare: ing.burnShare });
   return { errors, warnings };
 }

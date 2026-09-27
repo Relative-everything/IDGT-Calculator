@@ -12,6 +12,12 @@ const ITEMS = [
   ['DSUE, GST exemption, annual-exclusion optimisation', 'Deceased-spouse unused exclusion (unindexed), GST allocation tracking for dynasty trusts, Crummey planning.'],
   ['Multi-asset joint optimisation', 'The ranking is marginal (each asset alone); order-dependent exclusion consumption is shown as a cumulative column only.'],
   ['PDF / Excel export', 'Scenario JSON and ranking CSV are available now; formatted reports are not.'],
+  ['Toggling grantor-trust status off (completed-gift non-grantor trust)', 'The expert alternative to both vehicles: burn inside the IDGT for years, then release the grantor-trust power so the trust pays its own tax in a no-tax situs. It needs a second tax regime mid-ledger and a search over the toggle year; the burn-share input is the in-model proxy for managing the burn.'],
+  ['Later completion of the ING gift', 'Releasing the retained powers completes the gift at the then value (using exclusion and ending estate inclusion); not modelled.'],
+  ['ING distributions, DNI and throwback', 'The ING is modelled as an accumulation trust. Distributions carry DNI to beneficiaries in taxing states, and some states (e.g. California) tax accumulated income on distribution.'],
+  ['State fiduciary income-tax table', 'The ING\'s state rate is an input. Source-state taxation and grantor-domicile resident-trust rules differ by state and could not be sourced and verified from the build environment.'],
+  ['Trust compressed brackets and exemption', 'The ING pays a flat top federal rate and NIIT from the first dollar (§1(e), §642(b) ignored): conservative by about $2,600 a year.'],
+  ['IDGT trustee costs; §2036 risk of reimbursement or of the ING committee', 'Neither trust\'s legal risk is priced; only the ING\'s administration cost is an input.'],
 ];
 
 export default function DeferredPanel() {

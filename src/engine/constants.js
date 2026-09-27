@@ -23,3 +23,35 @@ export const SWAP_TIE_TOLERANCE = 1e-6; // relative, applied as max(1, |NPV|) sc
 
 // Mortality table sentinel: an l_x array that never reaches zero is closed at its last index.
 export const TABLE_END_WARNING = 'MORTALITY_TABLE_TRUNCATED';
+
+// ---------------------------------------------------------------------------------------------
+// ING comparison module (docs/changes/2026-09-27-ing-comparison/model.md).
+
+// Contract defaults for the ING's own design fields (model.md §1). v1 callers never set them and must keep
+// evaluating exactly as before. The grantor's state components (stateOrd, stateCg) and NIIT have NO engine
+// default: they describe the client, not the vehicle, so evaluateIng requires them (validateIngInputs).
+export const DEFAULT_BURN_SHARE = 1; // φ: the grantor bears all of the trust's income tax (§§671–677; v1 behaviour)
+export const DEFAULT_ING_FED_ORD = 0.37; // §1(e) as made permanent by OBBBA: top trust ordinary rate
+export const DEFAULT_ING_FED_LTCG = 0.20; // §1(h)(1)(D): top long-term capital-gain rate
+export const DEFAULT_ING_STATE_RATE = 0; // intangibles in a no-tax situs (NV, WY, SD, AK; DE with no resident beneficiaries)
+export const DEFAULT_ING_ADMIN_RATE = 0; // no corporate-trustee cost unless entered
+export const DEFAULT_ING_STATE_TAX_ON_GRANTOR = false; // home state does not tax the grantor on the ING (NY/CA do)
+
+// Breakeven solver (model.md §6). A coarse scan of BREAKEVEN_SCAN_POINTS equally spaced trials finds the sign
+// changes (the function need not be monotone); the first is bisected. Bisection halves the bracket each step,
+// so 60 iterations resolve any bracket below double precision: the x-tolerance ends every practical solve.
+export const BREAKEVEN_SCAN_POINTS = 11;
+export const BREAKEVEN_MAX_ITER = 60;
+export const BREAKEVEN_BURN_SHARE_XTOL = 1e-4; // φ* to 0.01 percentage points (the UI shows one decimal of %)
+export const BREAKEVEN_STATE_RATE_XTOL = 1e-4; // σ* to 0.01 percentage points
+export const BREAKEVEN_STATE_RATE_MAX = 0.20; // σ bracket [0, 20%]: above every state's top marginal rate (CA 13.3%, incl. its 1% mental-health surtax, is the highest)
+export const BREAKEVEN_ESTATE_XTOL = 1_000; // E_0* to $1,000 (immaterial against an eight-figure estate)
+export const BREAKEVEN_ESTATE_MULTIPLE = 3; // E_0 bracket [0, max(3 E_0, 5 X_0)]: wide enough to cross the exclusion either way
+export const BREAKEVEN_EXCLUSION_MULTIPLE = 5;
+
+// Breakeven grid (model.md §7): grantor state rate (columns) × burn share (rows). Built from whole percentage
+// points ÷ 100 so the axis labels are exact; comparisonGrid inserts the input's own rate and share when they
+// fall between lattice points, so the user's position is always a cell.
+const pctPoints = (points) => Object.freeze(points.map((p) => p / 100));
+export const GRID_STATE_RATES = pctPoints([0, 2, 4, 6, 8, 10, 12, 14]);
+export const GRID_BURN_SHARES = pctPoints([100, 80, 60, 40, 20, 0]);

@@ -34,7 +34,12 @@ export const UI_LABELS = {
   swapBasisPct: 'Consideration basis', swapGrowth: 'Consideration growth', swapYield: 'Consideration yield', swapTaxRate: 'Rate on consideration yield',
   fmv: 'Fair market value', discount: 'Valuation discount', basis: 'Cost basis', growth: 'Appreciation', yield: 'Income yield',
   saleYear: 'Sale year', postSaleGrowth: 'Post-sale appreciation', postSaleYield: 'Post-sale yield', annualExclusions: 'Annual exclusions',
+  burnShare: 'Share of trust tax the grantor bears', ingFedOrd: 'Trust federal ordinary rate', ingFedLtcg: 'Trust federal LTCG rate',
+  ingStateRate: 'State rate the ING bears', ingAdminRate: 'ING administration cost',
 };
+
+/** The ING comparison's settings fields (docs/changes/2026-09-27-ing-comparison/model.md §1), all required strings. */
+export const ING_SETTING_FIELDS = ['burnShare', 'ingFedOrd', 'ingFedLtcg', 'ingStateRate', 'ingAdminRate'];
 
 /**
  * Field-level checks on the raw UI values (blank / non-numeric / non-integer) so the error lands on the
@@ -55,6 +60,7 @@ export function validateUiFields({ grantor, estate, settings, asset }) {
   need(estate, 'maxYears', { integer: true });
   if (parseNum(estate.priorGifts) > 0 && estate.priorExclusionMode === 'custom') need(estate, 'priorGiftExclusion');
   if (settings.swapCustom) for (const f of ['swapBasisPct', 'swapGrowth', 'swapYield', 'swapTaxRate']) need(settings, f);
+  for (const f of ING_SETTING_FIELDS) need(settings, f);
   for (const f of ['fmv', 'discount', 'basis', 'growth', 'yield', 'annualExclusions']) need(asset, f);
   need(asset, 'saleYear', { integer: true });
   if (parseNum(asset.saleYear) > 0) for (const f of ['postSaleGrowth', 'postSaleYield']) need(asset, f);
@@ -93,6 +99,10 @@ export function buildEngineInputs({ grantor, estate, settings, asset }) {
     deathYearOverride: grantor.useDeathYear ? int(grantor.deathYear) : null,
     tauOrd: pct(grantor.fedOrd) + pct(grantor.stateOrd) + pct(grantor.niit),
     tauCg: pct(grantor.fedLtcg) + pct(grantor.stateLtcg) + pct(grantor.niit),
+    // the same panel values un-summed, for the ING comparison (the trust stacks and the state-rate breakeven)
+    stateOrd: pct(grantor.stateOrd),
+    stateCg: pct(grantor.stateLtcg),
+    niit: pct(grantor.niit),
     // estate and transfer tax
     tauBene: pct(estate.beneFedLtcg) + pct(estate.beneStateLtcg) + beneNiit,
     tauE: pct(estate.estateTaxRate),
@@ -123,6 +133,13 @@ export function buildEngineInputs({ grantor, estate, settings, asset }) {
     // conventions
     discountAtDeath: Boolean(settings.discountAtDeath),
     saleAppliesToBaseline: Boolean(settings.saleAppliesToBaseline),
+    // ING comparison (docs/changes/2026-09-27-ing-comparison/model.md §1)
+    burnShare: pct(settings.burnShare),
+    ingFedOrd: pct(settings.ingFedOrd),
+    ingFedLtcg: pct(settings.ingFedLtcg),
+    ingStateRate: pct(settings.ingStateRate),
+    ingAdminRate: pct(settings.ingAdminRate),
+    ingStateTaxOnGrantor: Boolean(settings.ingStateTaxOnGrantor),
   };
 }
 
@@ -155,4 +172,13 @@ export const FIELD_LABELS = {
   gSw: 'Consideration growth',
   ySw: 'Consideration yield',
   tauSw: 'Rate on consideration yield',
+  stateOrd: 'State ordinary rate',
+  stateCg: 'State LTCG rate',
+  niit: 'NIIT',
+  burnShare: 'Share of trust tax the grantor bears',
+  ingFedOrd: 'Trust federal ordinary rate',
+  ingFedLtcg: 'Trust federal LTCG rate',
+  ingStateRate: 'State rate the ING bears',
+  ingAdminRate: 'ING administration cost',
+  ingStateTaxOnGrantor: 'Home state taxes the grantor on the ING',
 };

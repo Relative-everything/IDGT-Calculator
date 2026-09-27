@@ -50,6 +50,13 @@ benchmarked against Holistiplan and Tax Status. Future enterprise migration plan
   Rev. Rul. 85-13, SSA period life table (provisional until verified)
 - Legislative scenarios are modelled by editing the basic exclusion amount (X_0) and its indexing
   rate (π). OBBBA fixed the 2026 exclusion at $15,000,000 with no sunset; there is no TCJA toggle
+- ING comparison (docs/changes/2026-09-27-ing-comparison/model.md): a third world on the same ledger —
+  incomplete gift, non-grantor trust paying its own tax and fee, included in the estate and stepped up.
+  Exact four-way decomposition (location / state-rate saving / fee / step-up); breakevens re-run the full
+  swap search and report readings from the signs, never an assumed direction
+- Burn share φ (`burnShare`): the IDGT holding path splits into V^b (row key `V`) and V^s (`Vs`); φ = 1 must
+  stay bit-identical to v1 (`ingInvariants.test.js` snapshot; regenerate only via
+  `docs/changes/2026-09-27-ing-comparison/reference/make-v1-snapshot.mjs` if the v1 contract changes)
 
 ## Conflict Handling
 If you encounter an irreconcilable trade-off between calculation accuracy and
@@ -63,9 +70,14 @@ Do not resolve silently.
 - Leaving UI inputs unwired to the engine. `src/hooks/__tests__/buildInputs.test.js` asserts every
   input moves an output; extend it when adding a field.
 - Summing "benefit buckets" measured against different baselines (double counting). Use the ledger.
+- Treating the ING's state-tax saving as a benefit without netting the estate tax on the extra wealth, or
+  its "location" effect (tax paid from the trust instead of the estate) as a tax benefit. The ledger nets
+  both; the location line is a return-differential effect, not tax.
+- Assuming an ING bears 0% state tax. That holds only for intangibles in a no-tax situs; source income,
+  grantor-domicile resident-trust states and the NY/CA grantor-level rules change it.
 
 ## Current commit
-See docs/changes/2026-09-26-idgt-rebuild/handback.md
+See docs/changes/2026-09-27-ing-comparison/handback.md (previous: docs/changes/2026-09-26-idgt-rebuild/handback.md)
 
 ## NEXT SESSIONS ROADMAP
 Follow docs/ROADMAP.md phase by phase (Phase 1: verify the SSA life table; Phase 2: installment
