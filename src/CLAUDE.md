@@ -67,6 +67,9 @@ Do not resolve silently.
 - Fabricating reference tables and presenting them as IRS data (a synthetic "Table 2000CM" factor
   grid shipped once). Load published values or mark the table UNVERIFIED.
 - Presenting sign/typeof tests as verification of financial math.
+- Writing a "reference" that transcribes the spec's formulas: it inherits the spec's errors (the ING liquidation bug
+  passed such a reference). Verify against `evals/` — a clean-room oracle built from the statute and cash flows — and
+  run `npm run eval` after any engine change; add a hand case and a control row for any new mechanism or field.
 - Leaving UI inputs unwired to the engine. `src/hooks/__tests__/buildInputs.test.js` asserts every
   input moves an output; extend it when adding a field.
 - Summing "benefit buckets" measured against different baselines (double counting). Use the ledger.
@@ -77,7 +80,8 @@ Do not resolve silently.
   grantor-domicile resident-trust states and the NY/CA grantor-level rules change it.
 
 ## Current commit
-See docs/changes/2026-09-27-ing-comparison/handback.md (latest model change: ING comparison),
+See docs/changes/2026-09-27-math-evals/handback.md (latest: eval suite and seven math/UI fixes),
+docs/changes/2026-09-27-ing-comparison/handback.md (ING comparison),
 docs/changes/2026-09-27-pages-branch-source/handback.md and docs/changes/2026-09-26-ci-deploy/handback.md
 (deploy pipeline) and
 docs/changes/2026-09-26-idgt-rebuild/handback.md (model and engine rebuild)

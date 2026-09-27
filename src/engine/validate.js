@@ -65,6 +65,20 @@ export function validateIngInputs(inp) {
 }
 
 /**
+ * The return-neutral swap consideration (model.md C-2): cash-like, basis 100%, earning the other-estate after-tax rate
+ * r_E after the grantor's tax at τ_ord. For r_E ≥ 0 that is a gross yield r_E/(1 − τ_ord) with no appreciation. For
+ * r_E < 0 it is a holding that depreciates at r_E with no income — a negative "yield" would mean the grantor collects a
+ * tax refund on negative income, which no instrument produces (docs/changes/2026-09-27-math-evals, F7). Either way the
+ * after-tax return is exactly r_E, so the pre-tax family wealth path is unchanged by the swap.
+ * @returns {{ bSw:number, gSw:number, ySw:number, tauSw:number }}
+ */
+export function neutralSwapProfile(rE, tauOrd) {
+  return rE >= 0
+    ? { bSw: 1, gSw: 0, ySw: rE / (1 - tauOrd), tauSw: tauOrd }
+    : { bSw: 1, gSw: rE, ySw: 0, tauSw: tauOrd };
+}
+
+/**
  * @param {object} inp - flat engine inputs (decimals)
  * @returns {{ errors: {field:string, message:string}[], warnings: {code:string, data:object}[] }}
  */
@@ -166,9 +180,10 @@ export function validateInputs(inp) {
 
   if (errors.length) return { errors, warnings };
 
-  const gSw = inp.gSw ?? 0;
-  const tauSw = inp.tauSw ?? inp.tauOrd;
-  const ySw = inp.ySw ?? inp.rE / (1 - inp.tauOrd);
+  const neutral = neutralSwapProfile(inp.rE, inp.tauOrd);
+  const gSw = inp.gSw ?? neutral.gSw;
+  const tauSw = inp.tauSw ?? neutral.tauSw;
+  const ySw = inp.ySw ?? neutral.ySw;
   if (1 + gSw + ySw <= 0) err('gSw', 'Consideration growth plus yield must exceed -100%.');
 
   // Exclusion must stay >= $1M in every projection year (matters only when pi < 0).

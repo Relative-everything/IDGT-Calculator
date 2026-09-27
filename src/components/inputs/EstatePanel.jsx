@@ -60,7 +60,7 @@ export default function EstatePanel({ estate, onChange, errors }) {
         <NumberField id="yearsToSale" label="Years after death until sale" value={estate.yearsToSale} onChange={set('yearsToSale')} suffix="yrs" error={err('yearsToSale') ?? err('k')}
           tip="Heirs' capital-gains tax on un-stepped-up gain is paid this many years after death." />
         <Toggle id="beneNiit" className="col-span-2 sm:col-span-3" label="Add NIIT to the heirs' rate" checked={estate.beneNiit} onChange={set('beneNiit')}
-          hint="A non-grantor trust after death hits the 3.8% surtax above ~$16,000 of undistributed NII; turn off only if gains will be distributed to heirs below the §1411 thresholds." />
+          hint="Adds the NIIT rate entered in the Grantor panel. A non-grantor trust after death hits the 3.8% surtax above ~$16,000 of undistributed NII; turn off only if gains will be distributed to heirs below the §1411 thresholds." />
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3">

@@ -56,7 +56,7 @@ Status: accepted 2026-09-26 — implementation contract for `src/engine/idgtMode
 - U_g = max(0, FMV·(1−δ) − A_ex) — adjusted taxable gift (§2001(b)(1)(B), frozen at gift-date value, §2001(f)); annual exclusions cannot exceed the gift (§2503(b)).
 - used_prior = min(P, X_P); R = max(0, X_0 − used_prior); U_c = min(U_g, R) — exclusion consumed.
 - G = τ_e · max(0, U_g − R) — gift tax paid from E at t = 0 (tax-exclusive, §2502(c)).
-- B^T_0 = B_0 + G · max(0, U_g − B_0)/U_g — trust basis (§1015(a) carryover + §1015(d)(6) increase); B^b_0 = B_0.
+- B^T_0 = B_0 + min(G, G · max(0, FMV(1−δ) − B_0)/U_g) — trust basis (§1015(a) carryover + §1015(d)(6) increase: net appreciation is the FMV of the gifted interest less basis, the amount of the gift is after annual exclusions, and the increase cannot exceed the tax paid — Reg. §1.1015-5(c)); B^b_0 = B_0. *Amended 2026-09-27 (docs/changes/2026-09-27-math-evals, F2): v1 took net appreciation on U_g, understating basis by G·A_ex/U_g.*
 - X_t = X_0 (1+π)^(t−1) (2026 fixed at the statutory amount; indexing from 2027; $10,000 round-down ignored — documented).
 - Anti-clawback exclusion (Reg. §20.2010-1(c)): AEA^b_t = max(X_t, used_prior); AEA^s_t = max(X_t, used_prior + U_c).
 - Taxable-base functions (dollars of base; tax = τ_e·max(0, base)), from §2001(b): tentative tax on
@@ -125,8 +125,11 @@ after death. For t < s the GIFT ledger has not swapped, so ΔH_t(s) = ΔH_t(none
 ## 6. Aggregation
 
 NPV(s) = Σ_{t=1}^{N} q_t · DF_t · ΔH_t(s). Expected death year = Σ q_t · t (display).
-Deathbed-swap bound NPV_PF = Σ q_t DF_t ΔH_t(s_t), s_t = t if feasible else none; labelled
-"assumes survival to a year-end swap in the year of death — upper bound".
+Deathbed-swap value NPV_PF = Σ q_t DF_t ΔH_t(s_t), s_t = t if feasible else none; labelled
+"assumes survival to a year-end swap in the year of death". *Amended 2026-09-27 (docs/changes/2026-09-27-math-evals, F3):
+v1 called this an upper bound. It is not one — when the consideration out-earns the asset (e.g. a low-return
+asset swapped for cash compounding at r_E/(1−τ_ord) gross), an early fixed-year swap beats the deathbed swap;
+the eval found NPV_PF < NPV(s\*) in 49% of scenarios where every swap year is feasible.*
 
 ## 7. Decomposition (reported for s = none and s = s*; exact sums)
 

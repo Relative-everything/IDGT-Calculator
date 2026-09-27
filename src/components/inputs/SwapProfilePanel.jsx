@@ -1,19 +1,24 @@
 import NumberField from '../ui/NumberField.jsx';
 import Toggle from '../ui/Toggle.jsx';
 import { fmtPct } from '../format.js';
+import { toggleSwapCustom } from '../../hooks/settingsActions.js';
 
 /** Consideration the grantor substitutes for the asset when the swap power is exercised. */
-export default function SwapProfilePanel({ settings, onChange, errors, neutralYield }) {
+export default function SwapProfilePanel({ settings, onChange, errors, neutralSwap, swapRates }) {
   const set = (field) => (value) => onChange({ ...settings, [field]: value });
   const err = (f) => errors?.[f];
   return (
     <div>
       <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">Swap consideration</h3>
       <p className="mt-1 text-xs text-muted">
-        Default: cash-like — basis 100%, no appreciation, gross yield {neutralYield != null ? fmtPct(neutralYield, 2) : '—'} taxed to the grantor, so it earns the other-estate rate after tax (return-neutral).
+        {neutralSwap == null ? 'Default: cash-like and return-neutral (earns the other-estate rate after tax).'
+          : neutralSwap.gSw === 0
+            ? `Default: cash-like — basis 100%, no appreciation, gross yield ${fmtPct(neutralSwap.ySw, 2)} taxed to the grantor, so it earns the other-estate rate after tax (return-neutral).`
+            : `Default: basis 100%, no income, value changing ${fmtPct(neutralSwap.gSw, 2)} a year — the other-estate rate, so the swap is return-neutral.`}
       </p>
-      <Toggle id="swapCustom" className="mt-2" label="Customise the consideration" checked={settings.swapCustom} onChange={set('swapCustom')}
-        tip="Any profile whose after-tax return differs from the other-estate growth books a residual that is not a tax benefit; the results flag it." />
+      <Toggle id="swapCustom" className="mt-2" label="Customise the consideration" checked={settings.swapCustom}
+        onChange={(on) => onChange(toggleSwapCustom(settings, on, swapRates ?? undefined))}
+        tip="Switching on starts from the neutral cash profile at the current rates, so the switch alone changes nothing. Any profile whose after-tax return differs from the other-estate growth books a residual that is not a tax benefit; the results flag it." />
       {settings.swapCustom && (
         <div className="mt-2 grid grid-cols-2 gap-3">
           <NumberField id="swapBasisPct" label="Basis (% of value)" value={settings.swapBasisPct} onChange={set('swapBasisPct')} suffix="%" error={err('swapBasisPct') ?? err('bSw')} />

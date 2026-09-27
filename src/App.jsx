@@ -57,7 +57,7 @@ export default function App() {
   const [notice, setNotice] = useState(null);
   const fileRef = useRef(null);
 
-  const { perAsset, ranked, remainingExclusion, neutralSwapYield, isStale } = useIdgtModel({ grantor, estate, settings, assets });
+  const { perAsset, ranked, remainingExclusion, neutralSwap, swapRates, isStale } = useIdgtModel({ grantor, estate, settings, assets });
 
   const errorsById = useMemo(() => {
     const out = {};
@@ -101,7 +101,7 @@ export default function App() {
       <GrantorPanel grantor={grantor} onChange={setGrantor} errors={sharedErrors} />
       <EstatePanel estate={estate} onChange={setEstate} errors={sharedErrors} />
       <AssetsPanel assets={assets} onChange={setAssets} errorsById={errorsById} />
-      <ModelSettingsPanel settings={settings} onChange={setSettings} errors={sharedErrors} neutralYield={neutralSwapYield} />
+      <ModelSettingsPanel settings={settings} onChange={setSettings} errors={sharedErrors} neutralSwap={neutralSwap} swapRates={swapRates} />
       <IngPanel settings={settings} onChange={setSettings} errors={sharedErrors} />
     </>
   );

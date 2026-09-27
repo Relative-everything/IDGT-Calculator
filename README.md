@@ -61,11 +61,18 @@ expose the conventions (return-neutral reinvestment, cash-like consideration, di
 inclusion, whether a scheduled sale also happens when the asset is kept).
 
 ## Verification status
+- **Eval suite** (`npm run eval`, method in [`evals/README.md`](evals/README.md)): a clean-room oracle built from the
+  statute (full §2001(c) brackets, period-by-period §2505 credits, anti-clawback) and a lot-based cash-flow ledger,
+  13 hand calculations, invariants, metamorphic and discontinuity scans, and every UI control driven through the app's
+  pipeline — 16 client personas plus a 1,500-scenario stratified sweep, all code-graded. On 2026-09-27 it found seven
+  defects (ING fee liquidation, §1015(d)(6), a false "upper bound" label, the swap-profile switch, ranking ties, the
+  swap tie rule, negative-growth consideration); all fixed, 398/398 checks and 168,001/168,001 assertions pass, and
+  400/400 on an unseen seed. [Findings, plan and handback](docs/changes/2026-09-27-math-evals/).
 - Engine: golden fixtures A–H (hand-derived, builder-confirmed 2026-09-26), §2001(c) cross-check
   against the bracket schedule, model invariants (decomposition sums, Σq = 1, neutrality, swap
   properties), input-wiring test — `npm test`.
 - ING comparison: Fixtures I and J plus machine rows (reference-derived, awaiting builder
-  confirmation), a bit-identity test proving the burn-share extension leaves every v1 ledger row
+  confirmation; I5 corrected 2026-09-27 for the liquidation fix), a bit-identity test proving the burn-share extension leaves every v1 ledger row
   unchanged at 100%, decomposition invariants, and breakeven tests that check the verdict flips across
   each root.
 - **Mortality table: UNVERIFIED.** `src/data/mortalityTable.js` carries an SSA 2021 period life
@@ -90,7 +97,8 @@ this version".
 ```
 npm ci
 npm run dev        # Vite dev server
-npm test           # vitest
+npm test           # vitest (includes a quick run of the eval suite)
+npm run eval       # full eval suite: engine vs clean-room oracle on 1,500+ client scenarios
 npm run lint       # eslint
 npm run build      # production build to dist/
 ```

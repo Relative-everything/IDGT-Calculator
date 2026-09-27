@@ -10,6 +10,6 @@ export {
 } from './breakeven.js';
 export { deriveGift, makeBases, exclusionAt, taxFromBase, tentativeTax, estateTaxByBrackets } from './fedTax.js';
 export { lxColumn, validateLx, deathProbabilities, expectedDeathYear } from './mortality.js';
-export { validateInputs, validateIngInputs, resolveIngInputs } from './validate.js';
+export { validateInputs, validateIngInputs, resolveIngInputs, neutralSwapProfile } from './validate.js';
 export { rankAssets } from './ranking.js';
 export * from './constants.js';

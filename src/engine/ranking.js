@@ -7,8 +7,11 @@
 // ranks last. A greedy cumulative column shows where the grantor's remaining exclusion runs out if
 // the assets are gifted in rank order (joint optimisation is a v2 item).
 
+import { RANK_EFFICIENCY_SIGNIFICANT_DIGITS } from './constants.js';
+
+// Efficiency rounded to RANK_EFFICIENCY_SIGNIFICANT_DIGITS: equal efficiencies tie and fall to the NPV tie-break.
 function rankValue(eff, npv) {
-  if (eff != null) return eff;
+  if (eff != null) return eff === 0 ? 0 : Number(eff.toPrecision(RANK_EFFICIENCY_SIGNIFICANT_DIGITS));
   return npv > 0 ? Infinity : -Infinity;
 }
 

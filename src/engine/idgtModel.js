@@ -19,24 +19,25 @@
 
 import { deriveGift, makeBases, taxFromBase } from './fedTax.js';
 import { deathProbabilities, expectedDeathYear } from './mortality.js';
-import { validateInputs, resolveIngInputs } from './validate.js';
+import { validateInputs, resolveIngInputs, neutralSwapProfile } from './validate.js';
 import { SECTION_2035_WINDOW_YEARS, SWAP_TIE_TOLERANCE } from './constants.js';
 
 export const SWAP_INFEASIBLE_POST_SALE = 'post-sale swap not modelled in v1';
 export const SWAP_INFEASIBLE_LIQUIDITY = 'other estate cannot fund the swap consideration';
 
 /**
- * Consideration profile for the swap. Defaults are cash-like and return-neutral (model.md C-2):
- * basis 100%, no appreciation, gross yield r_E/(1 − τ_ord) taxed to the grantor at τ_ord, so the
- * consideration compounds at r_E after tax exactly like the other estate.
+ * Consideration profile for the swap. Each field left null takes the cash-like, return-neutral default
+ * (model.md C-2, validate.js neutralSwapProfile): basis 100%, and for r_E ≥ 0 no appreciation with a gross yield
+ * r_E/(1 − τ_ord) taxed to the grantor at τ_ord, so the consideration compounds at r_E after tax exactly like the
+ * other estate (for r_E < 0: depreciation at r_E, no income).
  */
 export function resolveSwapProfile(inp) {
-  const tauSw = inp.tauSw ?? inp.tauOrd;
+  const neutral = neutralSwapProfile(inp.rE, inp.tauOrd);
   return {
-    bSw: inp.bSw ?? 1,
-    gSw: inp.gSw ?? 0,
-    ySw: inp.ySw ?? inp.rE / (1 - inp.tauOrd),
-    tauSw,
+    bSw: inp.bSw ?? neutral.bSw,
+    gSw: inp.gSw ?? neutral.gSw,
+    ySw: inp.ySw ?? neutral.ySw,
+    tauSw: inp.tauSw ?? neutral.tauSw,
   };
 }
 
@@ -261,7 +262,8 @@ export function aggregate(rows, q) {
 
 /**
  * Full evaluation of one asset: no-swap NPV, NPV curve over every feasible swap year, optimum,
- * deathbed-swap bound, efficiency ratios, components, warnings. Throws on invalid inputs.
+ * deathbed-swap value (swap at the end of the death year where feasible — not an upper bound on NPV(s*)), efficiency
+ * ratios, components, warnings. Throws on invalid inputs.
  */
 export function evaluateAsset(inp) {
   const { errors, warnings } = validateInputs(inp);
@@ -280,7 +282,6 @@ export function evaluateAsset(inp) {
   const tol = (ref) => SWAP_TIE_TOLERANCE * Math.max(1, Math.abs(ref));
   const curve = [{ s: 0, npv: noneAgg.npv, feasible: true, reason: null }];
   const diagPV = new Array(N);
-  let best = { s: 0, npv: noneAgg.npv, sim: none, agg: noneAgg };
   for (let s = 1; s <= N; s += 1) {
     const sim = simulate(inp, s, N);
     if (sim.infeasible) {
@@ -291,8 +292,14 @@ export function evaluateAsset(inp) {
     const agg = aggregate(sim.rows, q);
     curve.push({ s, npv: agg.npv, feasible: true, reason: null });
     diagPV[s - 1] = sim.rows[s - 1].PV;
-    if (agg.npv > best.npv + tol(best.npv)) best = { s, npv: agg.npv, sim, agg };
   }
+  // model.md §8 tie rule, applied against the best NPV: every candidate within tol of it ties, and the tie goes to no
+  // swap, then to the earliest year. (A running "replace only if better by more than tol" could walk a chain of
+  // near-ties to a later year — docs/changes/2026-09-27-math-evals, F6.)
+  const maxNpv = Math.max(...curve.filter((c) => c.feasible).map((c) => c.npv));
+  const pick = curve.find((c) => c.feasible && c.npv >= maxNpv - tol(maxNpv));
+  const bestSim = pick.s === 0 ? none : simulate(inp, pick.s, N);
+  const best = { s: pick.s, npv: pick.npv, sim: bestSim, agg: pick.s === 0 ? noneAgg : aggregate(bestSim.rows, q) };
   const npvPF = diagPV.reduce((acc, pv, i) => acc + q[i] * pv, 0);
 
   const { Ug, G } = none.derived;

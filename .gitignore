@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# ad hoc eval runs; pass1 / pass2 / holdout are the committed records
+evals/results/*.json
+!evals/results/pass1.json
+!evals/results/pass2.json
+!evals/results/holdout.json

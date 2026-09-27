@@ -3,7 +3,7 @@ import SwapCurveChart from './SwapCurveChart.jsx';
 import DecompositionChart from './DecompositionChart.jsx';
 import LedgerTable from './LedgerTable.jsx';
 import WarningsList from './WarningsList.jsx';
-import { fmtMoney, fmtMoneyCompact, fmtRatio, fmtDecimal } from '../format.js';
+import { fmtMoney, fmtMoneyCompact, fmtRatio, fmtDecimal, deathbedNote } from '../format.js';
 // NPV per $ of FMV is exported in the CSV; the tiles show the ranking metric (per $ of taxable gift).
 
 function Tile({ label, value, sub, negative }) {
@@ -28,8 +28,8 @@ export default function AssetDetail({ entry }) {
         <Tile label="NPV · best swap year" value={fmtMoneyCompact(r.npvOpt)} sub={r.sStar > 0 ? `swap at end of year ${r.sStar}` : 'no swap is best'} negative={r.npvOpt < 0} />
         <Tile label="NPV · no swap" value={fmtMoneyCompact(r.npvNone)} sub="probability-weighted, discounted" negative={r.npvNone < 0} />
         <Tile label="NPV per $ of taxable gift" value={fmtRatio(r.eff.opt)} sub={`no swap ${fmtRatio(r.eff.none)}`} negative={r.eff.opt < 0} />
-        <Tile label={allSwapYearsFeasible ? 'Deathbed-swap bound' : 'Deathbed-swap value'} value={fmtMoneyCompact(r.npvPF)}
-          sub={allSwapYearsFeasible ? 'upper bound: swap always precedes death' : 'swap in the death year where feasible; not a bound here'} negative={r.npvPF < 0} />
+        <Tile label="Deathbed-swap value" value={fmtMoneyCompact(r.npvPF)}
+          sub={deathbedNote(r.npvPF >= r.npvOpt, allSwapYearsFeasible)} negative={r.npvPF < 0} />
         <Tile label="Per $ of gift tax" value={d.G > 0 ? fmtRatio(r.effPerGiftTax.opt) : '—'} sub={d.G > 0 ? 'exclusion exhausted' : 'no gift tax paid'} negative={r.effPerGiftTax.opt < 0} />
       </div>
 
