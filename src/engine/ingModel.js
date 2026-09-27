@@ -19,6 +19,7 @@ import { simulate, evaluateAsset } from './idgtModel.js';
 import { makeBases, taxFromBase } from './fedTax.js';
 import { validateInputs, validateIngInputs, resolveIngInputs } from './validate.js';
 import { SWAP_TIE_TOLERANCE } from './constants.js';
+import { evaluateIngMarried } from './marriedModel.js';
 
 const pos = (x) => Math.max(0, x);
 
@@ -217,7 +218,8 @@ export function evaluateIng(inp, idgtResult) {
   const idgt = idgtResult ?? evaluateAsset(inp);
   const { q } = idgt;
   const N = idgt.derived.N;
-  const sim = simulateIng(inp, N);
+  // Married couple: rows by the year of the second death (docs/changes/2026-09-27-life-tables/model.md §3–§4)
+  const sim = inp.married ? evaluateIngMarried(inp) : simulateIng(inp, N);
   const optRows = idgt.rows.opt;
 
   let npv = 0;
@@ -248,7 +250,9 @@ export function evaluateIng(inp, idgtResult) {
     warnings.push({ code: 'ING_NO_STATE_SAVING', data: { ingRate: ingOrdTotal, grantorRate: inp.tauOrd, onGrantor: sim.derived.stateTaxOnGrantor } });
   }
   const netYield = inp.y * (1 - tauNo);
-  const postSale = inp.S > 0 && inp.S < N;
+  // the ING pays its fee only while the grantor lives (married: it passes to the spouse at the grantor's death, M-9)
+  const ingYears = inp.married ? idgt.derived.NG : N;
+  const postSale = inp.S > 0 && inp.S < ingYears;
   const netYieldPost = postSale ? (inp.yr ?? inp.y) * (1 - tauNo) : Infinity;
   if (feeRate > Math.min(netYield, netYieldPost)) {
     warnings.push({ code: 'ING_FEE_EXCEEDS_YIELD', data: { fee: feeRate, netYield: Math.min(netYield, netYieldPost) } });

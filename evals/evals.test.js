@@ -1,4 +1,4 @@
-// The eval suite in CI: a reduced sweep (quick mode, ≈ 10 s) must pass every check. The full sweep is `npm run eval`.
+// The eval suite in CI: a reduced sweep (quick mode, ≈ 20–25 s) must pass every check. The full sweep is `npm run eval`.
 // Methodology: evals/README.md. A failure here prints the check and its first failing scenario.
 import { describe, it, expect } from 'vitest';
 import { runEvals } from './suite.js';

@@ -2,10 +2,12 @@
 // planner sees (src/components/inputs/*.jsx), not from src/hooks/buildInputs.js.
 //
 // The basic exclusion table is restated here from the IRS revenue procedures so the eval also audits
-// src/data/exclusionAmounts.js. The mortality column is taken from src/data (it cannot be re-derived offline;
-// its provenance is audited separately and reported as UNVERIFIED).
+// src/data/exclusionAmounts.js. Life tables: the default (SSA 2023 period, 2026 Trustees Report) is derived here from
+// the extracted source file docs/sources/…csv (./lives.js), not from src/data; the legacy 2021 column exists only in
+// src/data (unverified, flagged in the UI) and is taken from there.
 
 import { SSA_2021_LX } from '../../src/data/mortalityTable.js';
+import { survivorsFromRates } from './lives.js';
 
 // IRC §2010(c)(3) basic exclusion amount by year (Rev. Procs. 2010-40, 2011-52, 2012-41, 2013-35, 2014-61,
 // 2015-53, 2016-55, 2017-58, 2018-57, 2019-44, 2020-45, 2021-45, 2022-38, 2023-34, 2024-40; OBBBA §70106 for 2026).
@@ -22,9 +24,18 @@ const num = (v) => {
 };
 const rate = (v) => num(v) / 100;
 
-function lxOf(sex) {
-  const ages = Object.keys(SSA_2021_LX).map(Number).sort((a, b) => a - b);
-  return ages.map((a) => SSA_2021_LX[a][sex]);
+// "Life table" options a planner can pick (GrantorPanel): the SSA 2023 period table (default) or the legacy 2021 column.
+export const DEFAULT_TABLE = 'ssa-2023-tr2026';
+const LEGACY_TABLE = 'ssa-2021-legacy';
+const tableId = (id) => (id === LEGACY_TABLE ? LEGACY_TABLE : DEFAULT_TABLE);
+
+/** Survivors column for one sex of the chosen table. */
+export function lxOf(sex, id = DEFAULT_TABLE) {
+  if (tableId(id) === LEGACY_TABLE) {
+    const ages = Object.keys(SSA_2021_LX).map(Number).sort((a, b) => a - b);
+    return ages.map((a) => SSA_2021_LX[a][sex]);
+  }
+  return survivorsFromRates(sex);
 }
 
 /** The engine input a planner's screen implies. */
@@ -32,10 +43,24 @@ export function expectedEngineInputs({ grantor, estate, settings, asset }) {
   const niit = rate(grantor.niit);
   const priorGifts = num(estate.priorGifts);
   const exclusionWhenMade = estate.priorExclusionMode === 'custom' ? num(estate.priorGiftExclusion) : BEA_BY_YEAR[Number(estate.priorGiftYear)];
+  const sexOf = (x) => (x === 'female' ? 'female' : 'male');
+  // "Married — estate tax at the second death": spouse fields matter only then; the life table only without assumed years
+  const married = Boolean(grantor.married);
+  const spousePrior = married ? num(estate.spousePriorGifts) : 0;
+  const spouseExclusionWhenMade = estate.spousePriorExclusionMode === 'custom' ? num(estate.spousePriorGiftExclusion) : BEA_BY_YEAR[Number(estate.spousePriorGiftYear)];
   return {
     age: num(grantor.age),
-    lx: grantor.useDeathYear ? null : lxOf(grantor.sex === 'female' ? 'female' : 'male'),
+    lifeTableId: grantor.useDeathYear ? null : tableId(grantor.lifeTable),
+    lx: grantor.useDeathYear ? null : lxOf(sexOf(grantor.sex), grantor.lifeTable),
     deathYearOverride: grantor.useDeathYear ? num(grantor.deathYear) : null,
+    married,
+    ageSpouse: married ? num(grantor.spouseAge) : null,
+    lxSpouse: married && !grantor.useDeathYear ? lxOf(sexOf(grantor.spouseSex), grantor.lifeTable) : null,
+    deathYearOverrideSpouse: married && grantor.useDeathYear ? num(grantor.spouseDeathYear) : null,
+    // "Elect portability at the first death" (on unless switched off); irrelevant for a single grantor
+    portability: married ? grantor.portability !== false : true,
+    PS: spousePrior,
+    XPS: married && spousePrior > 0 ? spouseExclusionWhenMade : num(estate.exclusion),
     // "Grantor income-tax rates … ordinary stack applies to the yield; the capital-gain stack applies to a sale"
     tauOrd: rate(grantor.fedOrd) + rate(grantor.stateOrd) + niit,
     tauCg: rate(grantor.fedLtcg) + rate(grantor.stateLtcg) + niit,

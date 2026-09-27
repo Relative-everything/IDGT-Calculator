@@ -2,6 +2,8 @@
 // input space a planner meets is covered: estates below / straddling / far above the exclusion, prior gifts
 // from none to gift-tax-paid, every asset archetype, every toggle, and the ING design space.
 //
+// About 45% of scenarios are married couples (estate tax at the second death); 15% use the legacy 2021 table.
+//
 // Scenarios are produced in the calculator's UI vocabulary (strings, percents) so the same case can be driven
 // through the UI mapping (src/hooks/buildInputs.js) AND through the independent mapping (evals/oracle/ui.js).
 
@@ -129,6 +131,33 @@ export function makeScenario(R, id) {
     ingAdminRate: s(R.weighted([[0, 4], [0.25, 2], [0.5, 2], [1, 1], [1.5, 1]])),
     ingStateTaxOnGrantor: R.next() < 0.2,
   };
+  // Life table and married couple (docs/changes/2026-09-27-life-tables/model.md): the second death decides the estate tax
+  grantor.lifeTable = R.weighted([['ssa-2023-tr2026', 85], ['ssa-2021-legacy', 15]]);
+  const married = R.next() < 0.45;
+  grantor.married = married;
+  grantor.spouseSex = R.next() < 0.85 ? (grantor.sex === 'male' ? 'female' : 'male') : grantor.sex;
+  grantor.spouseAge = String(Math.min(100, Math.max(25, age + R.int(-10, 10))));
+  grantor.spouseDeathYear = String(R.weighted([[R.int(1, 3), 3], [R.int(4, 10), 3], [R.int(11, 40), 4]]));
+  grantor.portability = R.next() < 0.85;
+  const spouseKind = R.weighted([['none', 12], ['partial', 4], ['exhausted', 2], ['giftTaxPaid', 1], ['custom', 1]]);
+  const spouseYear = R.pick(Object.keys(BEA));
+  let spouseGifts = 0;
+  let spouseMode = 'year';
+  let spouseExclusion = '13990000';
+  if (spouseKind === 'partial') spouseGifts = Math.round(R.between(0.1, 0.9) * BEA[spouseYear]);
+  if (spouseKind === 'exhausted') spouseGifts = BEA[spouseYear];
+  if (spouseKind === 'giftTaxPaid') spouseGifts = Math.round(BEA[spouseYear] * R.between(1.05, 1.6));
+  if (spouseKind === 'custom') { spouseMode = 'custom'; spouseExclusion = String(R.pick([11_700_000, 12_920_000, 13_990_000])); spouseGifts = Math.round(R.between(2e6, 14e6)); }
+  Object.assign(estate, { spousePriorGifts: String(spouseGifts), spousePriorGiftYear: spouseYear, spousePriorExclusionMode: spouseMode, spousePriorGiftExclusion: spouseExclusion });
+  if (grantor.lifeTable !== 'ssa-2023-tr2026' && !useDeathYear) tags.push('table:legacy');
+  if (married) {
+    tags.push('married');
+    if (!grantor.portability) tags.push('portabilityOff');
+    tags.push(`spousePrior:${spouseKind}`);
+    if (grantor.spouseSex === grantor.sex) tags.push('sameSexCouple');
+    if (Number(grantor.spouseAge) > age) tags.push('spouseOlder');
+  } else tags.push('single');
+
   for (const k of ['discountAtDeath', 'saleAppliesToBaseline', 'swapCustom', 'ingStateTaxOnGrantor']) if (settings[k]) tags.push(k);
   if (swapCustom) tags.push(neutral ? 'swapNeutralCustom' : 'swapNonNeutral');
   if (burnShare < 100) tags.push('burnShare<100');

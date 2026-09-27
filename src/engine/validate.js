@@ -14,13 +14,24 @@ import { BASIC_EXCLUSION_2026 } from '../data/exclusionAmounts.js';
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 const isInt = (v) => Number.isInteger(v);
 
-/** Projection horizon implied by the inputs (deterministic year, or ω − age from the table). */
+/** Projection horizon of one life (deterministic year, or ω − age from its table). */
+function lifeHorizon(lx, age, override) {
+  if (override != null) return override;
+  if (!Array.isArray(lx) || !isInt(age)) return MAX_PROJECTION_YEARS;
+  let omega = lx.findIndex((v, i) => i > age && v === 0);
+  if (omega === -1) omega = lx.length;
+  return Math.max(1, omega - age);
+}
+
+/**
+ * Projection horizon implied by the inputs: the grantor's, or for a married couple the later of the two lives' (the
+ * second death, docs/changes/2026-09-27-life-tables/model.md §2).
+ */
 export function horizonYears(inp) {
-  if (inp.deathYearOverride != null) return inp.deathYearOverride;
-  if (!Array.isArray(inp.lx) || !isInt(inp.age)) return MAX_PROJECTION_YEARS;
-  let omega = inp.lx.findIndex((v, i) => i > inp.age && v === 0);
-  if (omega === -1) omega = inp.lx.length;
-  return Math.max(1, omega - inp.age);
+  const grantor = lifeHorizon(inp.lx, inp.age, inp.deathYearOverride);
+  if (!inp.married) return grantor;
+  const spouse = lifeHorizon(inp.lxSpouse, inp.ageSpouse, inp.deathYearOverride != null ? inp.deathYearOverrideSpouse : null);
+  return Math.max(grantor, spouse);
 }
 
 /**
@@ -102,6 +113,27 @@ export function validateInputs(inp) {
       if (inp.age >= inp.lx.length) err('age', `Age is beyond the mortality table (last age ${inp.lx.length - 1}); use an assumed death year.`);
       else if (!(inp.lx[inp.age] > 0)) err('age', `The mortality table has no survivors at age ${inp.age}; use an assumed death year.`);
     }
+  }
+
+  // Married couple (docs/changes/2026-09-27-life-tables/model.md §5): the spouse's life on the same basis as the grantor's
+  if (inp.married != null && typeof inp.married !== 'boolean') err('married', 'Married must be on or off.');
+  if (inp.married === true) {
+    if (!isInt(inp.ageSpouse) || inp.ageSpouse < 0) err('ageSpouse', "Spouse's age must be a whole number of years, zero or more.");
+    if (deterministic) {
+      if (!isInt(inp.deathYearOverrideSpouse) || inp.deathYearOverrideSpouse < 1) err('deathYearOverrideSpouse', "Spouse's assumed death year must be a whole number, 1 or more.");
+      else if (inp.deathYearOverrideSpouse > MAX_PROJECTION_YEARS) err('deathYearOverrideSpouse', `Spouse's assumed death year cannot exceed ${MAX_PROJECTION_YEARS}.`);
+      if (isInt(inp.ageSpouse) && inp.ageSpouse > MAX_GRANTOR_AGE) err('ageSpouse', `Spouse's age cannot exceed ${MAX_GRANTOR_AGE}.`);
+    } else {
+      const problems = Array.isArray(inp.lxSpouse) ? validateLx(inp.lxSpouse) : ['no mortality table supplied for the spouse'];
+      if (problems.length) err('lxSpouse', `Spouse's mortality table: ${problems[0]}.`);
+      else if (isInt(inp.ageSpouse) && inp.ageSpouse >= 0) {
+        if (inp.ageSpouse >= inp.lxSpouse.length) err('ageSpouse', `Spouse's age is beyond the mortality table (last age ${inp.lxSpouse.length - 1}); use assumed death years.`);
+        else if (!(inp.lxSpouse[inp.ageSpouse] > 0)) err('ageSpouse', `The mortality table has no survivors at the spouse's age ${inp.ageSpouse}; use assumed death years.`);
+      }
+    }
+    if (inp.PS != null && (!isNum(inp.PS) || inp.PS < 0)) err('PS', "Spouse's prior taxable gifts cannot be negative.");
+    if (inp.XPS != null && (!isNum(inp.XPS) || inp.XPS < 0)) err('XPS', "Spouse's prior-gift exclusion cannot be negative.");
+    if (inp.portability != null && typeof inp.portability !== 'boolean') err('portability', 'Portability must be on or off.');
   }
 
   // Rates
@@ -206,5 +238,7 @@ export function validateInputs(inp) {
   // the implied-understanding caveat of Rev. Rul. 2004-64 describes; the safe harbour also needs state law that
   // keeps the trust out of the grantor's creditors' reach (§2036(a)(1) otherwise). Not priced.
   if (ing.burnShare < 1) warn('BURN_REIMBURSED', { burnShare: ing.burnShare });
+  if (inp.married === true && inp.portability === false) warn('PORTABILITY_OFF', {});
+  if (inp.married === true && (inp.PS ?? 0) > 0 && inp.XPS != null && inp.PS > inp.XPS) warn('SPOUSE_PRIOR_GIFT_TAX', { P: inp.PS, XP: inp.XPS });
   return { errors, warnings };
 }

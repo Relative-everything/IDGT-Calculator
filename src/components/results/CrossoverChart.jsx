@@ -33,7 +33,7 @@ function LineKey({ color, label }) {
  * @param {{ rows: { t: number, age: number, q: number, dH: number, dHIdgt: number }[], leadYears?: number[], expectedDeathYear?: number, sStar: number, maxYears?: number }} props
  *   leadYears: the engine's `vsIdgt.ingLeadsYears` (years the ING leads, with the model's tie tolerance)
  */
-export default function CrossoverChart({ rows, leadYears = [], expectedDeathYear, sStar, maxYears }) {
+export default function CrossoverChart({ rows, leadYears = [], expectedDeathYear, sStar, maxYears, married = false }) {
   const [ref, width] = useContainerWidth();
   const [hover, setHover] = useState(null);
   if (!rows?.length) return null;
@@ -118,11 +118,11 @@ export default function CrossoverChart({ rows, leadYears = [], expectedDeathYear
         {xTicks.map((t) => (
           <text key={t} x={x(t)} y={plotBottom + 16} textAnchor="middle" fontSize="11" fill="var(--ink-muted)" className="tabular">{t}</text>
         ))}
-        <text x={M.left + plotW / 2} y={H - 4} textAnchor="middle" fontSize="11" fill="var(--ink-2)">death at end of year</text>
+        <text x={M.left + plotW / 2} y={H - 4} textAnchor="middle" fontSize="11" fill="var(--ink-2)">{married ? 'second death at end of year' : 'death at end of year'}</text>
         {showDeath && (
           <g>
             <line x1={x(expectedDeathYear)} x2={x(expectedDeathYear)} y1={M.top} y2={plotBottom} stroke="var(--line-strong)" strokeWidth="1" />
-            <text x={x(expectedDeathYear)} y={M.top - 7} textAnchor={deathAnchor} fontSize="10" fill="var(--ink-muted)">expected death</text>
+            <text x={x(expectedDeathYear)} y={M.top - 7} textAnchor={deathAnchor} fontSize="10" fill="var(--ink-muted)">{married ? 'expected second death' : 'expected death'}</text>
           </g>
         )}
         <path d={path('dHIdgt')} fill="none" stroke={COLOR.IDGT} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />

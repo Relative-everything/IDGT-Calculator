@@ -2,10 +2,14 @@
 // calculator. Each is a full UI state (strings / percents) layered on the app's defaults (src/App.jsx).
 
 export const DEFAULTS = {
-  grantor: { age: '65', sex: 'male', useDeathYear: false, deathYear: '20', fedOrd: '37', stateOrd: '5', niit: '3.8', fedLtcg: '20', stateLtcg: '5' },
+  grantor: {
+    age: '65', sex: 'male', useDeathYear: false, deathYear: '20', fedOrd: '37', stateOrd: '5', niit: '3.8', fedLtcg: '20', stateLtcg: '5',
+    lifeTable: 'ssa-2023-tr2026', married: false, spouseAge: '63', spouseSex: 'female', spouseDeathYear: '25', portability: true,
+  },
   estate: {
     otherEstate: '20000000', otherEstateGrowth: '3', exclusion: '15000000', exclusionIndexing: '2',
     priorGifts: '0', priorGiftYear: '2025', priorExclusionMode: 'year', priorGiftExclusion: '13990000',
+    spousePriorGifts: '0', spousePriorGiftYear: '2025', spousePriorExclusionMode: 'year', spousePriorGiftExclusion: '13990000',
     estateTaxRate: '40', beneFedLtcg: '20', beneStateLtcg: '5', beneNiit: true, yearsToSale: '1', discountRate: '4', maxYears: '35',
   },
   settings: {
@@ -102,5 +106,60 @@ export const PERSONAS = [
     estate: { otherEstate: '24000000' },
     settings: { saleAppliesToBaseline: false },
     asset: { fmv: '4000000', basis: '400000', growth: '8', yield: '1', saleYear: '3', postSaleGrowth: '6', postSaleYield: '2' },
+  }),
+  // Life tables and married couples (docs/changes/2026-09-27-life-tables/model.md)
+  persona('P17-married-defaults', 'The app defaults with "Married" on: 65M and 63F, portability elected, $20M couple estate.', {
+    grantor: { married: true },
+  }),
+  persona('P18-married-no-portability', 'Married, $20M estate, portability NOT elected: the grantor\'s exclusion is lost at a first death, so the gift uses it for free.', {
+    grantor: { married: true, portability: false },
+  }),
+  persona('P19-young-founder-couple', 'Founder 45M, spouse 43F, $60M estate, $20M pre-IPO stock at 25% off, sale in year 6 — long joint horizon.', {
+    grantor: { age: '45', married: true, spouseAge: '43', stateOrd: '13.3', stateLtcg: '13.3' },
+    estate: { otherEstate: '60000000', otherEstateGrowth: '4' },
+    asset: { fmv: '20000000', basis: '100000', discount: '25', growth: '14', yield: '0', saleYear: '6', postSaleGrowth: '6', postSaleYield: '2' },
+  }),
+  persona('P20-same-sex-exhausted', 'Same-sex couple 70F / 68F, grantor used the 2021 exclusion (gift tax on this gift; §2035(b) add-back taxed at a first death).', {
+    grantor: { age: '70', sex: 'female', married: true, spouseAge: '68', spouseSex: 'female' },
+    estate: { otherEstate: '40000000', priorGifts: '11700000', priorGiftYear: '2021' },
+    asset: { fmv: '8000000', basis: '5000000', discount: '35', growth: '5', yield: '3' },
+  }),
+  persona('P21-spouse-made-a-slat', 'Grantor 72M, spouse 74F who funded a $10M SLAT in 2021: smaller DSUE if the spouse dies first, smaller own exclusion if not.', {
+    grantor: { age: '72', married: true, spouseAge: '74' },
+    estate: { otherEstate: '30000000', spousePriorGifts: '10000000', spousePriorGiftYear: '2021' },
+    asset: { fmv: '5000000', basis: '1000000', growth: '7', yield: '2' },
+  }),
+  persona('P22-married-assumed-deaths', 'Assumed deaths: grantor year 3 (inside §2035(b)), spouse year 12; exclusion exhausted in 2025.', {
+    grantor: { age: '74', married: true, spouseAge: '66', useDeathYear: true, deathYear: '3', spouseDeathYear: '12' },
+    estate: { otherEstate: '45000000', priorGifts: '13990000', priorGiftYear: '2025' },
+    asset: { fmv: '6000000', basis: '1500000', growth: '8', yield: '2.5' },
+  }),
+  persona('P23-legacy-table', 'The legacy 2021 table (unverified, flagged) for a 66M single grantor — reproduces earlier results.', {
+    grantor: { age: '66', lifeTable: 'ssa-2021-legacy' },
+    estate: { otherEstate: '26000000' },
+    asset: { fmv: '3000000', basis: '500000', growth: '7', yield: '2' },
+  }),
+  persona('P24-married-ny-ing', 'NY couple 61M / 59F weighing an ING (NY taxes the grantor on INGs; 0.5% trustee fee).', {
+    grantor: { age: '61', married: true, spouseAge: '59', stateOrd: '10.9', stateLtcg: '10.9' },
+    estate: { otherEstate: '35000000' },
+    settings: { ingStateTaxOnGrantor: true, ingAdminRate: '0.5' },
+    asset: { fmv: '10000000', basis: '4000000', growth: '4', yield: '4' },
+  }),
+  persona('P25-older-spouse-custom-swap', 'Grantor 80M, older spouse 86F, sale in year 2, non-neutral custom consideration, 60% burn share.', {
+    grantor: { age: '80', married: true, spouseAge: '86' },
+    estate: { otherEstate: '22000000' },
+    settings: { swapCustom: true, swapBasisPct: '50', swapGrowth: '5', swapYield: '1.5', swapTaxRate: '40', burnShare: '60' },
+    asset: { fmv: '4000000', basis: '600000', growth: '9', yield: '1', saleYear: '2', postSaleGrowth: '5', postSaleYield: '2' },
+  }),
+  persona('P26-spouse-first-inside-2035b', 'Exclusion used in 2025, gift tax on this gift; assumed deaths spouse year 1, grantor year 2 — the add-back falls in the grantor\'s (second) estate, nothing is taxed at a first death.', {
+    grantor: { age: '70', married: true, spouseAge: '72', useDeathYear: true, deathYear: '2', spouseDeathYear: '1' },
+    estate: { otherEstate: '30000000', priorGifts: '13990000', priorGiftYear: '2025' },
+    asset: { fmv: '2000000', basis: '500000', growth: '7', yield: '2' },
+  }),
+  persona('P27-married-ing-fee-after-grantor', 'ING with a 0.5% fee; the asset is sold in year 5 into a no-yield holding, but the grantor dies in year 2 — the ING (and its fee) ends then.', {
+    grantor: { age: '76', married: true, spouseAge: '70', useDeathYear: true, deathYear: '2', spouseDeathYear: '10' },
+    estate: { otherEstate: '25000000' },
+    settings: { ingAdminRate: '0.5' },
+    asset: { fmv: '3000000', basis: '900000', growth: '5', yield: '4', saleYear: '5', postSaleGrowth: '5', postSaleYield: '0' },
   }),
 ];

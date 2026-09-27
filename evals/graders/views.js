@@ -1,11 +1,17 @@
 // Normalise engine and oracle results into one comparable "view" so graders compare like with like.
 
 export function engineView(res, ing) {
+  const married = Boolean(res.lives?.married);
   const row = (r) => ({
     t: r.t, V: r.V, Vs: r.Vs, Eb: r.Eb, Es: r.Es, T: r.T, TEb: r.TEb, TEs: r.TEs,
     ETb: r.ETb, ETs: r.ETs, SUb: r.SUb, SUs: r.SUs, Hb: r.Hb, Hs: r.Hs, dH: r.dH,
+    ...(married ? { ET1: r.ET1, dsueHold: r.dsueHold, dsueGift: r.dsueGift, grantorFirst: r.grantorFirst } : {}),
   });
   return {
+    married: married ? {
+      NG: res.derived.NG, NS: res.derived.NS, qG: res.lives.qG, qS: res.lives.qS,
+      expectedGrantorDeathYear: res.derived.expectedGrantorDeathYear,
+    } : null,
     N: res.derived.N,
     q: res.q,
     expectedDeathYear: res.derived.expectedDeathYear,
@@ -17,8 +23,37 @@ export function engineView(res, ing) {
     rowsOpt: res.rows.opt.map(row),
     ing: ing ? {
       npv: ing.npv, deltaOpt: ing.vsIdgt.deltaOpt, deltaNone: ing.vsIdgt.deltaNone, verdict: ing.vsIdgt.verdict,
-      rows: ing.rows.map((r) => ({ t: r.t, Vn: r.Vn, En: r.En, TEn: r.TEn, ETn: r.ETn, SUn: r.SUn, Hn: r.Hn, dH: r.dH })),
+      rows: ing.rows.map((r) => ({ t: r.t, Vn: r.Vn, En: r.En, TEn: r.TEn, ETn: r.ETn, SUn: r.SUn, Hn: r.Hn, dH: r.dH, ...(married ? { dsue: r.dsue } : {}) })),
     } : null,
+  };
+}
+
+/** The married-couple oracle (../oracle/couple.js) in the same shape; rows at the ENGINE's s* when the oracle can do it. */
+export function coupleView(oc, sStar = oc.sStar) {
+  const at = oc.feasibleAt(sStar) ? sStar : oc.sStar;
+  const pick = (r) => ({
+    t: r.t, V: r.V, Vs: r.Vs, Eb: r.Eb, Es: r.Es, T: r.T, TEb: r.TEb, TEs: r.TEs, ETb: r.ETb, ETs: r.ETs, SUb: r.SUb, SUs: r.SUs,
+    Hb: r.Hb, Hs: r.Hs, dH: r.dH, ET1: r.ET1, dsueHold: r.dsueHold, dsueGift: r.dsueGift, grantorFirst: r.grantorFirst,
+  });
+  const npvAtEngine = oc.npvAt(at);
+  const deltaOpt = oc.npvIng - oc.npvOpt;
+  const tol = 1e-6 * Math.max(1, Math.abs(oc.npvOpt));
+  return {
+    married: { NG: oc.lives.NG, NS: oc.lives.NS, qG: oc.lives.qG, qS: oc.lives.qS, expectedGrantorDeathYear: oc.expectedGrantorDeathYear },
+    N: oc.N,
+    q: oc.q,
+    expectedDeathYear: oc.expectedDeathYear,
+    derived: { Ug: oc.facts.Ug, R: oc.facts.R, Uc: oc.facts.Uc, G: oc.facts.G, BT0: oc.facts.BT0 },
+    npvNone: oc.npvNone, npvOpt: oc.npvOpt, sStar: oc.sStar, npvPF: oc.npvPF, maxNpv: oc.maxNpv, npvAtEngine,
+    eff: oc.eff, effPerGiftTax: oc.effPerGiftTax, effPerFMV: oc.effPerFMV,
+    curve: oc.curve.map((c) => ({ s: c.s, npv: c.npv, feasible: c.feasible })),
+    curveSampled: oc.curve.length !== oc.lives.NG + 1,
+    rowsNone: oc.rowsAt(0).map(pick),
+    rowsOpt: oc.rowsAt(at).map(pick),
+    ing: {
+      npv: oc.npvIng, deltaOpt, deltaNone: oc.npvIng - oc.npvNone, verdict: deltaOpt > tol ? 'ING' : deltaOpt < -tol ? 'IDGT' : 'tie',
+      rows: oc.ingRows,
+    },
   };
 }
 

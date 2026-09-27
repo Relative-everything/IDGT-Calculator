@@ -13,7 +13,7 @@ const { summary, failing } = res;
 const fmt = (x) => (typeof x === 'number' ? (Math.abs(x) >= 1000 ? x.toFixed(2) : x.toPrecision(10)) : String(x));
 
 console.log(`\nIDGT calculator evals — ${summary.label} (seed ${summary.seed}, ${summary.seconds.toFixed(1)} s, pipeline: ${summary.pipeline})`);
-console.log(`Scenarios: ${summary.personas} personas + ${summary.sweep} sweep → ${summary.scenariosEvaluated} evaluated, ${summary.scenariosRejected} rejected by validation; ${summary.handCases} hand calculations`);
+console.log(`Scenarios: ${summary.personas} personas + ${summary.sweep} sweep → ${summary.scenariosEvaluated} evaluated (${summary.scenariosMarried} married couples, ${summary.marriedFullCurve} with the full swap curve), ${summary.scenariosRejected} rejected by validation; ${summary.handCases} hand calculations`);
 for (const [name, L] of Object.entries(summary.layers).sort()) {
   console.log(`  ${name.padEnd(26)} ${String(L.checks - L.failingChecks).padStart(4)}/${String(L.checks).padEnd(4)} checks pass   ${String(L.assertions - L.failures).padStart(7)}/${L.assertions} assertions`);
 }

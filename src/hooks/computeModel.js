@@ -4,12 +4,14 @@ import { evaluateAsset, resolveSwapProfile } from '../engine/idgtModel.js';
 import { evaluateIng } from '../engine/ingModel.js';
 import { validateInputs } from '../engine/validate.js';
 import { rankAssets } from '../engine/ranking.js';
-import { buildEngineInputs, validateUiFields, FIELD_LABELS } from './buildInputs.js';
+import { lifeExpectancyYears } from '../engine/mortality.js';
+import { buildEngineInputs, validateUiFields, FIELD_LABELS, lifeTableFor } from './buildInputs.js';
 
 /**
  * @param {{ grantor:object, estate:object, settings:object, assets:object[] }} state - UI state
  * @returns {{ perAsset: object[], ranked: object[], remainingExclusion: number|null, neutralSwapYield: number|null,
- *   neutralSwap: { bSw:number, gSw:number, ySw:number, tauSw:number }|null, swapRates: { rE:number, tauOrd:number }|null }}
+ *   neutralSwap: { bSw:number, gSw:number, ySw:number, tauSw:number }|null, swapRates: { rE:number, tauOrd:number }|null,
+ *   mortality: object }}
  */
 export function computeModel({ grantor, estate, settings, assets }) {
   const perAsset = assets.map((asset) => {
@@ -41,5 +43,25 @@ export function computeModel({ grantor, estate, settings, assets }) {
       swapRates = { rE, tauOrd };
     }
   }
-  return { perAsset, ranked, remainingExclusion, neutralSwapYield: neutralSwap?.ySw ?? null, neutralSwap, swapRates };
+  return { perAsset, ranked, remainingExclusion, neutralSwapYield: neutralSwap?.ySw ?? null, neutralSwap, swapRates, mortality: mortalitySummary(grantor, ok[0]) };
+}
+
+/**
+ * What the grantor panel shows about mortality: the chosen table and its verification, and the life expectancies the
+ * engine's death-year probabilities imply (grantor, spouse, and the second death for a couple). Shared by all assets.
+ */
+function mortalitySummary(grantor, first) {
+  const table = lifeTableFor(grantor.lifeTable);
+  const out = {
+    table: { id: table.id, label: table.label, verified: table.verified },
+    married: Boolean(grantor.married), deterministic: Boolean(grantor.useDeathYear), grantorYears: null, spouseYears: null, secondDeathYears: null,
+  };
+  if (!first || grantor.useDeathYear) return out;
+  const lives = first.result.lives;
+  out.grantorYears = lifeExpectancyYears(lives.qG);
+  if (lives.married) {
+    out.spouseYears = lifeExpectancyYears(lives.qS);
+    out.secondDeathYears = lifeExpectancyYears(lives.qL);
+  }
+  return out;
 }

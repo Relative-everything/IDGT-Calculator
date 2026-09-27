@@ -1,0 +1,489 @@
+{
+  "summary": {
+    "mutations": 14,
+    "stale": 0,
+    "caughtByEval": 14,
+    "caughtByUnit": 14,
+    "caughtByEither": 14
+  },
+  "results": [
+    {
+      "id": "M01",
+      "defect": "spouse's table column wired to the grantor's sex",
+      "file": "src/hooks/buildInputs.js",
+      "caughtByEval": true,
+      "evalFailingChecks": 76,
+      "evalExamples": [
+        {
+          "layer": "L2 oracle agreement",
+          "check": "death probabilities q",
+          "fail": 52
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "expected death year",
+          "fail": 52
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "NPV no swap",
+          "fail": 52
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "NPV by swap year (whole curve, or the sampled years)",
+          "fail": 52
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "NPV at s*",
+          "fail": 52
+        }
+      ],
+      "caughtByUnit": true,
+      "unitTests": "2 failed | 261 passed | 1 skipped (264)",
+      "seconds": 22.012
+    },
+    {
+      "id": "M02",
+      "defect": "legacy table choice silently falls back to the default table",
+      "file": "src/hooks/buildInputs.js",
+      "caughtByEval": true,
+      "evalFailingChecks": 75,
+      "evalExamples": [
+        {
+          "layer": "L2 oracle agreement",
+          "check": "horizon N",
+          "fail": 20
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "death probabilities q",
+          "fail": 20
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "expected death year",
+          "fail": 20
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "NPV no swap",
+          "fail": 20
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "NPV by swap year (whole curve, or the sampled years)",
+          "fail": 20
+        }
+      ],
+      "caughtByUnit": true,
+      "unitTests": "2 failed | 261 passed | 1 skipped (264)",
+      "seconds": 22.956
+    },
+    {
+      "id": "M03",
+      "defect": "q-basis table not closed at 120 (published q₁₁₉ used, one extra year)",
+      "file": "src/engine/mortality.js",
+      "caughtByEval": true,
+      "evalFailingChecks": 53,
+      "evalExamples": [
+        {
+          "layer": "L2 oracle agreement",
+          "check": "horizon N",
+          "fail": 140
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "death probabilities q",
+          "fail": 140
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "ledger (no swap): one row per year of the (second) death",
+          "fail": 140
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "ledger (s*): one row per year of the (second) death",
+          "fail": 140
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "ING ledger: Vn",
+          "fail": 140
+        }
+      ],
+      "caughtByUnit": true,
+      "unitTests": "4 failed | 259 passed | 1 skipped (264)",
+      "seconds": 22.495
+    },
+    {
+      "id": "M04",
+      "defect": "second-death distribution in the difference form (cancels in the tail)",
+      "file": "src/engine/mortality.js",
+      "caughtByEval": true,
+      "evalFailingChecks": 45,
+      "evalExamples": [
+        {
+          "layer": "L2 oracle agreement",
+          "check": "ledger (no swap): V",
+          "fail": 57
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "ledger (no swap): Vs",
+          "fail": 57
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "ledger (no swap): T",
+          "fail": 57
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "ledger (no swap): TEb",
+          "fail": 57
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "ledger (no swap): ETb",
+          "fail": 57
+        }
+      ],
+      "caughtByUnit": true,
+      "unitTests": "1 failed | 262 passed | 1 skipped (264)",
+      "seconds": 22.681
+    },
+    {
+      "id": "M05",
+      "defect": "the gift does not reduce the grantor's DSUE",
+      "file": "src/engine/marriedModel.js",
+      "caughtByEval": true,
+      "evalFailingChecks": 42,
+      "evalExamples": [
+        {
+          "layer": "L1 hand calc",
+          "check": "engine: HC-M1 row.none.2.dsueGift",
+          "fail": 1
+        },
+        {
+          "layer": "L1 hand calc",
+          "check": "engine: HC-M1 row.none.2.ETs",
+          "fail": 1
+        },
+        {
+          "layer": "L1 hand calc",
+          "check": "engine: HC-M1 row.none.2.dH",
+          "fail": 1
+        },
+        {
+          "layer": "L1 hand calc",
+          "check": "engine: HC-M1 npvNone",
+          "fail": 1
+        },
+        {
+          "layer": "L1 hand calc",
+          "check": "engine: HC-M2 row.none.2.dH",
+          "fail": 1
+        }
+      ],
+      "caughtByUnit": true,
+      "unitTests": "4 failed | 259 passed | 1 skipped (264)",
+      "seconds": 21.726
+    },
+    {
+      "id": "M06",
+      "defect": "first-death tax not grossed up (§2056(b)(4)(A) ignored)",
+      "file": "src/engine/marriedModel.js",
+      "caughtByEval": true,
+      "evalFailingChecks": 22,
+      "evalExamples": [
+        {
+          "layer": "L1 hand calc",
+          "check": "engine: HC-M6 row.none.2.ET1",
+          "fail": 1
+        },
+        {
+          "layer": "L1 hand calc",
+          "check": "engine: HC-M6 npvNone",
+          "fail": 1
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "ledger (no swap): Es",
+          "fail": 17
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "ledger (no swap): TEs",
+          "fail": 17
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "ledger (no swap): Hs",
+          "fail": 17
+        }
+      ],
+      "caughtByUnit": true,
+      "unitTests": "1 failed | 262 passed | 1 skipped (264)",
+      "seconds": 22.034
+    },
+    {
+      "id": "M07",
+      "defect": "the IDGT stays a grantor trust after the grantor's death (pays no tax)",
+      "file": "src/engine/marriedModel.js",
+      "caughtByEval": true,
+      "evalFailingChecks": 43,
+      "evalExamples": [
+        {
+          "layer": "L1 hand calc",
+          "check": "engine: HC-M2 row.none.2.Vs",
+          "fail": 1
+        },
+        {
+          "layer": "L1 hand calc",
+          "check": "engine: HC-M2 row.none.2.dH",
+          "fail": 1
+        },
+        {
+          "layer": "L1 hand calc",
+          "check": "engine: HC-M2 npvNone",
+          "fail": 1
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "NPV no swap",
+          "fail": 65
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "NPV by swap year (whole curve, or the sampled years)",
+          "fail": 65
+        }
+      ],
+      "caughtByUnit": true,
+      "unitTests": "1 failed | 262 passed | 1 skipped (264)",
+      "seconds": 21.394
+    },
+    {
+      "id": "M08",
+      "defect": "the spouse's DSUE ignores the spouse's own prior gifts",
+      "file": "src/engine/marriedModel.js",
+      "caughtByEval": true,
+      "evalFailingChecks": 39,
+      "evalExamples": [
+        {
+          "layer": "L1 hand calc",
+          "check": "engine: HC-M7 row.none.2.dsueHold",
+          "fail": 1
+        },
+        {
+          "layer": "L1 hand calc",
+          "check": "engine: HC-M7 row.none.2.ETb",
+          "fail": 1
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "ledger (no swap): ETb",
+          "fail": 29
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "ledger (no swap): Hb",
+          "fail": 29
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "ledger (s*): ETb",
+          "fail": 29
+        }
+      ],
+      "caughtByUnit": true,
+      "unitTests": "1 failed | 262 passed | 1 skipped (264)",
+      "seconds": 22.143
+    },
+    {
+      "id": "M09",
+      "defect": "portability election ignored (always on)",
+      "file": "src/engine/marriedModel.js",
+      "caughtByEval": true,
+      "evalFailingChecks": 34,
+      "evalExamples": [
+        {
+          "layer": "L1 hand calc",
+          "check": "engine: HC-M5 row.none.2.ETb",
+          "fail": 1
+        },
+        {
+          "layer": "L1 hand calc",
+          "check": "engine: HC-M5 row.none.2.ETs",
+          "fail": 1
+        },
+        {
+          "layer": "L1 hand calc",
+          "check": "engine: HC-M5 npvNone",
+          "fail": 1
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "ledger (no swap): ETb",
+          "fail": 10
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "ledger (no swap): ETs",
+          "fail": 10
+        }
+      ],
+      "caughtByUnit": true,
+      "unitTests": "3 failed | 260 passed | 1 skipped (264)",
+      "seconds": 21.884
+    },
+    {
+      "id": "M10",
+      "defect": "swapped-back asset not stepped up at the first death",
+      "file": "src/engine/marriedModel.js",
+      "caughtByEval": true,
+      "evalFailingChecks": 11,
+      "evalExamples": [
+        {
+          "layer": "L1 hand calc",
+          "check": "engine: HC-M8 curve.1",
+          "fail": 1
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "NPV by swap year (whole curve, or the sampled years)",
+          "fail": 11
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "deathbed-swap value",
+          "fail": 11
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "NPV at s*",
+          "fail": 9
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "NPV per $ taxable gift (opt)",
+          "fail": 9
+        }
+      ],
+      "caughtByUnit": true,
+      "unitTests": "1 failed | 262 passed | 1 skipped (264)",
+      "seconds": 22.273
+    },
+    {
+      "id": "M11",
+      "defect": "survivor taxed at the wrong rate on the ING property after the first death",
+      "file": "src/engine/marriedModel.js",
+      "caughtByEval": true,
+      "evalFailingChecks": 28,
+      "evalExamples": [
+        {
+          "layer": "L1 hand calc",
+          "check": "engine: HC-M9 ing.npv",
+          "fail": 1
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "ING NPV",
+          "fail": 65
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "ING minus IDGT (best swap)",
+          "fail": 65
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "ING minus IDGT (no swap)",
+          "fail": 65
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "ING ledger: En",
+          "fail": 65
+        }
+      ],
+      "caughtByUnit": true,
+      "unitTests": "1 failed | 262 passed | 1 skipped (264)",
+      "seconds": 22.376
+    },
+    {
+      "id": "M12",
+      "defect": "FIRST_DEATH_TAX raised although the spouse surely dies first",
+      "file": "src/engine/marriedModel.js",
+      "caughtByEval": true,
+      "evalFailingChecks": 1,
+      "evalExamples": [
+        {
+          "layer": "L3 invariants & theorems",
+          "check": "warning FIRST_DEATH_TAX iff the add-back is taxed at a possible first death",
+          "fail": 1
+        }
+      ],
+      "caughtByUnit": true,
+      "unitTests": "1 failed | 262 passed | 1 skipped (264)",
+      "seconds": 22.734
+    },
+    {
+      "id": "M13",
+      "defect": "ING fee warning looks past the grantor's death",
+      "file": "src/engine/ingModel.js",
+      "caughtByEval": true,
+      "evalFailingChecks": 1,
+      "evalExamples": [
+        {
+          "layer": "L3 invariants & theorems",
+          "check": "warning ING_FEE_EXCEEDS_YIELD iff the ING must liquidate to pay its fee",
+          "fail": 1
+        }
+      ],
+      "caughtByUnit": true,
+      "unitTests": "1 failed | 262 passed | 1 skipped (264)",
+      "seconds": 21.609
+    },
+    {
+      "id": "M14",
+      "defect": "same-year deaths double-counted in the NPV (half weight also given to spouse-first)",
+      "file": "src/engine/marriedModel.js",
+      "caughtByEval": true,
+      "evalFailingChecks": 28,
+      "evalExamples": [
+        {
+          "layer": "L1 hand calc",
+          "check": "engine: HC-M10 npvNone",
+          "fail": 1
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "NPV no swap",
+          "fail": 61
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "NPV by swap year (whole curve, or the sampled years)",
+          "fail": 61
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "ING minus IDGT (no swap)",
+          "fail": 61
+        },
+        {
+          "layer": "L2 oracle agreement",
+          "check": "NPV per $ taxable gift (none)",
+          "fail": 58
+        }
+      ],
+      "caughtByUnit": true,
+      "unitTests": "1 failed | 262 passed | 1 skipped (264)",
+      "seconds": 21.814
+    }
+  ]
+}

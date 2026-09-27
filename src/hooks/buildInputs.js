@@ -1,11 +1,9 @@
 // Pure mapping from UI state (strings, percents) to the engine's flat input (numbers, decimals).
 // No React. Every UI field is mapped here; buildInputs.test.js walks this mapping.
 
-import { lxColumn } from '../engine/mortality.js';
-import { SSA_2021_LX } from '../data/mortalityTable.js';
+import { lxFromLifeTable } from '../engine/mortality.js';
+import { LIFE_TABLE_BY_ID, DEFAULT_LIFE_TABLE_ID } from '../data/lifeTables/index.js';
 import { BASIC_EXCLUSION_BY_YEAR } from '../data/exclusionAmounts.js';
-
-const LX_CACHE = {};
 
 /** Parse a user-typed number; commas and blanks tolerated. Returns NaN when not a number. */
 export function parseNum(v) {
@@ -25,10 +23,12 @@ const int = (v) => {
 
 /** UI field labels for validation messages. */
 export const UI_LABELS = {
-  age: 'Age', deathYear: 'Assumed death year', fedOrd: 'Federal ordinary rate', stateOrd: 'State ordinary rate', niit: 'NIIT',
+  age: 'Age', deathYear: 'Assumed death year', spouseAge: "Spouse's age", spouseDeathYear: "Spouse's assumed death year",
+  fedOrd: 'Federal ordinary rate', stateOrd: 'State ordinary rate', niit: 'NIIT',
   fedLtcg: 'Federal LTCG rate', stateLtcg: 'State LTCG rate',
   otherEstate: 'Other estate', otherEstateGrowth: 'Other-estate growth', exclusion: 'Basic exclusion', exclusionIndexing: 'Exclusion indexing',
   priorGifts: 'Prior taxable gifts', priorGiftExclusion: 'Prior-gift exclusion', estateTaxRate: 'Estate tax rate',
+  spousePriorGifts: "Spouse's prior taxable gifts", spousePriorGiftExclusion: "Spouse's prior-gift exclusion",
   beneFedLtcg: "Heirs' federal LTCG rate", beneStateLtcg: "Heirs' state LTCG rate", yearsToSale: 'Years until heirs sell',
   discountRate: 'Discount rate', maxYears: 'Table display horizon',
   swapBasisPct: 'Consideration basis', swapGrowth: 'Consideration growth', swapYield: 'Consideration yield', swapTaxRate: 'Rate on consideration yield',
@@ -55,6 +55,12 @@ export function validateUiFields({ grantor, estate, settings, asset }) {
   };
   need(grantor, 'age', { integer: true });
   if (grantor.useDeathYear) need(grantor, 'deathYear', { integer: true });
+  if (grantor.married) {
+    need(grantor, 'spouseAge', { integer: true });
+    if (grantor.useDeathYear) need(grantor, 'spouseDeathYear', { integer: true });
+    need(estate, 'spousePriorGifts');
+    if (parseNum(estate.spousePriorGifts) > 0 && estate.spousePriorExclusionMode === 'custom') need(estate, 'spousePriorGiftExclusion');
+  }
   for (const f of ['fedOrd', 'stateOrd', 'niit', 'fedLtcg', 'stateLtcg']) need(grantor, f);
   for (const f of ['otherEstate', 'otherEstateGrowth', 'exclusion', 'exclusionIndexing', 'priorGifts', 'estateTaxRate', 'beneFedLtcg', 'beneStateLtcg', 'yearsToSale', 'discountRate']) need(estate, f);
   need(estate, 'maxYears', { integer: true });
@@ -67,16 +73,27 @@ export function validateUiFields({ grantor, estate, settings, asset }) {
   return errors;
 }
 
-export function lxFor(sex) {
-  const key = sex === 'female' ? 'female' : 'male';
-  if (!LX_CACHE[key]) LX_CACHE[key] = lxColumn(SSA_2021_LX, key);
-  return LX_CACHE[key];
+/** The chosen life table (registry, src/data/lifeTables); an unknown id falls back to the default table. */
+export function lifeTableFor(id) {
+  return LIFE_TABLE_BY_ID[id] ?? LIFE_TABLE_BY_ID[DEFAULT_LIFE_TABLE_ID];
+}
+
+/** Survivors column the engine uses for one sex of the chosen table. */
+export function lxFor(tableId, sex) {
+  return lxFromLifeTable(lifeTableFor(tableId), sex === 'female' ? 'female' : 'male');
 }
 
 /** Exclusion of the prior-gift year: from the table when a year is chosen, else the custom amount. */
 export function priorGiftExclusion(estate) {
   if (estate.priorExclusionMode === 'custom') return parseNum(estate.priorGiftExclusion);
   const year = int(estate.priorGiftYear);
+  return BASIC_EXCLUSION_BY_YEAR[year] ?? NaN;
+}
+
+/** The same for the spouse's prior gifts (married couples). */
+export function spousePriorGiftExclusion(estate) {
+  if (estate.spousePriorExclusionMode === 'custom') return parseNum(estate.spousePriorGiftExclusion);
+  const year = int(estate.spousePriorGiftYear);
   return BASIC_EXCLUSION_BY_YEAR[year] ?? NaN;
 }
 
@@ -92,11 +109,22 @@ export function buildEngineInputs({ grantor, estate, settings, asset }) {
   const P = parseNum(estate.priorGifts);
   const beneNiit = estate.beneNiit ? pct(grantor.niit) : 0;
   const custom = settings.swapCustom;
+  const married = Boolean(grantor.married);
+  const PS = married ? parseNum(estate.spousePriorGifts) : 0;
   return {
     // grantor
     age: int(grantor.age),
-    lx: grantor.useDeathYear ? null : lxFor(grantor.sex),
+    lifeTableId: grantor.useDeathYear ? null : lifeTableFor(grantor.lifeTable).id, // provenance only; the engine reads lx
+    lx: grantor.useDeathYear ? null : lxFor(grantor.lifeTable, grantor.sex),
     deathYearOverride: grantor.useDeathYear ? int(grantor.deathYear) : null,
+    // married couple: estate tax at the second death (docs/changes/2026-09-27-life-tables/model.md)
+    married,
+    ageSpouse: married ? int(grantor.spouseAge) : null,
+    lxSpouse: married && !grantor.useDeathYear ? lxFor(grantor.lifeTable, grantor.spouseSex) : null,
+    deathYearOverrideSpouse: married && grantor.useDeathYear ? int(grantor.spouseDeathYear) : null,
+    portability: married ? grantor.portability !== false : true,
+    PS: Number.isFinite(PS) ? PS : NaN,
+    XPS: married && PS > 0 ? spousePriorGiftExclusion(estate) : parseNum(estate.exclusion),
     tauOrd: pct(grantor.fedOrd) + pct(grantor.stateOrd) + pct(grantor.niit),
     tauCg: pct(grantor.fedLtcg) + pct(grantor.stateLtcg) + pct(grantor.niit),
     // the same panel values un-summed, for the ING comparison (the trust stacks and the state-rate breakeven)
@@ -147,6 +175,13 @@ export function buildEngineInputs({ grantor, estate, settings, asset }) {
 export const FIELD_LABELS = {
   age: 'Grantor age',
   deathYearOverride: 'Assumed death year',
+  married: 'Married couple',
+  ageSpouse: "Spouse's age",
+  lxSpouse: "Spouse's mortality table",
+  deathYearOverrideSpouse: "Spouse's assumed death year",
+  portability: 'Portability',
+  PS: "Spouse's prior taxable gifts",
+  XPS: "Spouse's prior-gift exclusion",
   tauOrd: 'Grantor ordinary-income rate',
   tauCg: 'Grantor capital-gain rate',
   tauBene: 'Beneficiary capital-gain rate',

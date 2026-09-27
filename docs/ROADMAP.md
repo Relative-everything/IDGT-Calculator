@@ -50,7 +50,12 @@ mergeable, no conflicts; fresh clone → `npm ci`, 97 tests green, lint 0, build
 3. Smoke-check the live site: ranking renders, the mortality banner shows, "Download CSV" works.
 Acceptance: live URL shows the v1 build; `main` == the handback commit or its merge.
 
-## Phase 1 — Verify the SSA life table (Lite; data)
+## Phase 1 — Verify the SSA life table (Lite; data) — DONE 2026-09-27
+Shipped on branch `claude/charming-euler-ekiy6n`; change folder `docs/changes/2026-09-27-life-tables/`. The builder
+supplied the 2023 period table (2026 Trustees Report); it is the verified default in a life-table registry
+(`src/data/lifeTables/`), the 2021 column stays selectable as a flagged legacy table, and married couples (second-death
+estate tax, portability, independent joint lives) were added in the same change. The text below is the original plan.
+
 Why first: every probability-weighted number depends on `src/data/mortalityTable.js`, which is
 labelled UNVERIFIED (flag N1 in the v1 handback). The deterministic mode is unaffected.
 Prerequisite (builder): download the table and hand it to the session — either the HTML page
@@ -172,6 +177,8 @@ Goldens: one hand-computed case per mechanics class (builder-confirmed). Deliver
 needed: 4a mechanics + two states; 4b the remaining states.
 
 ## Phase 5 — SLAT and DSUE (Full)
+Partly in place since 2026-09-27: married couples use joint-life mortality from two columns (independent lives) and
+port the first spouse's DSUE at death (docs/changes/2026-09-27-life-tables/model.md). Still to build:
 SLAT: spouse as beneficiary; joint-life mortality from two l_x columns (independent lives —
 convention); optional spousal distributions (consumption, taxed as the gift ledger's yield);
 reciprocal-trust warning text only. DSUE: unindexed amount applied before the basic exclusion for

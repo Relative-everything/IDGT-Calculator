@@ -1,5 +1,5 @@
 import Card from '../ui/Card.jsx';
-import { MORTALITY_TABLE_META } from '../../data/mortalityTable.js';
+import { LIFE_TABLES } from '../../data/lifeTables/index.js';
 import { EXCLUSION_META } from '../../data/exclusionAmounts.js';
 
 function Section({ title, children }) {
@@ -21,6 +21,11 @@ export default function MethodologyPanel() {
       </Section>
       <Section title="The swap and its timing">
         <p>Exercising the §675(4)(C) substitution power at the end of year <em>s</em> moves the appreciated asset back into the estate (it will be stepped up) and puts consideration of equal value into the trust (Rev. Rul. 85-13 — no gain; Rev. Rul. 2008-22 — no inclusion). The curve re-runs the ledger for every feasible <em>s</em>; a swap is infeasible when the other estate cannot fund it or when the holding has already been sold. The best year maximises NPV. The “deathbed-swap value” assumes the swap is made at the end of the year of death; it is not an upper limit — when the swapped-in consideration out-earns the asset, an earlier swap moves more growth out of the estate and is worth more.</p>
+      </Section>
+      <Section title="Mortality, life tables and married couples">
+        <p>Death-year probabilities come from the life table you choose. The default is the <strong>SSA 2023 period life table used in the 2026 Trustees Report</strong>, loaded from the published page and checked value by value. The engine builds survivors from its one-year death probabilities (more precise than the rounded survivor column at advanced ages) and assumes everyone alive at 119 dies before 120.</p>
+        <p><strong>Married couples</strong> are valued pair by pair over both spouses' death years, drawn independently from the same table. At the first death everything passes to the survivor under the marital deduction (§2056) and, with portability, the first spouse's unused exclusion (DSUE, §2010(c)(4); Reg. §20.2010-2(c)) is added to the survivor's; estate tax falls at the second death. The gift reduces the DSUE the grantor leaves by the exclusion it used. The IDGT's own mechanics still end at the <em>grantor's</em> death: the tax burn and the swap power stop, the grantor's assets are stepped up, and the trust pays its own income tax from then on. If the grantor's exclusion is exhausted and death comes within three years, the §2035(b) add-back is taxed at the first death and reduces the marital share (§2056(b)(4)). The ING passes to the survivor in a marital-deduction form at the grantor's death. The ledger then shows each year's expected outcome given the second death in that year.</p>
+        <p><strong>Limits:</strong> a period table applies one year's death rates to every future year (no improvement), and the SSA table covers the whole population. Higher-income people live markedly longer (Chetty et al., JAMA 2016: 14.6 years between the top and bottom 1% of income for men, 10.1 for women), so the table likely places a UHNW client's death too early. Spouses' deaths are treated as independent; gift-splitting, community-property double step-up, remarriage and credit-shelter drafting are not modelled.</p>
       </Section>
       <Section title="Federal tax mechanics">
         <ul className="list-disc space-y-1 pl-5">
@@ -50,7 +55,9 @@ export default function MethodologyPanel() {
       </Section>
       <Section title="Data status">
         <ul className="list-disc space-y-1 pl-5">
-          <li>Mortality: {MORTALITY_TABLE_META.name}, period year {MORTALITY_TABLE_META.periodYear} ({MORTALITY_TABLE_META.publishedIn}). <strong>{MORTALITY_TABLE_META.verified ? 'Verified' : 'UNVERIFIED'}</strong>{!MORTALITY_TABLE_META.verified && ' — the build environment could not reach ssa.gov; the table was carried forward and plausibility-checked only. Use the assumed-death-year mode for a table-independent result.'}</li>
+          {LIFE_TABLES.map((t) => (
+            <li key={t.id}>Mortality: {t.label}. <strong>{t.verified ? `Verified ${t.checkedOn}` : 'UNVERIFIED'}</strong> — {t.provenance}</li>
+          ))}
           <li>Exclusion amounts: {EXCLUSION_META.authority} (checked {EXCLUSION_META.checkedOn}). {EXCLUSION_META.indexingNote}</li>
           <li>Rates: 37% top ordinary (permanent under OBBBA), 20% LTCG, 3.8% NIIT (§1411), 40% estate/gift — 2026.</li>
         </ul>

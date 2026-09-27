@@ -68,22 +68,53 @@ export function giftTaxSequence(periods, topRate) {
 /**
  * §2001(b) federal estate tax.
  * @param {object} p
- * @param {number} p.grossEstate         taxable estate (no deductions modelled)
+ * @param {number} p.grossEstate         taxable estate (gross estate less any deduction, e.g. the marital deduction)
  * @param {{amount:number, bea:number}[]} p.lifetimeGifts  post-1976 taxable gifts not included in the gross estate
  * @param {number} p.beaAtDeath          §2010(c)(3) basic exclusion amount for the year of death
  * @param {number} p.topRate
+ * @param {number} [p.dsue]              deceased spousal unused exclusion ported to this decedent (§2010(c)(2)(B))
  */
-export function estateTax({ grossEstate, lifetimeGifts, beaAtDeath, topRate }) {
+export function estateTax({ grossEstate, lifetimeGifts, beaAtDeath, topRate, dsue = 0 }) {
   const adjustedTaxableGifts = lifetimeGifts.reduce((a, g) => a + g.amount, 0);
   const tentative = tentativeTax(grossEstate + adjustedTaxableGifts, topRate);
   // §2001(b)(2), (g)(1): gift tax that would have been payable on those gifts at the date-of-death rates.
   const seq = giftTaxSequence(lifetimeGifts, topRate);
   const giftTaxPayable = seq.reduce((a, g) => a + g.tax, 0);
-  // §2010(c) applicable exclusion; Reg. §20.2010-1(c) anti-clawback: the credit is based on the greater of the
-  // BEA at death and the BEA allowable on the lifetime gifts.
+  // §2010(c) applicable exclusion = BEA + DSUE; Reg. §20.2010-1(c) anti-clawback raises the BEA part to the BEA
+  // allowable on the lifetime gifts when that is greater. The credit is the tentative tax on the applicable exclusion.
   const beaUsedByGifts = seq.reduce((a, g) => a + g.beaUsed, 0);
-  const credit = tentativeTax(Math.max(beaAtDeath, beaUsedByGifts), topRate);
+  const credit = tentativeTax(Math.max(beaAtDeath, beaUsedByGifts) + dsue, topRate);
   return Math.max(0, tentative - giftTaxPayable - credit);
+}
+
+/**
+ * Reg. §20.2010-2(c): the DSUE a decedent leaves the surviving spouse (portability, §2010(c)(4)) is the lesser of
+ * (i) the BEA in effect in the year of death and (ii) the decedent's applicable exclusion amount less the sum of the
+ * taxable estate and the adjusted taxable gifts — the latter reduced, for this purpose only, by the amounts on which
+ * gift tax was paid ((c)(2)), i.e. counting only the part of each gift the exclusion sheltered.
+ */
+export function dsueLeft({ taxableEstate, lifetimeGifts, beaAtDeath, topRate }) {
+  const seq = giftTaxSequence(lifetimeGifts, topRate);
+  const sheltered = seq.reduce((a, g) => a + g.beaUsed, 0);
+  const applicable = Math.max(beaAtDeath, sheltered);
+  return Math.max(0, Math.min(beaAtDeath, applicable - (taxableEstate + sheltered)));
+}
+
+/**
+ * First death with everything passing to the surviving spouse (§2056(a)). Items that cannot pass to the spouse (the
+ * §2035(b) gift-tax add-back) stay taxable, and the estate tax is paid out of the property that would otherwise pass,
+ * so the marital deduction is the value passing NET of that tax (§2056(b)(4)(A)). Solved by fixed-point iteration on
+ * taxable estate = non-marital items + tax (converges geometrically at rate τ_e).
+ * @returns {{ tax:number, taxableEstate:number }}
+ */
+export function firstDeathWithMaritalDeduction({ nonMaritalItems, lifetimeGifts, beaAtDeath, topRate }) {
+  let tax = 0;
+  for (let k = 0; k < 200; k += 1) {
+    const next = estateTax({ grossEstate: nonMaritalItems + tax, lifetimeGifts, beaAtDeath, topRate });
+    if (Math.abs(next - tax) <= 1e-9) { tax = next; break; }
+    tax = next;
+  }
+  return { tax, taxableEstate: nonMaritalItems + tax };
 }
 
 /**

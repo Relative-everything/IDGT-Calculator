@@ -2,26 +2,9 @@
 // Independent of src/engine (imports nothing from it).
 
 import { worldHold, worldGift, worldIng, giftFacts, resolve } from './worlds.js';
+import { deathDistribution } from './lives.js';
 
-/**
- * Death-year distribution from a survivors column l_x (actuarial definition): the probability that a life aged
- * x dies in year t is (l_{x+t−1} − l_{x+t}) / l_x. The column is closed at the first zero after x, or at the end
- * of the table (all remaining lives die in the last year).
- */
-export function deathDistribution(inp) {
-  if (inp.deathYearOverride != null) {
-    const q = Array.from({ length: inp.deathYearOverride }, (_, i) => (i === inp.deathYearOverride - 1 ? 1 : 0));
-    return { q, N: inp.deathYearOverride };
-  }
-  const { lx, age } = inp;
-  let end = lx.length;
-  for (let a = age + 1; a < lx.length; a += 1) if (lx[a] === 0) { end = a; break; }
-  const l = (a) => (a >= end ? 0 : lx[a]);
-  const N = end - age;
-  const q = [];
-  for (let t = 1; t <= N; t += 1) q.push((l(age + t - 1) - l(age + t)) / lx[age]);
-  return { q, N };
-}
+export { deathDistribution };
 
 const TIE = 1e-6; // the calculator's stated tie rule: within 1e-6·max(1,|NPV|) prefer no swap, then the earlier year
 

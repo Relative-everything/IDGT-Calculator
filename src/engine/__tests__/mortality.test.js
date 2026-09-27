@@ -67,3 +67,92 @@ describe('SSA table (provisional) — structural invariants', () => {
     expect(SSA_2021_LX[85].female).toBe(c.female[85]);
   });
 });
+
+describe('life-table registry (src/data/lifeTables)', () => {
+  it('every verified table matches its published checksum survivors, and the default table is verified', async () => {
+    const { LIFE_TABLES, DEFAULT_LIFE_TABLE_ID, LIFE_TABLE_BY_ID } = await import('../../data/lifeTables/index.js');
+    expect(LIFE_TABLE_BY_ID[DEFAULT_LIFE_TABLE_ID].verified).toBe(true);
+    for (const t of LIFE_TABLES.filter((x) => x.verified)) {
+      for (const sex of ['male', 'female']) {
+        for (const [age, l] of Object.entries(t.checksum[sex])) {
+          const published = t.basis === 'q' ? t.data[sex].l[Number(age)] : t.data[Number(age)][sex];
+          expect(published, `${t.id} ${sex} ${age}`).toBe(l);
+        }
+      }
+    }
+  });
+});
+
+describe('SSA 2023 period table (2026 Trustees Report) — derived from the published death probabilities', async () => {
+  const { LIFE_TABLE_BY_ID } = await import('../../data/lifeTables/index.js');
+  const { lxFromLifeTable, survivorsFromDeathRates, lifeExpectancyYears } = await import('../mortality.js');
+  const table = LIFE_TABLE_BY_ID['ssa-2023-tr2026'];
+  it('survivors rebuilt from q match the published (rounded) survivors within one life at every age', () => {
+    for (const sex of ['male', 'female']) {
+      const l = lxFromLifeTable(table, sex);
+      expect(l.length).toBe(121);
+      expect(l[120]).toBe(0);
+      for (let x = 0; x < 120; x += 1) expect(Math.abs(l[x] - table.data[sex].l[x]), `${sex} ${x}`).toBeLessThan(1);
+    }
+  });
+  it('Σ q_t = 1 for every starting age 0–119, both sexes; horizon closes at 120', () => {
+    for (const sex of ['male', 'female']) {
+      const lx = lxFromLifeTable(table, sex);
+      for (let age = 0; age <= 119; age += 1) {
+        const m = deathProbabilities({ lx, age });
+        expect(Math.abs(m.q.reduce((a, b) => a + b, 0) - 1), `${sex} ${age}`).toBeLessThanOrEqual(1e-12);
+        expect(m.N).toBe(120 - age);
+        expect(m.warnings).toEqual([]);
+      }
+    }
+  });
+  it('life expectancy implied by the engine equals the published column within 0.01 years at ages 1–110', () => {
+    for (const sex of ['male', 'female']) {
+      const lx = lxFromLifeTable(table, sex);
+      for (let age = 1; age <= 110; age += 1) {
+        const e = lifeExpectancyYears(deathProbabilities({ lx, age }).q);
+        expect(Math.abs(e - table.data[sex].e[age]), `${sex} ${age}: ${e} vs ${table.data[sex].e[age]}`).toBeLessThan(0.01);
+      }
+    }
+  });
+  it('the first-year death probability equals the published q (male 65: 0.016455; female 85: 0.071752)', () => {
+    expect(deathProbabilities({ lx: lxFromLifeTable(table, 'male'), age: 65 }).q[0]).toBeCloseTo(0.016455, 12);
+    expect(deathProbabilities({ lx: lxFromLifeTable(table, 'female'), age: 85 }).q[0]).toBeCloseTo(0.071752, 12);
+  });
+  it('closure at the terminal age: a survivor at 119 dies within the year', () => {
+    const m = deathProbabilities({ lx: survivorsFromDeathRates(table.data.male.q, 1, 120), age: 119 });
+    expect(m.q).toEqual([1]);
+  });
+});
+
+describe('second death of two independent lives', async () => {
+  const { secondDeathDistribution } = await import('../mortality.js');
+  it('two-year tables: q^G = (0.4, 0.6), q^S = (0.2, 0.8) → q^L = (0.4·0.2, 1 − 0.08) = (0.08, 0.92)', () => {
+    const qL = secondDeathDistribution([0.4, 0.6], [0.2, 0.8]);
+    expect(qL[0]).toBeCloseTo(0.08, 15);
+    expect(qL[1]).toBeCloseTo(0.92, 15);
+  });
+  it('unequal horizons: the longer life decides the tail; sums to one; symmetric in the two lives', () => {
+    const a = [0.1, 0.2, 0.7];
+    const b = [0.5, 0.5];
+    const qL = secondDeathDistribution(a, b);
+    expect(qL.length).toBe(3);
+    expect(qL.reduce((x, y) => x + y, 0)).toBeCloseTo(1, 15);
+    expect(secondDeathDistribution(b, a)).toEqual(qL);
+    expect(qL[0]).toBeCloseTo(0.1 * 0.5, 15); // both die in year 1
+    expect(qL[1]).toBeCloseTo(0.3 * 1 - 0.05, 15); // F_G(2) F_S(2) − F_G(1) F_S(1)
+  });
+  it('keeps full relative precision in the far tail (eval pass 3: the difference form lost 1e-7 at ages 115+)', async () => {
+    const { LIFE_TABLE_BY_ID, DEFAULT_LIFE_TABLE_ID } = await import('../../data/lifeTables/index.js');
+    const { lxFromLifeTable, deathProbabilities } = await import('../mortality.js');
+    const table = LIFE_TABLE_BY_ID[DEFAULT_LIFE_TABLE_ID];
+    const qG = deathProbabilities({ lx: lxFromLifeTable(table, 'male'), age: 78 }).q;
+    const qS = deathProbabilities({ lx: lxFromLifeTable(table, 'female'), age: 75 }).q;
+    const qL = secondDeathDistribution(qG, qS);
+    // explicit double sum over the pairs, the definition
+    const direct = new Array(qL.length).fill(0);
+    qG.forEach((g, i) => qS.forEach((p, j) => { direct[Math.max(i, j)] += g * p; }));
+    qL.forEach((x, t) => expect(Math.abs(x - direct[t])).toBeLessThanOrEqual(1e-13 * direct[t] + 1e-300));
+    expect(direct[qL.length - 1]).toBeLessThan(1e-8); // the tail really is tiny: relative accuracy matters there
+  });
+});

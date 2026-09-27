@@ -15,13 +15,18 @@ import ErrorBoundary from './components/ui/ErrorBoundary.jsx';
 import { useIdgtModel } from './hooks/useIdgtModel.js';
 import { useIngBreakeven } from './hooks/useIngBreakeven.js';
 import { serializeScenario, parseScenario, rankingToCsv, newId, MAX_IMPORT_BYTES } from './hooks/scenarioIO.js';
-import { MORTALITY_TABLE_META } from './data/mortalityTable.js';
+import { DEFAULT_LIFE_TABLE_ID } from './data/lifeTables/index.js';
 import { BASIC_EXCLUSION_2026 } from './data/exclusionAmounts.js';
 
-const DEFAULT_GRANTOR = { age: '65', sex: 'male', useDeathYear: false, deathYear: '20', fedOrd: '37', stateOrd: '5', niit: '3.8', fedLtcg: '20', stateLtcg: '5' };
+const DEFAULT_GRANTOR = {
+  age: '65', sex: 'male', useDeathYear: false, deathYear: '20', fedOrd: '37', stateOrd: '5', niit: '3.8', fedLtcg: '20', stateLtcg: '5',
+  // life table and married couple (docs/changes/2026-09-27-life-tables/model.md)
+  lifeTable: DEFAULT_LIFE_TABLE_ID, married: false, spouseAge: '63', spouseSex: 'female', spouseDeathYear: '25', portability: true,
+};
 const DEFAULT_ESTATE = {
   otherEstate: '20000000', otherEstateGrowth: '3', exclusion: String(BASIC_EXCLUSION_2026), exclusionIndexing: '2',
   priorGifts: '0', priorGiftYear: '2025', priorExclusionMode: 'year', priorGiftExclusion: '13990000',
+  spousePriorGifts: '0', spousePriorGiftYear: '2025', spousePriorExclusionMode: 'year', spousePriorGiftExclusion: '13990000',
   estateTaxRate: '40', beneFedLtcg: '20', beneStateLtcg: '5', beneNiit: true, yearsToSale: '1', discountRate: '4', maxYears: '35',
 };
 const DEFAULT_SETTINGS = {
@@ -57,7 +62,7 @@ export default function App() {
   const [notice, setNotice] = useState(null);
   const fileRef = useRef(null);
 
-  const { perAsset, ranked, remainingExclusion, neutralSwap, swapRates, isStale } = useIdgtModel({ grantor, estate, settings, assets });
+  const { perAsset, ranked, remainingExclusion, neutralSwap, swapRates, mortality, isStale } = useIdgtModel({ grantor, estate, settings, assets });
 
   const errorsById = useMemo(() => {
     const out = {};
@@ -98,8 +103,8 @@ export default function App() {
 
   const sidebar = (
     <>
-      <GrantorPanel grantor={grantor} onChange={setGrantor} errors={sharedErrors} />
-      <EstatePanel estate={estate} onChange={setEstate} errors={sharedErrors} />
+      <GrantorPanel grantor={grantor} onChange={setGrantor} errors={sharedErrors} mortality={mortality} />
+      <EstatePanel estate={estate} onChange={setEstate} errors={sharedErrors} married={Boolean(grantor.married)} />
       <AssetsPanel assets={assets} onChange={setAssets} errorsById={errorsById} />
       <ModelSettingsPanel settings={settings} onChange={setSettings} errors={sharedErrors} neutralSwap={neutralSwap} swapRates={swapRates} />
       <IngPanel settings={settings} onChange={setSettings} errors={sharedErrors} />
@@ -113,9 +118,9 @@ export default function App() {
           <span>{notice}</span><button type="button" className="text-muted" onClick={() => setNotice(null)} aria-label="Dismiss">✕</button>
         </div>
       )}
-      {!MORTALITY_TABLE_META.verified && !grantor.useDeathYear && (
+      {mortality && !mortality.table.verified && !grantor.useDeathYear && (
         <div className="rounded-md border border-warn/40 bg-warn-soft px-3 py-2 text-sm text-ink">
-          <strong>Mortality table unverified.</strong> The bundled SSA {MORTALITY_TABLE_META.periodYear} period life table could not be checked against ssa.gov when this build was made. Probability-weighted results depend on it; switch to an assumed death year for a table-independent result.
+          <strong>Mortality table unverified.</strong> {mortality.table.label} was never checked against its published source. Probability-weighted results depend on it; choose the verified SSA 2023 table, or an assumed death year for a table-independent result.
         </div>
       )}
       <ErrorBoundary>

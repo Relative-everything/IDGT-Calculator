@@ -47,13 +47,20 @@ benchmarked against Holistiplan and Tax Status. Future enterprise migration plan
 - Key technical dependencies: IRC §§671–679 (grantor trust), §675(4)(C) (swap), §1014/§1015 and
   Rev. Rul. 2023-2 (basis), §2001(b)/(c) with flat 40% above the exclusion, §2010(c) as amended by
   OBBBA §70106 ($15,000,000 for 2026, indexed after), Reg. §20.2010-1(c) (anti-clawback), §2035(b),
-  Rev. Rul. 85-13, SSA period life table (provisional until verified)
+  Rev. Rul. 85-13, SSA 2023 period life table (2026 Trustees Report; verified against the published page)
 - Legislative scenarios are modelled by editing the basic exclusion amount (X_0) and its indexing
   rate (π). OBBBA fixed the 2026 exclusion at $15,000,000 with no sunset; there is no TCJA toggle
 - ING comparison (docs/changes/2026-09-27-ing-comparison/model.md): a third world on the same ledger —
   incomplete gift, non-grantor trust paying its own tax and fee, included in the estate and stepped up.
   Exact four-way decomposition (location / state-rate saving / fee / step-up); breakevens re-run the full
   swap search and report readings from the signs, never an assumed direction
+- Life tables (docs/changes/2026-09-27-life-tables/model.md): a registry in `src/data/lifeTables/` (source, `verified`,
+  checksums, `basis` 'q' or 'l'); the engine uses published death rates q_x, closed at 120. Never add a table that was
+  not loaded from its published source; keep the supplied file in `docs/sources/` with its SHA-256
+- Married couples: estate tax at the SECOND death; every pair of death years is valued (spouse first: DSUE ported to
+  the grantor; grantor first: marital deduction, §2035(b) add-back taxed tax-inclusive, DSUE reduced by the gift's
+  exclusion, step-up, IDGT becomes non-grantor, burn and swap end). Rows are expectations given the second-death year.
+  Never feed a last-survivor distribution into the single-life ledger (model.md §0 lists the four errors)
 - Burn share φ (`burnShare`): the IDGT holding path splits into V^b (row key `V`) and V^s (`Vs`); φ = 1 must
   stay bit-identical to v1 (`ingInvariants.test.js` snapshot; regenerate only via
   `docs/changes/2026-09-27-ing-comparison/reference/make-v1-snapshot.mjs` if the v1 contract changes)
@@ -80,14 +87,15 @@ Do not resolve silently.
   grantor-domicile resident-trust states and the NY/CA grantor-level rules change it.
 
 ## Current commit
-See docs/changes/2026-09-27-math-evals/handback.md (latest: eval suite and seven math/UI fixes),
+See docs/changes/2026-09-27-life-tables/handback.md (latest: SSA 2023 life table, table registry, married couples),
+docs/changes/2026-09-27-math-evals/handback.md (eval suite and seven math/UI fixes),
 docs/changes/2026-09-27-ing-comparison/handback.md (ING comparison),
 docs/changes/2026-09-27-pages-branch-source/handback.md and docs/changes/2026-09-26-ci-deploy/handback.md
 (deploy pipeline) and
 docs/changes/2026-09-26-idgt-rebuild/handback.md (model and engine rebuild)
 
 ## NEXT SESSIONS ROADMAP
-Follow docs/ROADMAP.md phase by phase (Phase 1: verify the SSA life table; Phase 2: installment
+Follow docs/ROADMAP.md phase by phase (Phase 1: verify the SSA life table — done 2026-09-27; Phase 2: installment
 sale; Phase 3: GRAT — term-certain §7520 factor, no Table 2010CM needed; Phase 4: state tax with a
 verified 2026 table; then SLAT/DSUE, sensitivity/exports, toolchain upgrade, UX polish). Each phase runs under the
 sdlc-loop: plan accepted and golden values builder-confirmed before source edits.

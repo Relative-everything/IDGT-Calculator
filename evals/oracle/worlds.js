@@ -15,6 +15,11 @@
 //   'ing'      — non-grantor trust (§641): pays its own tax at the trust stack and its fee; included in the
 //                estate and stepped up (§§2038, 1014(b)(9)). NY/CA: the grantor also pays home-state tax on
 //                its income from E.
+//   'spouse'   — married couples: the surviving spouse owns the lot (it passed at the grantor's death): pays its
+//                tax from E, included in the spouse's estate and stepped up at the spouse's death.
+//   'trust'    — married couples: the IDGT after the grantor's death — no longer a grantor trust (§§671–677,
+//                §672(e)), so it pays its own tax from the lot's cash (at the lot's rate, convention M-6); carryover
+//                basis for heirs.
 
 import { estateTax, giftTaxSequence, doneeBasis } from './statute.js';
 
@@ -75,18 +80,18 @@ export function giftFacts(r) {
   };
 }
 
-const assetRates = (r, t) => (r.S > 0 && t > r.S ? { g: r.gr, y: r.yr } : { g: r.g, y: r.y });
+export const assetRates = (r, t) => (r.S > 0 && t > r.S ? { g: r.gr, y: r.yr } : { g: r.g, y: r.y });
 
 /**
  * One year of income on a lot owned by `owner`. Returns the tax the grantor pays from E this year.
  * Mutates the lot. The trust never needs to liquidate for its share of a grantor trust's tax (τ < 1);
  * the ING may, when its fee exceeds its after-tax yield.
  */
-function earn(lot, g, y, r) {
+export function earn(lot, g, y, r) {
   const open = lot.value;
   const cash = y * open; // yield received in cash at year-end
   const grown = open * (1 + g); // the holding itself, before the yield cash is reinvested
-  if (lot.owner === 'grantor') {
+  if (lot.owner === 'grantor' || lot.owner === 'spouse') {
     const tax = lot.tax * cash;
     lot.value = grown + cash; // C-1: gross yield reinvested; tax paid from E
     lot.basis += cash;
@@ -98,6 +103,12 @@ function earn(lot, g, y, r) {
     lot.value = grown + cash - trustShare;
     lot.basis += cash - trustShare;
     return { fromE: r.phi * tax };
+  }
+  if (lot.owner === 'trust') {
+    const tax = lot.tax * cash; // non-grantor trust pays its own tax out of the yield cash
+    lot.value = grown + cash - tax;
+    lot.basis += cash - tax;
+    return { fromE: 0 };
   }
   // 'ing' — trust pays its own tax and fee (fee not deductible, N-3); NY/CA grantor pays home-state tax from E
   const trustTax = r.ingOrd * cash;
@@ -124,15 +135,17 @@ function earn(lot, g, y, r) {
 }
 
 /** Scheduled sale of the asset lot at t = S. Returns the tax charged to E. */
-function sell(lot, r) {
+export function sell(lot, r) {
   const gain = pos(lot.value - lot.basis);
   let fromE = 0;
-  if (lot.owner === 'grantor') {
-    fromE = r.tauCg * gain; // grantor's own sale
+  if (lot.owner === 'grantor' || lot.owner === 'spouse') {
+    fromE = r.tauCg * gain; // the owner's own sale
   } else if (lot.owner === 'idgt') {
     const tax = r.tauCg * gain; // Rev. Rul. 85-13: grantor is the taxpayer on the trust's sale
     fromE = r.phi * tax;
     lot.value -= (1 - r.phi) * tax; // N-6: reimbursed share paid from the proceeds
+  } else if (lot.owner === 'trust') {
+    lot.value -= r.tauCg * gain; // non-grantor trust pays its own gain tax (M-6: at the grantor's rate)
   } else {
     lot.value -= r.ingCg * gain;
     fromE = r.grantorStateCgOnIng * gain;

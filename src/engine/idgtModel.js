@@ -21,6 +21,7 @@ import { deriveGift, makeBases, taxFromBase } from './fedTax.js';
 import { deathProbabilities, expectedDeathYear } from './mortality.js';
 import { validateInputs, resolveIngInputs, neutralSwapProfile } from './validate.js';
 import { SECTION_2035_WINDOW_YEARS, SWAP_TIE_TOLERANCE } from './constants.js';
+import { evaluateMarried } from './marriedModel.js';
 
 export const SWAP_INFEASIBLE_POST_SALE = 'post-sale swap not modelled in v1';
 export const SWAP_INFEASIBLE_LIQUIDITY = 'other estate cannot fund the swap consideration';
@@ -230,7 +231,7 @@ export function simulate(inp, swapYear, N) {
       t, age: inp.age + t, Xt, Y, V: Vb, Vs, Ys, burn, burnS, burnSw,
       trustPaid: trustBurn + trustBurnSw + trustCg, // income tax the trust paid from its own assets this year
       grantorPaid: grantorBurn + grantorBurnSw + grantorCg, // income tax charged to E in the GIFT scenario this year
-      CGb, CGs, Bb, Bs, Eb, Es, W, WB, Tself, swapped, swapEvent, incl, inclS,
+      CGb, CGs, Bb, Bs, Eb, Es, W, WB, Tself, Bself, swapped, swapEvent, incl, inclS,
       TEb, baseB, ETb, SUb, Hb, T, TB, add2035, TEs, baseS, ETs, BIG, SUs, Hs,
       dH, dTW, dTWgt, dTWsw, dET, dSU, freeze, burnC, giftTaxC, resid, stepUp,
       DF, PV: dH * DF,
@@ -272,6 +273,8 @@ export function evaluateAsset(inp) {
     e.errors = errors;
     throw e;
   }
+  // Married couple: the estate-tax event is the second death (docs/changes/2026-09-27-life-tables/model.md).
+  if (inp.married) return evaluateMarried(inp, warnings);
   const mort = deathProbabilities({ lx: inp.lx, age: inp.age, deathYearOverride: inp.deathYearOverride ?? null });
   const { q, N, omega } = mort;
   const allWarnings = [...warnings];
@@ -331,8 +334,9 @@ export function evaluateAsset(inp) {
   }
 
   return {
-    derived: { ...none.derived, N, omega, expectedDeathYear: expectedDeathYear(q) },
+    derived: { ...none.derived, N, omega, married: false, expectedDeathYear: expectedDeathYear(q), expectedGrantorDeathYear: expectedDeathYear(q) },
     q,
+    lives: { married: false, qG: q, NG: N },
     rows: { none: attach(none), opt: rowsOpt },
     npvCurve: curve,
     npvNone: noneAgg.npv,
