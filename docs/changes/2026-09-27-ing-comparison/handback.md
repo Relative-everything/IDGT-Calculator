@@ -83,7 +83,21 @@ other-estate growth 3% after tax):
   more than one crossing.
 
 ## Verification output
-(filled in at the end of the session — see below)
+`npx vitest run` — Test Files 9 passed (9); Tests 214 passed | 1 skipped (215). The skipped test is v1's
+mortality checksum (gated on `MORTALITY_TABLE_META.verified`). New: `ingGolden` 16, `ingInvariants` 79
+(incl. 41 bit-identity snapshot cases), `breakeven` 11, wiring +9, scenario IO +2.
+`npx eslint .` — 0 problems. `npx vite build` — ✓ built; CSS 24.26 kB, JS 315.27 kB (gzip 100.23 kB).
+Engine vs independent reference (`reference/xcheck.mjs`): 400 seeded scenarios, 511,575 values (every IDGT
+row field at a random burn share and three swap years, every ING row field), 0 mismatches, worst relative
+difference 2.0e-14. The run exposed two defects in the reference harness, not the engine (a null
+swap-basis default and a display field that omitted a sale year's gain tax); fixed, no golden moved.
+Playwright (Chromium, production preview): 1280 px light and dark, 375 px — console errors 0, no
+horizontal page scroll at any width. Screenshots in `screenshots/`: the comparison card (light, dark,
+375 px), a mixed-verdict case with the grid frontier drawn (`ing-card-frontier.png`: business interest,
+$4M other estate — ING better by $183K, state-rate breakeven 2.10%), the input card, the ranking, both
+chart elements, and full pages.
+Timing (breakevens + grid, selected asset): 0.16 s at age 65, 0.42 s at age 45, 0.77 s for a 120-year
+deterministic horizon; computed after paint, debounced 250 ms.
 
 ## Review
 The contract (model.md) was attacked by five lenses before code; three completed (tax law, decomposition
@@ -113,6 +127,11 @@ None.
 - **B4 — Two review lenses and the skeptic stage did not run** (usage limit). Their scope was covered in
   part by the engine-vs-reference cross-check (solver behaviour, numerical identities) and by the breakeven
   tests (verdict flips across each root); planner usefulness is addressed by B2 and B3.
+- **B6 — UI built by a delegated agent and reviewed.** The comparison card and its three charts were
+  written by a sub-agent from a written spec and then reviewed here; two changes were made on review
+  (the crossover shading now uses the engine's lead years, and "How to read" names the location effect).
+  Its deviations from the spec are accepted: ink text on every grid step (white failed 3:1 in light mode),
+  engine constants imported for the reason codes and the 20% bound, and a few legend additions.
 - **B5 — Performance.** Breakevens and grid take ≈ 0.16 s at age 65, ≈ 0.4 s at age 45 and ≈ 0.8 s in the
   120-year worst case; they run after paint, debounced, for the selected asset only.
 

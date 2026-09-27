@@ -25,10 +25,13 @@ export default function IngPanel({ settings, onChange, errors }) {
           tip="Trust brackets are compressed (§1(e)): the 37% top rate starts at about $15,650 of income (2025). NIIT from the grantor panel is added (§1411(a)(2))." />
         <NumberField id="ingFedLtcg" label="Trust federal LTCG rate" value={settings.ingFedLtcg} onChange={set('ingFedLtcg')} suffix="%" error={err('ingFedLtcg')}
           tip="§1(h): 20% top rate. NIIT from the grantor panel is added." />
-        <NumberField id="ingStateRate" label="State rate the ING bears" value={settings.ingStateRate} onChange={set('ingStateRate')} suffix="%" error={err('ingStateRate')}
-          hint="0% only for portfolio income and gains in a no-tax situs (NV, WY, SD, AK; DE without resident beneficiaries). Enter a rate for income sourced to a taxing state, or if the grantor's home state taxes the trust as a resident trust." />
         <NumberField id="ingAdminRate" label="Administration cost" value={settings.ingAdminRate} onChange={set('ingAdminRate')} suffix="%/yr" error={err('ingAdminRate')}
           tip="Corporate trustee at the situs, as a share of trust value each year. Not deducted for income tax (conservative)." />
+        <NumberField id="ingStateRate" label="State rate the ING bears" value={settings.ingStateRate} onChange={set('ingStateRate')} suffix="%" error={err('ingStateRate')} />
+        <p className="col-span-2 -mt-1 text-xs text-muted">
+          State rate: 0% only for portfolio income and gains in a no-tax situs (NV, WY, SD, AK; DE without resident beneficiaries). Enter a rate for
+          income sourced to a taxing state, or if the grantor's home state taxes the trust as a resident trust.
+        </p>
         <Toggle id="ingStateTaxOnGrantor" className="col-span-2" label="Home state taxes the grantor on the ING's income (New York, California)"
           checked={settings.ingStateTaxOnGrantor} onChange={set('ingStateTaxOnGrantor')}
           hint="N.Y. Tax Law §612(b)(41) and Cal. R&TC §17082 treat an ING as a grantor trust for state tax. The grantor then pays the state tax from the other estate, and the ING saves none." />

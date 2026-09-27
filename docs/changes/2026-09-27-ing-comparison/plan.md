@@ -203,3 +203,23 @@ v1's T^self in every year (checked: max |T − T^self| = 0).
 
 ## Deferred (surfaced in-app)
 See model.md §12.
+
+## Departures from plan
+- Step 3 (engine) was started by a workflow agent against model.md revision 1 and interrupted by a usage
+  limit; its partial work was kept, reviewed line by line and brought to revision 2 by hand. The v1 row
+  snapshot it generated had wrong scenario metadata (Fixture B labelled with the male table) and was
+  regenerated from a clean worktree of commit 4c13019 with a committed generator
+  (`reference/make-v1-snapshot.mjs`).
+- The planned verification workflow (reviewers + skeptics) was replaced by a hand review of every
+  design-review finding, the engine-vs-reference cross-check (`reference/xcheck.mjs`) and the breakeven
+  tests; two design-review lenses and the skeptic stage never ran (usage limit; handback B4).
+- Step 5 (UI) was split: the comparison card and its three charts were built by a background agent from a
+  written spec while the input card, ledger view, ranking columns, panels and wiring were built here. The
+  hooks/panels commit went in before the card with App.jsx held back so no commit fails to build.
+- plan.md's Fixture I year-2 derivation had an unfinished arithmetic line and a sixth-decimal slip in the
+  year-3 family-wealth figure; both corrected against ing-ref.out before any test asserted them.
+- The "0% state rate" condition is a permanent input hint and card line rather than a warning code (a
+  warning would fire on every default asset).
+- Ranking columns "NPV · ING" and "Better vehicle" sit next to the IDGT's best-swap NPV rather than at the
+  end of the table, so the verdict is visible without scrolling.
+

@@ -12,11 +12,11 @@ const COLUMNS = [
   { key: 'npvNone', label: 'NPV · no swap', get: (r) => r.result.npvNone, fmt: fmtMoney },
   { key: 'sStar', label: 'Best swap', get: (r) => r.result.sStar, fmt: fmtYear },
   { key: 'npvOpt', label: 'NPV · best swap', get: (r) => r.result.npvOpt, fmt: fmtMoney },
+  { key: 'npvIng', label: 'NPV · ING', get: (r) => r.ing?.npv, fmt: fmtMoney },
+  { key: 'structure', label: 'Better vehicle', get: (r) => r.ing?.vsIdgt.verdict ?? '', align: 'left' },
   { key: 'effOpt', label: 'NPV per $ gift (swap)', get: (r) => r.result.eff.opt, fmt: fmtRatio },
   { key: 'effNone', label: 'NPV per $ gift (none)', get: (r) => r.result.eff.none, fmt: fmtRatio },
   { key: 'cum', label: 'Cum. taxable gift', get: (r) => r.cumulativeTaxableGift, fmt: fmtMoney },
-  { key: 'npvIng', label: 'NPV · ING', get: (r) => r.ing?.npv, fmt: fmtMoney },
-  { key: 'structure', label: 'Better vehicle', get: (r) => r.ing?.vsIdgt.verdict ?? '', align: 'left' },
 ];
 const VERDICT_TEXT = { ING: 'ING', IDGT: 'IDGT', tie: 'Tie' };
 
