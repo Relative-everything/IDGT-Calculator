@@ -72,7 +72,7 @@ independently. Table in `evals/README.md`.
   with assumed deaths 20 / 25 — $2.59M, year 20; 20 / 12 (spouse first) — $1.79M, year 10. No console errors; no horizontal scroll at 390 px.
   Screenshots in `screenshots/`.
 
-## Limits (stated in the app, not modelled)
+## Limits (stated in the app's methodology panel, not modelled)
 1. **Period, not cohort:** 2023 death rates applied to every future year; a cohort table would lengthen a 65-year-old's
    life by roughly one to two years (medium confidence, not re-checked this session).
 2. **General population:** wealth and longevity are linked (Chetty et al., JAMA 2016: 14.6-year gap for men, 10.1 for

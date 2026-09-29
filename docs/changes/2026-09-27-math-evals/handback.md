@@ -49,5 +49,6 @@ result and, where it applies, one where it must not; every moved state re-checke
    reference script and the clean-room oracle.
 2. **Unblock the mortality check:** allow `www.ssa.gov` in the environment's network settings, then load the published
    l_x column and set `MORTALITY_TABLE_META.verified`. Until then, probability-weighted NPVs rest on an unverified table;
-   the assumed-death-year mode does not.
+   the assumed-death-year mode does not. *Done 2026-09-27: the builder supplied the published SSA 2023 table, which is
+   now the verified default ([life-tables handback](../2026-09-27-life-tables/handback.md)).*
 3. Decide whether heirs' NIIT should become its own input (plan.md, "Not changed").

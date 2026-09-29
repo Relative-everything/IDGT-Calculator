@@ -18,6 +18,7 @@ import { deriveGift, makeBases, exclusionAt } from './fedTax.js';
 import { deathProbabilities, expectedDeathYear, secondDeathDistribution } from './mortality.js';
 import { SECTION_2035_WINDOW_YEARS, SWAP_TIE_TOLERANCE } from './constants.js';
 
+// Floor at zero: a tax base, an exclusion amount or a DSUE cannot be negative (§2010(c)(4); Reg. §20.2010-2(c)).
 const pos = (x) => Math.max(0, x);
 
 /**

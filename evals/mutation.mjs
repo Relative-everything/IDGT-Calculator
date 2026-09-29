@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Mutation testing — grades the eval suite and the unit tests themselves (evals/README.md, "Grade the suite itself").
 //
-//   node evals/mutation.mjs            # every mutation (≈ 2 min each: the quick suite and the unit tests)
+//   node evals/mutation.mjs            # every mutation (≈ 40 s each: the quick suite and the unit tests)
 //   node evals/mutation.mjs M05 M10    # a subset
 //
 // Each mutation injects ONE realistic defect into the source (a single exact-string replacement), runs the quick eval

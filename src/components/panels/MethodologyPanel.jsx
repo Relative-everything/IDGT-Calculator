@@ -29,7 +29,7 @@ export default function MethodologyPanel() {
       </Section>
       <Section title="Federal tax mechanics">
         <ul className="list-disc space-y-1 pl-5">
-          <li>Flat 40% above the applicable exclusion — exact because §2001(c) is flat above $1,000,000 and the unified credit absorbs the rest.</li>
+          <li>Flat 40% above the applicable exclusion — exact because §2001(c) is flat above $1,000,000 and the unified credit absorbs the rest. It is exact only while every exclusion involved is at least $1,000,000: a custom prior-gift exclusion below that (gifts made before 2002) falls in the graduated brackets, where results can be off by a constant.</li>
           <li>Basic exclusion $15,000,000 for 2026 (§2010(c)(3), OBBBA §70106), indexed from 2027 at the rate you set; anti-clawback per Reg. §20.2010-1(c).</li>
           <li>Prior gifts are measured against the exclusion of their own year (§2001(g)(2)); gift tax paid now is tax-exclusive (§2502(c)), added back if death occurs within three years (§2035(b)), and increases trust basis under §1015(d)(6).</li>
           <li>A sale of the holding is taxed to the grantor on carryover basis (§1015(a); Rev. Rul. 85-13) wherever the holding sits; heirs pay capital-gains tax on un-stepped-up gain <em>k</em> years after death.</li>

@@ -187,4 +187,3 @@ export function auditParse(kind, raw) {
   if (kind === 'int') { const v = num(raw); return Number.isInteger(v) ? v : NaN; }
   return raw;
 }
-

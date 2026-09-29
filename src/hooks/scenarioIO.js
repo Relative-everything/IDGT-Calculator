@@ -10,9 +10,10 @@ export const MAX_IMPORT_BYTES = 2 * 1024 * 1024;
 // Longest text a field keeps on import; the asset name and Source ref inputs stop at the same length, so a row (and its
 // tick fingerprint) survives Export/Import JSON unchanged.
 export const MAX_TEXT_FIELD_LENGTH = 200;
-// Inputs audit ticks (docs/changes/2026-09-28-inputs-audit/plan.md): household ticks are keyed by field reference
-// (G.age, E.otherEstate, S.burnShare) and record the value checked; asset ticks are keyed by a fingerprint of the row,
-// with #k for the k-th of several identical rows (inputRegister.assetTickKey).
+// Inputs audit ticks as a scenario file stores them (docs/changes/2026-09-28-inputs-audit/plan.md): household ticks are
+// keyed by field reference (G.age, E.otherEstate, S.burnShare) and record the value checked; asset ticks are keyed by a
+// fingerprint of the row, with #k for the k-th of several identical rows (inputRegister.ticksForFile / ticksFromFile).
+// In the app, asset ticks are keyed by row id instead (inputRegister.assetTickKey).
 export const MAX_AUDIT_TICKS = 2_000;
 const AUDIT_TICK_KEY = /^(?:[GES]\.[A-Za-z]{1,40}|A:[0-9a-f]{8}(?:#[1-9][0-9]{0,2})?)$/;
 const AUDIT_DATE = /^\d{4}-\d{2}-\d{2}$/;

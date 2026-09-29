@@ -56,7 +56,7 @@ Every upheld and split finding of all five rounds was fixed. The most important:
 - **Paste and CSV hardening.** Formula injection is blocked in the pasted table and in CSV, including after a `;`
   that a semicolon-locale Excel splits on. Free text that a spreadsheet would read as a number, date or boolean stays
   text. A signed or formatted number in a numeric column (-2%, +2,500,000) stays a number. An amount grouped with any
-  whitespace is flagged, because a spreadsheet pastes it as text. A tab between digits, or a decimal comma, is flagged
+  whitespace gets a "confirm" flag, because a spreadsheet pastes it as text. A tab between digits, or a decimal comma, is flagged
   as a likely keying error, with the decimal reading (1 234 567,89 → 1234567.89).
 - **Print and dates.** Pages are landscape, and the audit tables are not clipped. The print rule is scoped to the audit
   page, so the Analysis print is unchanged. The flags list prints in full, and rows are not split across pages. Tick
