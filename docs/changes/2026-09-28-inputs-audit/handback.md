@@ -26,33 +26,38 @@ source documents, such as an Excel sheet or an eMoney-style balance sheet, when 
 5. **Export JSON** saves the ticks and reviewer. **Download audit CSV** or **Print** for the file.
 
 ## Pre-merge review
-Three adversarial review rounds ran before merge, each finding tried by independent skeptics.
+Five adversarial review rounds ran before merge, each finding tried by independent skeptics, until they ran dry.
 
 | Round | Scope | Raised | Upheld | Split | Refuted |
 |---|---|---|---|---|---|
 | 1 (97 agents) | the page as first committed | 46 | 39 | 4 | 3 |
 | 2 (73 agents) | the round-1 fixes, plus a regression hunt | 43 | 33 | 1 | 9 |
 | 3 (37 agents) | the round-2 fixes, plus a regression hunt | 20 | 13 | 3 | 4 |
+| 4 (24 agents) | the round-3 fixes | 13 | 8 | 0 | 5 |
+| 5 (14 agents) | the round-4 fixes | 7 | 2 | 0 | 5 |
 
-Every upheld and split finding of all three rounds was fixed. The most important:
+Every upheld and split finding of all five rounds was fixed. The most important:
 - **Ticks.** In round 1, ticking one of two identical rows verified both. The round-1 fix numbered identical rows, but
   round 2 showed the numbering let a tick pass to the other twin when one was edited or deleted. Ticks now follow the
   row id within a session and hold only while the row's content is unchanged. The file keeps content keys, since ids
   are regenerated on import. A household row that goes out of use is no longer shown as verified anywhere. The Clear
-  ticks confirmation is armed for the exact tick set it was shown for, so it cannot reappear by itself.
+  ticks confirmation is armed for the exact tick set it was shown for, so it cannot reappear by itself. It opens with
+  focus on Cancel, so a held or repeated Enter cannot clear the ticks. After Confirm, focus rests on an "All ticks
+  cleared." note in the same place.
 - **Footing.** Every total now equals the sum of the cells shown above it, in both views. Money shown to the cent is
   totalled in whole cents, typed inputs are totalled as typed (to 15 significant digits, so large typed amounts keep
   their cents), and the tie-out foots its two lines. In the "as typed" view the control totals use the same figures.
 - **Error placement.** An error now shows on exactly the fields behind it: every rate in a stack, including the trust
   stacks. A negative federal rate is reported on the federal rate: it is the only way a state component can exceed its
-  stack less NIIT. A prior-gift year with no exclusion on file is reported on the year. The ING value-factor error
+  stack less NIIT. The engine detects it, so no other error in the scenario is hidden. A prior-gift year with no exclusion on file is reported on the year. The ING value-factor error
   names its asset and shows on the fee, the asset's growth and the trust's ordinary stack. A negative indexing rate
   that breaks the $1M floor also shows on the exclusion it indexes. An exclusion error no longer spills onto unused
   prior-gift rows.
 - **Paste and CSV hardening.** Formula injection is blocked in the pasted table and in CSV, including after a `;`
   that a semicolon-locale Excel splits on. Free text that a spreadsheet would read as a number, date or boolean stays
-  text. A signed or formatted number in a numeric column (-2%, +2,500,000) stays a number. An amount grouped with
-  spaces is flagged, because a spreadsheet pastes it as text.
+  text. A signed or formatted number in a numeric column (-2%, +2,500,000) stays a number. An amount grouped with any
+  whitespace is flagged, because a spreadsheet pastes it as text. A tab between digits, or a decimal comma, is flagged
+  as a likely keying error, with the decimal reading (1 234 567,89 → 1234567.89).
 - **Print and dates.** Pages are landscape, and the audit tables are not clipped. The print rule is scoped to the audit
   page, so the Analysis print is unchanged. The flags list prints in full, and rows are not split across pages. Tick
   dates use the reviewer's local date.
@@ -64,7 +69,11 @@ Every upheld and split finding of all three rounds was fixed. The most important
   - footing is checked in both views, on rows with sub-cent parts.
 
   The status check requires a real model input to move for a field marked in use, and footing is compared exactly.
-  Mutations M19–M24 cover the new mechanisms.
+  Mutations M19–M24 cover the new mechanisms. `mutation.mjs` refuses to grade unless the unmutated suite is green.
+- **Eval graders.** Round 5 found two grader false alarms on an unseen seed (31 × 400). They predate this work and
+  failed identically before it. The continuity scan flagged a smooth but very steep NPV, and it now refines to a few
+  ulps and compares the jump with the change beside it. A breakeven end within the money tolerance of 0 is now a root.
+  Seed 31 now passes 679/679.
 
 ## Verification
 Final tree (after all three review rounds):
