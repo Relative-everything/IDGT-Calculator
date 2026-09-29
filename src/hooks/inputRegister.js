@@ -177,6 +177,13 @@ const ENGINE_TO_FIELDS = {
 };
 for (const f of HOUSEHOLD_FIELDS) if (f.engine) ENGINE_TO_FIELDS[f.engine] ??= [f.key];
 const HOUSEHOLD_KEYS = new Set(HOUSEHOLD_FIELDS.map((f) => f.key));
+// validate.js STATE_ABOVE_STACK: the state component above its stack less NIIT. The app builds the stack as federal +
+// state + NIIT, so state and NIIT cancel in that bound and only a negative federal rate can break it: the error is
+// shown on the federal rate, worded for it.
+const STATE_BOUND_TO_FEDERAL = {
+  stateOrd: { field: 'fedOrd', message: 'Federal ordinary rate is below 0%, so the state rate exceeds the grantor ordinary rate less NIIT.' },
+  stateCg: { field: 'fedLtcg', message: 'Federal LTCG rate is below 0%, so the state rate exceeds the grantor capital-gain rate less NIIT.' },
+};
 const ASSET_ENGINE_TO_FIELD = Object.fromEntries(ASSET_FIELDS.filter((f) => f.engine).map((f) => [f.engine, f.key]));
 const ASSET_KEYS = new Set(ASSET_FIELDS.map((f) => f.key));
 
@@ -312,7 +319,15 @@ function textFlags(field, raw, { unusedField = false } = {}) {
     if (text.includes(',') && !/^-?\d{1,3}(,\d{3})+(\.\d+)?$/.test(text)) {
       flags.push({ code: 'IRREGULAR_GROUPING', severity: 'check', message: `"${raw}" has commas that are not thousands separators; the model reads ${parseNum(raw)}.` });
     }
-    if (/\d[ \u00A0\u202F]+\d/.test(String(raw).trim())) {
+    // any whitespace between digits (space, no-break, thin, figure space, tab): the model strips it, a spreadsheet does not
+    const spaced = String(raw).trim();
+    if (/\d\t+\d/.test(spaced)) {
+      flags.push({ code: 'SPACE_GROUPING', severity: 'check', message: `"${raw}" has a tab between digits: two spreadsheet cells pasted into one field? The model reads ${parseNum(raw)}.` });
+    } else if (/\d\s+\d/u.test(spaced) && /,\d{1,2}$/.test(text)) {
+      // space grouping with a decimal comma (1 234 567,89): the comma is read as a thousands separator, 100× too much
+      const decimalReading = text.replace(/\./g, '').replace(/,(\d{1,2})$/, '.$1').replace(/,/g, '');
+      flags.push({ code: 'SPACE_GROUPING', severity: 'check', message: `"${raw}" looks like a decimal-comma amount; the model reads ${parseNum(raw)}. If the amount is ${decimalReading}, type ${decimalReading}.` });
+    } else if (/\d\s+\d/u.test(spaced)) {
       flags.push({ code: 'SPACE_GROUPING', severity: 'confirm', message: `"${raw}" is grouped with spaces. The model reads ${parseNum(raw)}, but a spreadsheet reads the pasted cell as text and leaves it out of SUM(). Type ${text.replace(/,/g, '')} to match.` });
     }
     if (/^\d{1,3}(\.\d{3})+$/.test(text)) {
@@ -365,6 +380,8 @@ export function buildInputRegister({ grantor, estate, settings, assets, perAsset
   for (const pa of perAsset) {
     for (const e of pa.errors ?? []) {
       const issue = { code: 'INVALID', severity: 'error', message: e.message };
+      const federal = e.code === 'STATE_ABOVE_STACK' ? STATE_BOUND_TO_FEDERAL[e.field] : null;
+      if (federal) { pushUnique(householdIssues, federal.field, { ...issue, message: federal.message }); continue; }
       const assetField = ASSET_KEYS.has(e.field) ? e.field : ASSET_ENGINE_TO_FIELD[e.field];
       if (assetField) { pushUnique(assetIssues, `${pa.id}.${assetField}`, issue); continue; }
       const fields = householdFieldsFor(e.field, ui);
@@ -477,6 +494,8 @@ export function buildInputRegister({ grantor, estate, settings, assets, perAsset
   });
 
   const tieOut = { ...balanceSheetTieOut({ otherEstate: base.E0, candidatesFmv: totals.FMV.sum }), candidatesSkipped: totals.FMV.skipped };
+  // the same tie-out for the "as typed" view, whose Σ FMV is the typed total
+  const tieOutTyped = { ...balanceSheetTieOut({ otherEstate: base.E0, candidatesFmv: typedTotals.FMV.sum, cents: false }), candidatesSkipped: typedTotals.FMV.skipped };
 
   // Amounts typed in thousands, schedule-wide: every amount far below anything an IDGT is used for.
   const general = [...(householdIssues['*'] ?? [])];
@@ -506,7 +525,7 @@ export function buildInputRegister({ grantor, estate, settings, assets, perAsset
     total: auditable.length + assetRows.length,
     hidden, // ticks on rows that changed since they were ticked, or are no longer in use (removed rows are not counted)
   };
-  return { household, derived, assets: assetRows, totals, typedTotals, tieOut, flags, progress };
+  return { household, derived, assets: assetRows, totals, typedTotals, tieOut, tieOutTyped, flags, progress };
 }
 
 // ---- export ---------------------------------------------------------------------------------------------------------
@@ -641,9 +660,12 @@ export function registerToCsv(register, mode, meta = {}) {
     ['Σ Gift value after discount', 'giftValue'], ['Σ Annual exclusions', 'annualExclusions'], ['Σ Taxable gift', 'taxableGift']]) {
     row([labelText, typedSum(key) ? bare(register.typedTotals[key].sum, 'typedSum') : bare(t[key].sum, 'money'), String(t[key].skipped)]);
   }
-  row(['Other estate', bare(register.tieOut.otherEstate, 'money'), '']);
-  row(['Plus Σ candidate FMV', bare(register.tieOut.candidates, 'money'), String(register.tieOut.candidatesSkipped)]);
-  row(['Other estate + Σ candidate FMV (compare with net worth)', bare(register.tieOut.total, 'money'), String(register.tieOut.candidatesSkipped)]);
+  const typedTie = mode === 'typed' && register.tieOutTyped;
+  const tie = typedTie ? register.tieOutTyped : register.tieOut;
+  const tieKind = typedTie ? 'typedSum' : 'money';
+  row(['Other estate', bare(tie.otherEstate, tieKind), '']);
+  row(['Plus Σ candidate FMV', bare(tie.candidates, tieKind), String(tie.candidatesSkipped)]);
+  row(['Other estate + Σ candidate FMV (compare with net worth)', bare(tie.total, tieKind), String(tie.candidatesSkipped)]);
   lines.push('');
   row(['Ref', 'Section', 'Input', `Value (${mode === 'typed' ? 'as typed' : 'as the model reads it'})`, 'Unit', 'Status', 'Flags', 'Verified']);
   for (const r of register.household) {

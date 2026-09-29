@@ -119,6 +119,9 @@ describe('control totals and the balance-sheet tie-out', () => {
     expect(assetTableRows(reg, 'model').totals[fmv]).toBe('12495678902.35');
     const csv = registerToCsv(reg, 'typed').split('\n');
     expect(csv.find((l) => l.startsWith('Σ Fair market value,'))).toBe('Σ Fair market value,12495678902.3534,0'); // the typed file agrees with its asset block
+    expect(csv.find((l) => l.startsWith('Plus Σ candidate FMV,'))).toBe('Plus Σ candidate FMV,12495678902.3534,0'); // and so does its tie-out
+    expect(csv.find((l) => l.startsWith('Other estate + Σ'))).toBe('Other estate + Σ candidate FMV (compare with net worth),12515678902.3534,0');
+    expect(registerToCsv(reg, 'model').split('\n').find((l) => l.startsWith('Plus Σ candidate FMV,'))).toBe('Plus Σ candidate FMV,12495678902.35,0');
   });
 });
 
@@ -214,6 +217,16 @@ describe('data-entry flags', () => {
     expect(reg.assets[1].cells.fmv.model).toBe(3_000_000);
     expect(reg.assets[1].cells.fmv.flags.map((f) => [f.code, f.severity])).toEqual([['SPACE_GROUPING', 'confirm']]);
     expect(reg.assets[2].cells.fmv.flags.map((f) => f.code)).toEqual(['SPACE_GROUPING']);
+    const flagOf = (fmv) => {
+      const t = single();
+      t.assets[0] = { ...t.assets[0], fmv };
+      return buildInputRegister(t).assets[0].cells.fmv.flags.find((f) => f.code === 'SPACE_GROUPING');
+    };
+    expect(flagOf('3\u2009000\u2009000').severity).toBe('confirm'); // thin space, as PDFs copy it
+    expect(flagOf('1000\t2000').severity).toBe('check'); // two cells pasted into one field
+    const decimalComma = flagOf('1 234 567,89');
+    expect(decimalComma.severity).toBe('check');
+    expect(decimalComma.message).toContain('type 1234567.89'); // never "type 123456789", the 100× misreading
   });
   it('an unreadable other estate does not make the whole schedule look small', () => {
     const st = single();
@@ -262,6 +275,15 @@ describe('validation errors land on every field that feeds them', () => {
     st.assets = [st.assets[0]];
     patch(st);
     expect(refsOf(buildInputRegister(withModel(st)))).toEqual(refs);
+  });
+  it('a negative federal rate is worded for the federal rate and hides no other error', () => {
+    const st = single();
+    st.assets = [st.assets[0]];
+    st.grantor.fedOrd = '-2';
+    st.assets[0].basis = '-1';
+    const reg = buildInputRegister(withModel(st));
+    expect(refsOf(reg)).toEqual(['A1.basis', 'G.fedOrd']);
+    expect(reg.household.find((r) => r.ref === 'G.fedOrd').flags[0].message).toMatch(/^Federal ordinary rate is below 0%/);
   });
   it("a married spouse's negative custom prior-gift exclusion lands on that field", () => {
     const st = married();

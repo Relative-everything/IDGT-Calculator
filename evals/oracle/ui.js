@@ -138,9 +138,12 @@ export const AUDIT_ROUTING_CASES = [
   { name: 'grantor capital-gain stack at 100% or more', patch: { grantor: { fedLtcg: '100' } }, parts: () => ['G.fedLtcg', 'G.stateLtcg', 'G.niit'] },
   { name: "heirs' stack at 100% or more", patch: { estate: { beneFedLtcg: '100' } },
     parts: ({ estate }) => ['E.beneFedLtcg', 'E.beneStateLtcg', ...(estate.beneNiit ? ['E.beneNiit', 'G.niit'] : [])] },
-  // a negative federal rate is the only way a state component can exceed its stack less NIIT (state and NIIT cancel)
-  { name: 'negative federal ordinary rate', patch: { grantor: { fedOrd: '-1' } }, parts: () => ['G.fedOrd'] },
-  { name: 'negative federal LTCG rate', patch: { grantor: { fedLtcg: '-1' } }, parts: () => ['G.fedLtcg'] },
+  // a negative federal rate is the only way a state component can exceed its stack less NIIT (state and NIIT cancel):
+  // that error is the federal rate's; if the whole stack is then below 0%, the stack's error is on all its parts
+  { name: 'negative federal ordinary rate', patch: { grantor: { fedOrd: '-1' } },
+    parts: ({ grantor }) => (rate('-1') + rate(grantor.stateOrd) + rate(grantor.niit) < 0 ? ['G.fedOrd', 'G.stateOrd', 'G.niit'] : ['G.fedOrd']) },
+  { name: 'negative federal LTCG rate', patch: { grantor: { fedLtcg: '-1' } },
+    parts: ({ grantor }) => (rate('-1') + rate(grantor.stateLtcg) + rate(grantor.niit) < 0 ? ['G.fedLtcg', 'G.stateLtcg', 'G.niit'] : ['G.fedLtcg']) },
   // the trust's federal rate at 100%: its own range error, and the trust stack on all three of its parts
   { name: 'trust ordinary stack at 100% or more', patch: { settings: { ingFedOrd: '100' } }, parts: () => ['S.ingFedOrd', 'S.ingStateRate', 'G.niit'] },
   { name: 'trust capital-gain stack at 100% or more', patch: { settings: { ingFedLtcg: '100' } }, parts: () => ['S.ingFedLtcg', 'S.ingStateRate', 'G.niit'] },

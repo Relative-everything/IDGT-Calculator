@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Card from '../ui/Card.jsx';
 import Button from '../ui/Button.jsx';
 import AuditFlags from './AuditFlags.jsx';
@@ -37,12 +37,23 @@ function Progress({ progress }) {
 export default function InputsAudit({ register, mode, onModeChange, filter, onFilterChange, reviewer, onReviewerChange, ticks, onTick, onClearTicks, onCopy, onDownload, onPrint, printedOn, wide, onWideChange, isStale, banner }) {
   // The Clear ticks confirmation is armed for the tick set it was shown for (the object itself: every tick, import or
   // reset makes a new one), so any tick change disarms it and it never comes back by itself.
+  // Focus: the confirmation opens on Cancel (the safe choice, so a held or repeated Enter cannot clear the ticks);
+  // Cancel returns focus to Clear ticks; Confirm moves it to the progress summary, since Clear ticks is then disabled.
   const [armedFor, setArmedFor] = useState(null);
   const [focusClear, setFocusClear] = useState(false);
+  const [announcement, setAnnouncement] = useState('');
+  const progressRef = useRef(null);
   const modeHint = MODES.find((m) => m.value === mode)?.hint;
   const anyTicks = register.progress.verified + register.progress.hidden > 0;
   const confirmClear = anyTicks && armedFor === ticks;
-  const disarm = () => { setArmedFor(null); setFocusClear(true); };
+  const cancel = () => { setArmedFor(null); setFocusClear(true); };
+  const confirm = () => {
+    onClearTicks();
+    setArmedFor(null);
+    setFocusClear(false);
+    setAnnouncement('All ticks cleared.');
+    progressRef.current?.focus();
+  };
   const shownAssets = register.assets.filter((r) => matchesFilter(r, filter)).length;
   const shownHousehold = register.household.filter((r) => matchesFilter(r, filter)).length;
   const filterText = FILTERS.find((f) => f.value === filter)?.label.toLowerCase();
@@ -57,7 +68,7 @@ export default function InputsAudit({ register, mode, onModeChange, filter, onFi
           </strong>
         )}
       </div>
-      <Card title="Inputs audit" subtitle="Every input as bare data, for checking against the source documents. Tick a row when it matches. A tick stays with its row and is hidden as soon as anything in that row changes (it returns if the change is undone); only live ticks are saved with Export JSON." aside={<Progress progress={register.progress} />}>
+      <Card title="Inputs audit" subtitle="Every input as bare data, for checking against the source documents. Tick a row when it matches. A tick stays with its row and is hidden as soon as anything in that row changes (it returns if the change is undone); only live ticks are saved with Export JSON." aside={<div ref={progressRef} tabIndex={-1} className="rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-soft"><Progress progress={register.progress} /></div>}>
         <div className="flex flex-wrap items-end gap-x-4 gap-y-3 print:hidden">
           <div>
             <span className="block text-xs font-medium text-ink-2">Show values</span>
@@ -90,12 +101,12 @@ export default function InputsAudit({ register, mode, onModeChange, filter, onFi
             {confirmClear
               ? (
                 <>
-                  <Button variant="danger" autoFocus onClick={() => { onClearTicks(); disarm(); }}>Confirm: clear all ticks</Button>
-                  <Button variant="ghost" onClick={disarm}>Cancel</Button>
+                  <Button variant="danger" onClick={confirm}>Confirm: clear all ticks</Button>
+                  <Button variant="ghost" autoFocus onClick={cancel}>Cancel</Button>
                 </>
               )
-              : <Button variant="ghost" autoFocus={focusClear} onClick={() => { setArmedFor(ticks); setFocusClear(false); }} disabled={!anyTicks} title="Removes every tick, including hidden ones">Clear ticks</Button>}
-            <span role="status" aria-live="polite" className="sr-only">{confirmClear ? 'Confirm to clear all ticks, or cancel.' : ''}</span>
+              : <Button variant="ghost" autoFocus={focusClear} onClick={() => { setArmedFor(ticks); setFocusClear(false); setAnnouncement(''); }} disabled={!anyTicks} title="Removes every tick, including hidden ones">Clear ticks</Button>}
+            <span role="status" aria-live="polite" className="sr-only">{confirmClear ? 'Clear all ticks? Confirm or cancel.' : announcement}</span>
           </div>
         </div>
         <p className="mt-3 text-xs text-muted print:hidden">
@@ -107,7 +118,7 @@ export default function InputsAudit({ register, mode, onModeChange, filter, onFi
       <AuditFlags flags={register.flags} />
 
       <Card title="Control totals">
-        <ControlTotals totals={register.totals} typedTotals={register.typedTotals} mode={mode} tieOut={register.tieOut} />
+        <ControlTotals totals={register.totals} typedTotals={register.typedTotals} mode={mode} tieOut={register.tieOut} tieOutTyped={register.tieOutTyped} />
       </Card>
 
       <Card title="Asset register" subtitle="Laid out like a sheet: in the CSV and the copied table, asset #n is on row n + 1 (row 1 is the header) and every column keeps its letter. Italic columns are derived by the model; dimmed cells are not used.">

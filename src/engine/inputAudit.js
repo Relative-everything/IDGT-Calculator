@@ -65,7 +65,9 @@ export function controlTotals(rows, fields, { cents = false } = {}) {
  * The total foots its two lines as shown to the cent (whole-cent addition, as in controlTotals).
  * @returns {{ otherEstate:number, candidates:number, total:number }}
  */
-export function balanceSheetTieOut({ otherEstate, candidatesFmv }) {
-  const cents = (v) => Math.round(v * CENTS_PER_DOLLAR);
-  return { otherEstate, candidates: candidatesFmv, total: (cents(otherEstate) + cents(candidatesFmv)) / CENTS_PER_DOLLAR };
+export function balanceSheetTieOut({ otherEstate, candidatesFmv, cents = true }) {
+  // `cents: false` for amounts shown as typed: the total is then their plain sum, like the lines above it
+  if (!cents) return { otherEstate, candidates: candidatesFmv, total: otherEstate + candidatesFmv };
+  const toCents = (v) => Math.round(v * CENTS_PER_DOLLAR);
+  return { otherEstate, candidates: candidatesFmv, total: (toCents(otherEstate) + toCents(candidatesFmv)) / CENTS_PER_DOLLAR };
 }

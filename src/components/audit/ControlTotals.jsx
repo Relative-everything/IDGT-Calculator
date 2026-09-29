@@ -27,8 +27,11 @@ const TYPED_COLUMNS = new Set(['FMV', 'B0', 'annualExclusions']);
  * Batch control totals and the balance-sheet tie-out; bare figures first (to match a SUM cell), formatted beside. In the
  * "as typed" view the typed columns total as typed, like the register's totals row.
  */
-export default function ControlTotals({ totals, typedTotals, mode, tieOut }) {
+export default function ControlTotals({ totals, typedTotals, mode, tieOut, tieOutTyped }) {
   const asTyped = (key) => mode === 'typed' && TYPED_COLUMNS.has(key) && typedTotals;
+  // the tie-out uses the same Σ FMV as the totals beside it: as typed in the typed view, to the cent otherwise
+  const tie = mode === 'typed' && tieOutTyped ? tieOutTyped : tieOut;
+  const tieKind = mode === 'typed' && tieOutTyped ? 'typedSum' : 'money';
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       <div>
@@ -56,14 +59,14 @@ export default function ControlTotals({ totals, typedTotals, mode, tieOut }) {
         <h3 className="text-sm font-semibold text-ink">Balance-sheet tie-out</h3>
         <p className="mt-0.5 text-xs text-muted">Compare the total with the client's net worth on the balance sheet (e.g. the eMoney net-worth report).</p>
         <dl className="mt-2 divide-y divide-line rounded-md border border-line text-[13px]">
-          <div className="grid grid-cols-[1fr_auto] items-baseline gap-3 px-3 py-1.5"><dt className="text-ink-2">Other estate (as entered)</dt><dd><Figure value={tieOut.otherEstate} /></dd></div>
+          <div className="grid grid-cols-[1fr_auto] items-baseline gap-3 px-3 py-1.5"><dt className="text-ink-2">Other estate (as entered)</dt><dd><Figure value={tie.otherEstate} kind={tieKind} /></dd></div>
           <div className="grid grid-cols-[1fr_auto] items-baseline gap-3 px-3 py-1.5">
             <dt className="text-ink-2">+ Σ candidate assets at FMV
-              {tieOut.candidatesSkipped > 0 && <span className="block text-xs text-bad">{tieOut.candidatesSkipped} value{tieOut.candidatesSkipped === 1 ? '' : 's'} not a number, left out of this total</span>}
+              {tie.candidatesSkipped > 0 && <span className="block text-xs text-bad">{tie.candidatesSkipped} value{tie.candidatesSkipped === 1 ? '' : 's'} not a number, left out of this total</span>}
             </dt>
-            <dd><Figure value={tieOut.candidates} /></dd>
+            <dd><Figure value={tie.candidates} kind={tieKind} /></dd>
           </div>
-          <div className="grid grid-cols-[1fr_auto] items-baseline gap-3 bg-surface-2 px-3 py-1.5 font-medium"><dt className="text-ink">= Total to compare with net worth</dt><dd><Figure value={tieOut.total} /></dd></div>
+          <div className="grid grid-cols-[1fr_auto] items-baseline gap-3 bg-surface-2 px-3 py-1.5 font-medium"><dt className="text-ink">= Total to compare with net worth</dt><dd><Figure value={tie.total} kind={tieKind} /></dd></div>
         </dl>
         <p className="mt-2 text-xs text-ink-2">
           Each asset is priced against the other estate plus that asset alone. The other estate also pays the grantor's
