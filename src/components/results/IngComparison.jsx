@@ -171,8 +171,10 @@ export default function IngComparison({ entry, breakevens, grid, isStale, error 
         </div>
         <div className="min-w-0">
           <h3 className="text-sm font-semibold text-ink">Heir-wealth gain by year of death</h3>
-          <p className="mb-2 text-xs text-muted">What heirs gain over keeping the asset if the grantor dies at the end of each year, undiscounted; shading marks the years the ING leads.</p>
-          <CrossoverChart rows={ing.rows} leadYears={vs.ingLeadsYears} expectedDeathYear={r.derived?.expectedDeathYear} sStar={r.sStar} maxYears={entry.inputs?.NDisp} />
+          <p className="mb-2 text-xs text-muted">{r.derived?.married
+            ? 'What heirs gain over keeping the asset if the second death falls at the end of each year (expected over which spouse dies first), undiscounted; shading marks the years the ING leads.'
+            : 'What heirs gain over keeping the asset if the grantor dies at the end of each year, undiscounted; shading marks the years the ING leads.'}</p>
+          <CrossoverChart rows={ing.rows} leadYears={vs.ingLeadsYears} expectedDeathYear={r.derived?.expectedDeathYear} sStar={r.sStar} maxYears={entry.inputs?.NDisp} married={Boolean(r.derived?.married)} />
         </div>
       </div>
 

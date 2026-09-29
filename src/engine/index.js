@@ -9,7 +9,9 @@ export {
   REASON_ING_ALWAYS, REASON_IDGT_ALWAYS, REASON_NOT_EVALUABLE,
 } from './breakeven.js';
 export { deriveGift, makeBases, exclusionAt, taxFromBase, tentativeTax, estateTaxByBrackets } from './fedTax.js';
-export { lxColumn, validateLx, deathProbabilities, expectedDeathYear } from './mortality.js';
-export { validateInputs, validateIngInputs, resolveIngInputs } from './validate.js';
+export { lxColumn, validateLx, deathProbabilities, expectedDeathYear, lifeExpectancyYears, survivorsFromDeathRates, lxFromLifeTable, secondDeathDistribution } from './mortality.js';
+export { evaluateMarried, evaluateIngMarried, marriedLives } from './marriedModel.js';
+export { validateInputs, validateIngInputs, resolveIngInputs, neutralSwapProfile } from './validate.js';
 export { rankAssets } from './ranking.js';
+export { assetAuditFacts, controlTotals, shareOfTotal, balanceSheetTieOut } from './inputAudit.js';
 export * from './constants.js';

@@ -14,13 +14,24 @@ import { BASIC_EXCLUSION_2026 } from '../data/exclusionAmounts.js';
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 const isInt = (v) => Number.isInteger(v);
 
-/** Projection horizon implied by the inputs (deterministic year, or ω − age from the table). */
+/** Projection horizon of one life (deterministic year, or ω − age from its table). */
+function lifeHorizon(lx, age, override) {
+  if (override != null) return override;
+  if (!Array.isArray(lx) || !isInt(age)) return MAX_PROJECTION_YEARS;
+  let omega = lx.findIndex((v, i) => i > age && v === 0);
+  if (omega === -1) omega = lx.length;
+  return Math.max(1, omega - age);
+}
+
+/**
+ * Projection horizon implied by the inputs: the grantor's, or for a married couple the later of the two lives' (the
+ * second death, docs/changes/2026-09-27-life-tables/model.md §2).
+ */
 export function horizonYears(inp) {
-  if (inp.deathYearOverride != null) return inp.deathYearOverride;
-  if (!Array.isArray(inp.lx) || !isInt(inp.age)) return MAX_PROJECTION_YEARS;
-  let omega = inp.lx.findIndex((v, i) => i > inp.age && v === 0);
-  if (omega === -1) omega = inp.lx.length;
-  return Math.max(1, omega - inp.age);
+  const grantor = lifeHorizon(inp.lx, inp.age, inp.deathYearOverride);
+  if (!inp.married) return grantor;
+  const spouse = lifeHorizon(inp.lxSpouse, inp.ageSpouse, inp.deathYearOverride != null ? inp.deathYearOverrideSpouse : null);
+  return Math.max(grantor, spouse);
 }
 
 /**
@@ -65,13 +76,30 @@ export function validateIngInputs(inp) {
 }
 
 /**
+ * The return-neutral swap consideration (model.md C-2): cash-like, basis 100%, earning the other-estate after-tax rate
+ * r_E after the grantor's tax at τ_ord. For r_E ≥ 0 that is a gross yield r_E/(1 − τ_ord) with no appreciation. For
+ * r_E < 0 it is a holding that depreciates at r_E with no income — a negative "yield" would mean the grantor collects a
+ * tax refund on negative income, which no instrument produces (docs/changes/2026-09-27-math-evals, F7). Either way the
+ * after-tax return is exactly r_E, so the pre-tax family wealth path is unchanged by the swap.
+ * @returns {{ bSw:number, gSw:number, ySw:number, tauSw:number }}
+ */
+export function neutralSwapProfile(rE, tauOrd) {
+  return rE >= 0
+    ? { bSw: 1, gSw: 0, ySw: rE / (1 - tauOrd), tauSw: tauOrd }
+    : { bSw: 1, gSw: rE, ySw: 0, tauSw: tauOrd };
+}
+
+/**
  * @param {object} inp - flat engine inputs (decimals)
  * @returns {{ errors: {field:string, message:string}[], warnings: {code:string, data:object}[] }}
  */
 export function validateInputs(inp) {
   const errors = [];
   const warnings = [];
-  const err = (field, message) => errors.push({ field, message });
+  // `also`: the other inputs an error depends on besides `field` (a stack's parts, the asset's returns for the ING value
+  // factor), so a caller can show the error on them too
+  // `code`: a stable name for an error a caller may place or word differently (STATE_ABOVE_STACK below)
+  const err = (field, message, also, code) => errors.push({ field, message, ...(also ? { also } : {}), ...(code ? { code } : {}) });
   const warn = (code, data = {}) => warnings.push({ code, data });
 
   // Grantor and horizon
@@ -88,6 +116,27 @@ export function validateInputs(inp) {
       if (inp.age >= inp.lx.length) err('age', `Age is beyond the mortality table (last age ${inp.lx.length - 1}); use an assumed death year.`);
       else if (!(inp.lx[inp.age] > 0)) err('age', `The mortality table has no survivors at age ${inp.age}; use an assumed death year.`);
     }
+  }
+
+  // Married couple (docs/changes/2026-09-27-life-tables/model.md §5): the spouse's life on the same basis as the grantor's
+  if (inp.married != null && typeof inp.married !== 'boolean') err('married', 'Married must be on or off.');
+  if (inp.married === true) {
+    if (!isInt(inp.ageSpouse) || inp.ageSpouse < 0) err('ageSpouse', "Spouse's age must be a whole number of years, zero or more.");
+    if (deterministic) {
+      if (!isInt(inp.deathYearOverrideSpouse) || inp.deathYearOverrideSpouse < 1) err('deathYearOverrideSpouse', "Spouse's assumed death year must be a whole number, 1 or more.");
+      else if (inp.deathYearOverrideSpouse > MAX_PROJECTION_YEARS) err('deathYearOverrideSpouse', `Spouse's assumed death year cannot exceed ${MAX_PROJECTION_YEARS}.`);
+      if (isInt(inp.ageSpouse) && inp.ageSpouse > MAX_GRANTOR_AGE) err('ageSpouse', `Spouse's age cannot exceed ${MAX_GRANTOR_AGE}.`);
+    } else {
+      const problems = Array.isArray(inp.lxSpouse) ? validateLx(inp.lxSpouse) : ['no mortality table supplied for the spouse'];
+      if (problems.length) err('lxSpouse', `Spouse's mortality table: ${problems[0]}.`);
+      else if (isInt(inp.ageSpouse) && inp.ageSpouse >= 0) {
+        if (inp.ageSpouse >= inp.lxSpouse.length) err('ageSpouse', `Spouse's age is beyond the mortality table (last age ${inp.lxSpouse.length - 1}); use assumed death years.`);
+        else if (!(inp.lxSpouse[inp.ageSpouse] > 0)) err('ageSpouse', `The mortality table has no survivors at the spouse's age ${inp.ageSpouse}; use assumed death years.`);
+      }
+    }
+    if (inp.PS != null && (!isNum(inp.PS) || inp.PS < 0)) err('PS', "Spouse's prior taxable gifts cannot be negative.");
+    if (inp.XPS != null && (!isNum(inp.XPS) || inp.XPS < 0)) err('XPS', "Spouse's prior-gift exclusion cannot be negative.");
+    if (inp.portability != null && typeof inp.portability !== 'boolean') err('portability', 'Portability must be on or off.');
   }
 
   // Rates
@@ -115,17 +164,17 @@ export function validateInputs(inp) {
   if (inp.niit != null) rateIn('niit', inp.niit, 0, 1, 'NIIT rate');
   const niitForBound = isNum(inp.niit) ? inp.niit : 0;
   if (isNum(ing.niit) && isNum(ing.ingStateRate)) {
-    if (isNum(ing.ingFedOrd) && ing.tauNo >= 1) err('ingFedOrd', 'The trust ordinary stack (federal + NIIT + state) must be below 100%.');
-    if (isNum(ing.ingFedLtcg) && ing.tauNc >= 1) err('ingFedLtcg', 'The trust capital-gain stack (federal + NIIT + state) must be below 100%.');
+    if (isNum(ing.ingFedOrd) && ing.tauNo >= 1) err('ingFedOrd', 'The trust ordinary stack (federal + NIIT + state) must be below 100%.', ['ingStateRate', 'niit']);
+    if (isNum(ing.ingFedLtcg) && ing.tauNc >= 1) err('ingFedLtcg', 'The trust capital-gain stack (federal + NIIT + state) must be below 100%.', ['ingStateRate', 'niit']);
   }
   // The state component sits inside the grantor's stack next to NIIT: 0 ≤ σ ≤ τ − niit (model.md §8).
   if (inp.stateOrd != null) {
     if (!isNum(inp.stateOrd) || inp.stateOrd < 0) err('stateOrd', 'State ordinary rate cannot be negative.');
-    else if (isNum(inp.tauOrd) && inp.stateOrd > inp.tauOrd - niitForBound + 1e-12) err('stateOrd', 'State ordinary rate cannot exceed the grantor ordinary rate less NIIT.');
+    else if (isNum(inp.tauOrd) && inp.stateOrd > inp.tauOrd - niitForBound + 1e-12) err('stateOrd', 'State ordinary rate cannot exceed the grantor ordinary rate less NIIT.', undefined, 'STATE_ABOVE_STACK');
   }
   if (inp.stateCg != null) {
     if (!isNum(inp.stateCg) || inp.stateCg < 0) err('stateCg', 'State capital-gain rate cannot be negative.');
-    else if (isNum(inp.tauCg) && inp.stateCg > inp.tauCg - niitForBound + 1e-12) err('stateCg', 'State capital-gain rate cannot exceed the grantor capital-gain rate less NIIT.');
+    else if (isNum(inp.tauCg) && inp.stateCg > inp.tauCg - niitForBound + 1e-12) err('stateCg', 'State capital-gain rate cannot exceed the grantor capital-gain rate less NIIT.', undefined, 'STATE_ABOVE_STACK');
   }
 
   // Exclusion and prior gifts
@@ -152,10 +201,15 @@ export function validateInputs(inp) {
 
   // ING value factor must stay positive on both rate profiles (model.md §8): 1 + g + (1 − τ^n_ord) y − c > 0.
   // v1's 1 + g + y > 0 does not imply it once the trust pays its own tax and fee.
-  if (isNum(inp.g) && isNum(inp.y) && isNum(ing.tauNo) && isNum(ing.ingAdminRate) && 1 + inp.g + (1 - ing.tauNo) * inp.y - ing.ingAdminRate <= 0) {
-    err('ingAdminRate', 'The ING would lose all its value in a year: growth plus after-tax yield less the administration cost must exceed -100%.');
-  } else if (inp.S > 0 && isNum(inp.gr) && isNum(inp.yr) && isNum(ing.tauNo) && isNum(ing.ingAdminRate) && 1 + inp.gr + (1 - ing.tauNo) * inp.yr - ing.ingAdminRate <= 0) {
-    err('ingAdminRate', 'After the sale the ING would lose all its value in a year: post-sale growth plus after-tax yield less the administration cost must exceed -100%.');
+  // Checked only where v1's 1 + g + y > 0 holds (otherwise that error already stands). The trust's ordinary stack is a
+  // part of the factor only when there is a yield to tax.
+  const trustStack = (y) => (y > 0 ? ['ingFedOrd', 'ingStateRate', 'niit'] : []);
+  if (isNum(inp.g) && isNum(inp.y) && isNum(ing.tauNo) && isNum(ing.ingAdminRate) && 1 + inp.g + inp.y > 0
+    && 1 + inp.g + (1 - ing.tauNo) * inp.y - ing.ingAdminRate <= 0) {
+    err('ingAdminRate', 'The ING would lose all its value in a year: growth plus after-tax yield less the administration cost must exceed -100%.', ['g', 'y', ...trustStack(inp.y)]);
+  } else if (inp.S > 0 && isNum(inp.gr) && isNum(inp.yr) && isNum(ing.tauNo) && isNum(ing.ingAdminRate) && 1 + inp.gr + inp.yr > 0
+    && 1 + inp.gr + (1 - ing.tauNo) * inp.yr - ing.ingAdminRate <= 0) {
+    err('ingAdminRate', 'After the sale the ING would lose all its value in a year: post-sale growth plus after-tax yield less the administration cost must exceed -100%.', ['gr', 'yr', ...trustStack(inp.yr)]);
   }
 
   // Swap consideration: nulls mean "derive the neutral default"; validate the RESOLVED profile.
@@ -166,14 +220,15 @@ export function validateInputs(inp) {
 
   if (errors.length) return { errors, warnings };
 
-  const gSw = inp.gSw ?? 0;
-  const tauSw = inp.tauSw ?? inp.tauOrd;
-  const ySw = inp.ySw ?? inp.rE / (1 - inp.tauOrd);
+  const neutral = neutralSwapProfile(inp.rE, inp.tauOrd);
+  const gSw = inp.gSw ?? neutral.gSw;
+  const tauSw = inp.tauSw ?? neutral.tauSw;
+  const ySw = inp.ySw ?? neutral.ySw;
   if (1 + gSw + ySw <= 0) err('gSw', 'Consideration growth plus yield must exceed -100%.');
 
   // Exclusion must stay >= $1M in every projection year (matters only when pi < 0).
   if (inp.pi < 0 && exclusionAt({ X0: inp.X0, pi: inp.pi }, horizonYears(inp)) < MIN_EXCLUSION_FOR_FLAT_RATE) {
-    err('pi', 'A negative indexing rate drives the exclusion below $1,000,000 within the projection horizon.');
+    err('pi', 'A negative indexing rate drives the exclusion below $1,000,000 within the projection horizon (set by the age and life table, or the assumed death year).', ['X0']);
   }
   if (errors.length) return { errors, warnings };
 
@@ -191,5 +246,7 @@ export function validateInputs(inp) {
   // the implied-understanding caveat of Rev. Rul. 2004-64 describes; the safe harbour also needs state law that
   // keeps the trust out of the grantor's creditors' reach (§2036(a)(1) otherwise). Not priced.
   if (ing.burnShare < 1) warn('BURN_REIMBURSED', { burnShare: ing.burnShare });
+  if (inp.married === true && inp.portability === false) warn('PORTABILITY_OFF', {});
+  if (inp.married === true && (inp.PS ?? 0) > 0 && inp.XPS != null && inp.PS > inp.XPS) warn('SPOUSE_PRIOR_GIFT_TAX', { P: inp.PS, XP: inp.XPS });
   return { errors, warnings };
 }

@@ -3,7 +3,7 @@ import SwapCurveChart from './SwapCurveChart.jsx';
 import DecompositionChart from './DecompositionChart.jsx';
 import LedgerTable from './LedgerTable.jsx';
 import WarningsList from './WarningsList.jsx';
-import { fmtMoney, fmtMoneyCompact, fmtRatio, fmtDecimal } from '../format.js';
+import { fmtMoney, fmtMoneyCompact, fmtRatio, fmtDecimal, deathbedNote } from '../format.js';
 // NPV per $ of FMV is exported in the CSV; the tiles show the ranking metric (per $ of taxable gift).
 
 function Tile({ label, value, sub, negative }) {
@@ -23,13 +23,15 @@ export default function AssetDetail({ entry }) {
   const allSwapYearsFeasible = r.npvCurve.slice(1).every((c) => c.feasible);
   return (
     <Card title={`Detail — ${entry.name}`}
-      subtitle={`Taxable gift ${fmtMoney(d.Ug)} · exclusion used ${fmtMoney(d.Uc)}${d.G > 0 ? ` · gift tax paid ${fmtMoney(d.G)} (trust basis ${fmtMoney(d.BT0)})` : ''} · expected death in year ${fmtDecimal(d.expectedDeathYear, 1)}`}>
+      subtitle={`Taxable gift ${fmtMoney(d.Ug)} · exclusion used ${fmtMoney(d.Uc)}${d.G > 0 ? ` · gift tax paid ${fmtMoney(d.G)} (trust basis ${fmtMoney(d.BT0)})` : ''} · ${d.married
+        ? `married: grantor's expected death in year ${fmtDecimal(d.expectedGrantorDeathYear, 1)}, second death in year ${fmtDecimal(d.expectedSecondDeathYear, 1)}`
+        : `expected death in year ${fmtDecimal(d.expectedDeathYear, 1)}`}`}>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <Tile label="NPV · best swap year" value={fmtMoneyCompact(r.npvOpt)} sub={r.sStar > 0 ? `swap at end of year ${r.sStar}` : 'no swap is best'} negative={r.npvOpt < 0} />
         <Tile label="NPV · no swap" value={fmtMoneyCompact(r.npvNone)} sub="probability-weighted, discounted" negative={r.npvNone < 0} />
         <Tile label="NPV per $ of taxable gift" value={fmtRatio(r.eff.opt)} sub={`no swap ${fmtRatio(r.eff.none)}`} negative={r.eff.opt < 0} />
-        <Tile label={allSwapYearsFeasible ? 'Deathbed-swap bound' : 'Deathbed-swap value'} value={fmtMoneyCompact(r.npvPF)}
-          sub={allSwapYearsFeasible ? 'upper bound: swap always precedes death' : 'swap in the death year where feasible; not a bound here'} negative={r.npvPF < 0} />
+        <Tile label="Deathbed-swap value" value={fmtMoneyCompact(r.npvPF)}
+          sub={deathbedNote(r.npvPF >= r.npvOpt, allSwapYearsFeasible)} negative={r.npvPF < 0} />
         <Tile label="Per $ of gift tax" value={d.G > 0 ? fmtRatio(r.effPerGiftTax.opt) : '—'} sub={d.G > 0 ? 'exclusion exhausted' : 'no gift tax paid'} negative={r.effPerGiftTax.opt < 0} />
       </div>
 
@@ -41,7 +43,7 @@ export default function AssetDetail({ entry }) {
         <div>
           <h3 className="text-sm font-semibold text-ink">NPV by swap year</h3>
           <p className="mb-2 text-xs text-muted">Each point re-runs the whole ledger with the asset swapped back at the end of that year. Dots on the baseline mark years a swap is not feasible.</p>
-          <SwapCurveChart curve={r.npvCurve} sStar={r.sStar} npvNone={r.npvNone} expectedDeathYear={d.expectedDeathYear} />
+          <SwapCurveChart curve={r.npvCurve} sStar={r.sStar} npvNone={r.npvNone} expectedDeathYear={d.expectedGrantorDeathYear ?? d.expectedDeathYear} />
         </div>
         <div>
           <h3 className="text-sm font-semibold text-ink">Where the NPV comes from</h3>
@@ -52,8 +54,10 @@ export default function AssetDetail({ entry }) {
 
       <div className="mt-5">
         <h3 className="text-sm font-semibold text-ink">Per-death-year ledger</h3>
-        <p className="mb-2 text-xs text-muted">What heirs receive if the grantor dies at the end of each year, keeping the asset versus having gifted it (or placed it in the ING trust).</p>
-        <LedgerTable rowsNone={r.rows.none} rowsOpt={r.rows.opt} rowsIng={entry.ing?.rows} sStar={r.sStar} maxYears={entry.inputs?.NDisp} shareBeyondDisplay={r.shareBeyondDisplay} />
+        <p className="mb-2 text-xs text-muted">{d.married
+          ? 'What heirs receive if the second death falls at the end of each year, keeping the asset versus having gifted it (or placed it in the ING trust).'
+          : 'What heirs receive if the grantor dies at the end of each year, keeping the asset versus having gifted it (or placed it in the ING trust).'}</p>
+        <LedgerTable rowsNone={r.rows.none} rowsOpt={r.rows.opt} rowsIng={entry.ing?.rows} sStar={r.sStar} maxYears={entry.inputs?.NDisp} shareBeyondDisplay={r.shareBeyondDisplay} married={Boolean(d.married)} />
       </div>
     </Card>
   );

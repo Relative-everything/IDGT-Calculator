@@ -1,3 +1,7 @@
+// LEGACY — superseded as the default on 2026-09-27 by the verified SSA 2023 period table (2026 Trustees Report) in
+// src/data/lifeTables/ssaPeriod2023Tr2026.js. Kept, labelled unverified, in the life-table registry
+// (src/data/lifeTables/index.js) so results computed with it can be reproduced.
+//
 // SSA period life table, l_x column (number of survivors out of 100,000 born alive), ages 0–119.
 // Intended source: Social Security Administration, Office of the Chief Actuary, "Actuarial Life Table"
 // (2021 period life table as used in the 2024 OASDI Trustees Report),

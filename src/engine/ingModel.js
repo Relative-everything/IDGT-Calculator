@@ -19,6 +19,7 @@ import { simulate, evaluateAsset } from './idgtModel.js';
 import { makeBases, taxFromBase } from './fedTax.js';
 import { validateInputs, validateIngInputs, resolveIngInputs } from './validate.js';
 import { SWAP_TIE_TOLERANCE } from './constants.js';
+import { evaluateIngMarried } from './marriedModel.js';
 
 const pos = (x) => Math.max(0, x);
 
@@ -27,32 +28,36 @@ export const IDGT_BRIDGE_KEYS = Object.freeze(['freeze', 'burn', 'giftTax', 'res
 export const ING_COMPONENT_KEYS = Object.freeze(['locNet', 'ssNet', 'feeNet', 'stepUp']);
 
 /**
- * One year of a self-taxing accumulation trust (model.md §3). Gross yield, income tax at `tauO` on the yield
- * and the fee `c` on the opening value (not deducted for income tax, N-3) are settled inside the trust.
- *   Y = y V_{t−1} ; Tax = τ Y ; Fee = c V_{t−1} ; V^pre = V_{t−1}(1+g) + Y ; D = Y − Tax − Fee
- *   D ≥ 0: V = V^pre − Tax − Fee ; B += D                      (net cash reinvested adds basis, N-4)
- *   D < 0: the fee beyond the after-tax yield is funded by liquidating L = −D of the holding with pro-rata basis
- *          (Reg. §1.61-6(a)): gain = L·max(0, 1 − B/V^pre), CGL = τ_cg·gain, B ·= (1 − L/V^pre), V = V^pre + D − CGL
- * B never goes negative. Mutates `state` ({V, B}); returns the year's flows.
+ * One year of a self-taxing accumulation trust (model.md §3, as corrected 2026-09-27 — docs/changes/2026-09-27-math-evals).
+ * Gross yield, income tax at `tauO` on the yield and the fee `c` on the opening value (not deducted for income tax,
+ * N-3) are settled inside the trust. H = V_{t−1}(1+g) is the holding after growth, before the yield cash.
+ *   Y = y V_{t−1} ; Tax = τ Y ; Fee = c V_{t−1} ; D = Y − Tax − Fee
+ *   D ≥ 0: V = H + D ; B += D                                   (net cash reinvested adds basis, N-4)
+ *   D < 0: ALL of the yield cash is spent, and the shortfall L = −D is raised by selling a slice X of H with its
+ *          pro-rata basis (Reg. §1.61-6(a)). The slice's own gain is taxed inside the trust, so it is grossed up to
+ *          net L: X = L / (1 − τ_cg·a), a = max(0, 1 − B/H); gain = X·a, CGL = τ_cg·gain, B ·= (1 − X/H), V = H − X.
+ * The branches meet at D = 0 (V = H, no slice), so V is continuous in the fee and the yield. B never goes negative.
+ * Mutates `state` ({V, B}); returns the year's flows.
  */
 function stepTrust(state, gt, yt, tauO, tauC, c) {
   const Vprev = state.V;
   const Y = yt * Vprev;
   const tax = tauO * Y;
   const fee = c * Vprev;
-  const Vpre = Vprev * (1 + gt) + Y;
+  const H = Vprev * (1 + gt);
   const D = Y - tax - fee;
   let gainL = 0;
   let CGL = 0;
   if (D >= 0) {
-    state.V = Vpre - tax - fee;
+    state.V = H + D;
     state.B += D;
   } else {
-    const L = -D;
-    gainL = L * pos(1 - state.B / Vpre);
+    const gainShare = pos(1 - state.B / H);
+    const sold = -D / (1 - tauC * gainShare);
+    gainL = sold * gainShare;
     CGL = tauC * gainL;
-    state.B *= 1 - L / Vpre;
-    state.V = Vpre + D - CGL;
+    state.B *= 1 - sold / H;
+    state.V = H - sold;
   }
   return { Y, tax, fee, gainL, CGL };
 }
@@ -213,7 +218,8 @@ export function evaluateIng(inp, idgtResult) {
   const idgt = idgtResult ?? evaluateAsset(inp);
   const { q } = idgt;
   const N = idgt.derived.N;
-  const sim = simulateIng(inp, N);
+  // Married couple: rows by the year of the second death (docs/changes/2026-09-27-life-tables/model.md §3–§4)
+  const sim = inp.married ? evaluateIngMarried(inp) : simulateIng(inp, N);
   const optRows = idgt.rows.opt;
 
   let npv = 0;
@@ -244,7 +250,9 @@ export function evaluateIng(inp, idgtResult) {
     warnings.push({ code: 'ING_NO_STATE_SAVING', data: { ingRate: ingOrdTotal, grantorRate: inp.tauOrd, onGrantor: sim.derived.stateTaxOnGrantor } });
   }
   const netYield = inp.y * (1 - tauNo);
-  const postSale = inp.S > 0 && inp.S < N;
+  // the ING pays its fee only while the grantor lives (married: it passes to the spouse at the grantor's death, M-9)
+  const ingYears = inp.married ? idgt.derived.NG : N;
+  const postSale = inp.S > 0 && inp.S < ingYears;
   const netYieldPost = postSale ? (inp.yr ?? inp.y) * (1 - tauNo) : Infinity;
   if (feeRate > Math.min(netYield, netYieldPost)) {
     warnings.push({ code: 'ING_FEE_EXCEEDS_YIELD', data: { fee: feeRate, netYield: Math.min(netYield, netYieldPost) } });

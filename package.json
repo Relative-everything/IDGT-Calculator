@@ -9,6 +9,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "test": "vitest",
+    "eval": "node evals/run.mjs --label run",
     "preview": "vite preview"
   },
   "dependencies": {

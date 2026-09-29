@@ -99,9 +99,12 @@ E^n_t = E^n_{t−1}(1+r_E) − σ^g_ord Y^n_t − σ^g_cg (gainS_t + gainL_t)   
 Y^n_t = y_t V^n_{t−1} ;  Tax^n_t = τ^n_ord Y^n_t ;  Fee_t = c V^n_{t−1} ;  V^pre_t = V^n_{t−1}(1+g_t) + Y^n_t
 D_t = Y^n_t − Tax^n_t − Fee_t
 if D_t ≥ 0:   V^n_t = V^pre_t − Tax^n_t − Fee_t ;  B^n_t = B^n_{t−1} + D_t ;  gainL_t = 0
-else (fee funded by liquidating L_t = −D_t of the holding; Reg. §1.61-6(a) pro-rata basis):
-              gainL_t = L_t · max(0, 1 − B^n_{t−1}/V^pre_t) ;  CGL_t = τ^n_cg gainL_t
-              B^n_t = B^n_{t−1} (1 − L_t / V^pre_t) ;  V^n_t = V^pre_t + D_t − CGL_t          # B^n_t ≥ 0 always
+else (all of the yield cash is spent; the shortfall L_t = −D_t is raised by selling a slice X_t of the holding
+      H_t = V^n_{t−1}(1+g_t) with its pro-rata basis, Reg. §1.61-6(a), grossed up for the tax on its own gain):
+              a_t = max(0, 1 − B^n_{t−1}/H_t) ;  X_t = L_t / (1 − τ^n_cg a_t) ;  gainL_t = X_t a_t ;  CGL_t = τ^n_cg gainL_t
+              B^n_t = B^n_{t−1} (1 − X_t / H_t) ;  V^n_t = H_t − X_t          # B^n_t ≥ 0 always; V^n continuous at D_t = 0
+      (Amended 2026-09-27, docs/changes/2026-09-27-math-evals finding F1. Revision 2 had V^n_t = V^pre_t + D_t − CGL_t,
+       which left the spent yield cash Y^n_t in the holding: V^n jumped up by Y^n_t as the fee crossed the after-tax yield.)
 Sale at t = S:  gainS_S = max(0, V^n_S − B^n_S) ; CG^n_S = τ^n_cg gainS_S ; V^n_S −= CG^n_S ; B^n_S := V^n_S ; after S the (g_r, y_r)
                 rates apply (gainS_t = 0 when t ≠ S; the sale follows the liquidation step within the year)
 Death at end of t:

@@ -131,10 +131,16 @@ describe('machine rows (reference-computed; plan.md)', () => {
     for (const r of ing.rows) expectMoney(r.dH, r.dTW);
   });
   it('I5 — fee beyond the after-tax yield: pro-rata liquidation, basis never negative', () => {
+    // Corrected 2026-09-27 (docs/changes/2026-09-27-math-evals, finding F1): all of the yield cash is spent and the
+    // shortfall is raised by a grossed-up slice of the holding. Year 1 by hand: shortfall = 2,040 + 10,000 − 5,000
+    // = 7,040; zero basis → slice = 7,040 ÷ (1 − 0.238) = 9,238.845144; V₁ = 1,070,000 − 9,238.845144.
+    // Reproduced by the corrected reference/ing-ref.mjs and by the clean-room oracle (evals/, hand case HC09).
     const { ing } = run(ING_FIXTURES.I5);
-    expectMoney(ing.npv, 22_528.617551);
+    expectMoney(ing.rows[0].Vn, 1_060_761.154856);
+    expectMoney(ing.rows[0].gainL, 9_238.845144);
+    expectMoney(ing.npv, 14_910.938545);
     expectMoney(ing.components.ssNet, 33_141.120044);
-    expectMoney(ing.components.feeNet, -10_524.235637);
+    expectMoney(ing.components.feeNet, -18_141.914643);
     expectMoney(ing.components.locNet, -88.266856);
     for (const r of ing.rows) expect(r.Bn).toBeGreaterThanOrEqual(0);
     expect(ing.warnings.map((w) => w.code)).toContain('ING_FEE_EXCEEDS_YIELD');

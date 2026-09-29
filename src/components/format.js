@@ -49,3 +49,13 @@ export function fmtDecimal(v, digits = 1) {
   if (v == null || !Number.isFinite(v)) return '—';
   return v.toFixed(digits);
 }
+
+/**
+ * Sub-line for the deathbed-swap tile. The value is NOT an upper bound (docs/changes/2026-09-27-math-evals, F3): when the
+ * swapped-in consideration out-earns the asset, an early fixed-year swap beats swapping in the year of death, so the
+ * note states which way the comparison went (the caller passes the comparison; no arithmetic here).
+ */
+export function deathbedNote(aboveBest, allFeasible) {
+  const where = allFeasible ? 'swap at the end of the year of death' : 'swap in the death year where feasible';
+  return aboveBest ? `${where}; beats the best fixed year` : `${where}; below the best fixed year (an earlier swap compounds more)`;
+}

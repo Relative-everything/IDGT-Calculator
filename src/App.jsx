@@ -12,36 +12,29 @@ import MethodologyPanel from './components/panels/MethodologyPanel.jsx';
 import DeferredPanel from './components/panels/DeferredPanel.jsx';
 import Button from './components/ui/Button.jsx';
 import ErrorBoundary from './components/ui/ErrorBoundary.jsx';
+import InputsAudit from './components/audit/InputsAudit.jsx';
 import { useIdgtModel } from './hooks/useIdgtModel.js';
+import { useInputRegister } from './hooks/useInputRegister.js';
+import { assetTableTsv, registerToCsv, ticksForFile, ticksFromFile } from './hooks/inputRegister.js';
 import { useIngBreakeven } from './hooks/useIngBreakeven.js';
-import { serializeScenario, parseScenario, rankingToCsv, newId, MAX_IMPORT_BYTES } from './hooks/scenarioIO.js';
-import { MORTALITY_TABLE_META } from './data/mortalityTable.js';
-import { BASIC_EXCLUSION_2026 } from './data/exclusionAmounts.js';
+import { serializeScenario, parseScenario, rankingToCsv, MAX_IMPORT_BYTES } from './hooks/scenarioIO.js';
+import { DEFAULT_GRANTOR, DEFAULT_ESTATE, DEFAULT_SETTINGS, DEFAULT_ASSETS, makeAsset } from './hooks/defaults.js';
 
-const DEFAULT_GRANTOR = { age: '65', sex: 'male', useDeathYear: false, deathYear: '20', fedOrd: '37', stateOrd: '5', niit: '3.8', fedLtcg: '20', stateLtcg: '5' };
-const DEFAULT_ESTATE = {
-  otherEstate: '20000000', otherEstateGrowth: '3', exclusion: String(BASIC_EXCLUSION_2026), exclusionIndexing: '2',
-  priorGifts: '0', priorGiftYear: '2025', priorExclusionMode: 'year', priorGiftExclusion: '13990000',
-  estateTaxRate: '40', beneFedLtcg: '20', beneStateLtcg: '5', beneNiit: true, yearsToSale: '1', discountRate: '4', maxYears: '35',
-};
-const DEFAULT_SETTINGS = {
-  rankKey: 'opt', discountAtDeath: false, saleAppliesToBaseline: true, swapCustom: false, swapBasisPct: '100', swapGrowth: '0', swapYield: '5.535', swapTaxRate: '45.8',
-  // ING comparison (docs/changes/2026-09-27-ing-comparison/model.md §1): classic full burn; trust at the federal top rates + NIIT in a no-tax situs
-  burnShare: '100', ingFedOrd: '37', ingFedLtcg: '20', ingStateRate: '0', ingAdminRate: '0', ingStateTaxOnGrantor: false,
-};
-const makeAsset = (over = {}) => ({
-  id: newId(), name: 'Asset 1', fmv: '1000000', discount: '0', basis: '200000', growth: '7', yield: '2',
-  saleYear: '0', postSaleGrowth: '6', postSaleYield: '1.5', annualExclusions: '0', ...over,
-});
-const DEFAULT_ASSETS = () => [
-  makeAsset({ name: 'Growth stock (low basis)' }),
-  makeAsset({ name: 'Family LP interest (30% discount)', fmv: '3000000', basis: '1500000', discount: '30', growth: '6', yield: '3' }),
-  makeAsset({ name: 'Business interest, sale in yr 5', fmv: '5000000', basis: '500000', discount: '25', growth: '8', yield: '1', saleYear: '5', postSaleGrowth: '6', postSaleYield: '1.5' }),
-];
 const defaultsForImport = () => ({ grantor: DEFAULT_GRANTOR, estate: DEFAULT_ESTATE, settings: DEFAULT_SETTINGS, asset: makeAsset() });
+const EMPTY_AUDIT = { reviewer: '', ticks: {} };
+// The reviewer's calendar date (local time, not UTC: an evening tick in the Americas must not carry tomorrow's date).
+const today = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+// The view is kept in the URL hash (#audit) so the audit page can be bookmarked; state itself is never stored (repo rule).
+const initialView = () => (typeof window !== 'undefined' && window.location.hash === '#audit' ? 'audit' : 'analysis');
 
+// CSVs start with a UTF-8 byte-order mark so Excel on Windows reads Σ, · and accented names correctly.
+const UTF8_BOM = '\uFEFF';
 function download(name, text, type) {
-  const blob = new Blob([text], { type });
+  const csv = type === 'text/csv';
+  const blob = new Blob([csv ? UTF8_BOM + text : text], { type: csv ? 'text/csv;charset=utf-8' : type });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = name; a.click();
@@ -55,9 +48,14 @@ export default function App() {
   const [assets, setAssets] = useState(DEFAULT_ASSETS);
   const [selectedId, setSelectedId] = useState(null);
   const [notice, setNotice] = useState(null);
+  const [view, setView] = useState(initialView);
+  const [audit, setAudit] = useState(EMPTY_AUDIT);
+  const [auditMode, setAuditMode] = useState('typed');
+  const [auditFilter, setAuditFilter] = useState('all');
+  const [auditWide, setAuditWide] = useState(false);
   const fileRef = useRef(null);
 
-  const { perAsset, ranked, remainingExclusion, neutralSwapYield, isStale } = useIdgtModel({ grantor, estate, settings, assets });
+  const { perAsset, ranked, remainingExclusion, neutralSwap, swapRates, mortality, isStale, snapshot } = useIdgtModel({ grantor, estate, settings, assets });
 
   const errorsById = useMemo(() => {
     const out = {};
@@ -68,9 +66,34 @@ export default function App() {
   const invalid = perAsset.filter((a) => a.errors.length);
   const selected = ranked.find((r) => r.id === selectedId) ?? ranked[0] ?? null;
   const ingBreakeven = useIngBreakeven(selected);
+  const register = useInputRegister({ ...snapshot, perAsset, audit });
 
-  const reset = () => { setGrantor(DEFAULT_GRANTOR); setEstate(DEFAULT_ESTATE); setSettings(DEFAULT_SETTINGS); setAssets(DEFAULT_ASSETS()); setSelectedId(null); setNotice('Inputs reset to defaults.'); };
-  const exportJson = () => download('idgt-scenario.json', serializeScenario({ grantor, estate, settings, assets }), 'application/json');
+  const changeView = (next) => {
+    setView(next);
+    if (typeof window !== 'undefined') window.history.replaceState(null, '', next === 'audit' ? '#audit' : `${window.location.pathname}${window.location.search}`);
+  };
+  const tick = (key, value, on) => setAudit((a) => {
+    const ticks = { ...a.ticks };
+    if (on) ticks[key] = { v: value, at: today() };
+    else delete ticks[key];
+    return { ...a, ticks };
+  });
+  const copyAssetTable = async () => {
+    try {
+      await navigator.clipboard.writeText(assetTableTsv(register, auditMode));
+      setNotice(`Copied ${register.assets.length} asset row${register.assets.length === 1 ? '' : 's'} with headers and totals (tab-separated): paste into Excel beside the source.`);
+    } catch {
+      setNotice('The browser refused clipboard access. Use Download audit CSV instead.');
+    }
+  };
+  const downloadAudit = () => download(`idgt-inputs-audit-${auditMode === 'typed' ? 'as-typed' : 'model-values'}.csv`,
+    registerToCsv(register, auditMode, { reviewer: audit.reviewer, generatedAt: new Date().toISOString() }), 'text/csv');
+  const clearTicks = () => setAudit((a) => ({ ...a, ticks: {} }));
+
+  const reset = () => { setGrantor(DEFAULT_GRANTOR); setEstate(DEFAULT_ESTATE); setSettings(DEFAULT_SETTINGS); setAssets(DEFAULT_ASSETS()); setAudit(EMPTY_AUDIT); setSelectedId(null); setNotice('Inputs reset to defaults.'); };
+  // Only live ticks are saved (a tick on a row that has changed since does not travel with the file), keyed by content.
+  const exportJson = () => download('idgt-scenario.json',
+    serializeScenario({ grantor, estate, settings, assets, audit: { ...audit, ticks: ticksForFile({ grantor, estate, settings, assets }, audit.ticks) } }), 'application/json');
   const exportCsv = () => download('idgt-ranking.csv', rankingToCsv(ranked), 'text/csv');
   const importJson = (file) => {
     if (file.size > MAX_IMPORT_BYTES) { setNotice(`Could not load ${file.name}: the file is too large to be a scenario.`); return; }
@@ -79,7 +102,8 @@ export default function App() {
     reader.onload = () => {
       try {
         const s = parseScenario(String(reader.result), defaultsForImport());
-        setGrantor(s.grantor); setEstate(s.estate); setSettings(s.settings); setAssets(s.assets); setSelectedId(null);
+        // the file keys asset ticks by content; map them onto the imported rows (whose ids are new)
+        setGrantor(s.grantor); setEstate(s.estate); setSettings(s.settings); setAssets(s.assets); setAudit({ ...s.audit, ticks: ticksFromFile(s.assets, s.audit.ticks) }); setSelectedId(null);
         setNotice(`Loaded ${file.name}.${s.dropped > 0 ? ` ${s.dropped} asset entr${s.dropped === 1 ? 'y was' : 'ies were'} skipped (not an object, or beyond the ${s.assets.length}-asset limit).` : ''}`);
       } catch (err) { setNotice(`Could not load ${file.name}: ${err.message}`); }
     };
@@ -98,41 +122,64 @@ export default function App() {
 
   const sidebar = (
     <>
-      <GrantorPanel grantor={grantor} onChange={setGrantor} errors={sharedErrors} />
-      <EstatePanel estate={estate} onChange={setEstate} errors={sharedErrors} />
+      <GrantorPanel grantor={grantor} onChange={setGrantor} errors={sharedErrors} mortality={mortality} />
+      <EstatePanel estate={estate} onChange={setEstate} errors={sharedErrors} married={Boolean(grantor.married)} />
       <AssetsPanel assets={assets} onChange={setAssets} errorsById={errorsById} />
-      <ModelSettingsPanel settings={settings} onChange={setSettings} errors={sharedErrors} neutralYield={neutralSwapYield} />
+      <ModelSettingsPanel settings={settings} onChange={setSettings} errors={sharedErrors} neutralSwap={neutralSwap} swapRates={swapRates} />
       <IngPanel settings={settings} onChange={setSettings} errors={sharedErrors} />
     </>
   );
 
+  // On the audit page the banner sits inside the page's landscape print layout, so it does not print on a page of its own.
+  const mortalityBanner = mortality && !mortality.table.verified && !grantor.useDeathYear ? (
+    <div className="rounded-md border border-warn/40 bg-warn-soft px-3 py-2 text-sm text-ink">
+      <strong>Mortality table unverified.</strong> {mortality.table.label} was never checked against its published source. Probability-weighted results depend on it; choose the verified SSA 2023 table, or an assumed death year for a table-independent result.
+    </div>
+  ) : null;
+  const flagged = register.flags.filter((f) => f.severity !== 'confirm').length;
+  const tabs = {
+    value: view,
+    onChange: changeView,
+    items: [
+      { value: 'analysis', label: 'Analysis' },
+      { value: 'audit', label: 'Inputs audit', badge: flagged > 0 ? flagged : null },
+    ],
+  };
+
   return (
-    <AppShell actions={actions} sidebar={sidebar}>
+    <AppShell actions={actions} sidebar={sidebar} tabs={tabs} wide={view === 'audit' && auditWide}>
       {notice && (
-        <div className="flex items-center justify-between rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink-2">
+        <div className="flex items-center justify-between rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink-2 print:hidden">
           <span>{notice}</span><button type="button" className="text-muted" onClick={() => setNotice(null)} aria-label="Dismiss">✕</button>
         </div>
       )}
-      {!MORTALITY_TABLE_META.verified && !grantor.useDeathYear && (
-        <div className="rounded-md border border-warn/40 bg-warn-soft px-3 py-2 text-sm text-ink">
-          <strong>Mortality table unverified.</strong> The bundled SSA {MORTALITY_TABLE_META.periodYear} period life table could not be checked against ssa.gov when this build was made. Probability-weighted results depend on it; switch to an assumed death year for a table-independent result.
-        </div>
+      {view !== 'audit' && mortalityBanner}
+      {view === 'audit' ? (
+        <ErrorBoundary>
+          <InputsAudit register={register} mode={auditMode} onModeChange={setAuditMode} filter={auditFilter} onFilterChange={setAuditFilter}
+            reviewer={audit.reviewer} onReviewerChange={(reviewer) => setAudit((a) => ({ ...a, reviewer }))} ticks={audit.ticks} onTick={tick}
+            onClearTicks={clearTicks} onCopy={copyAssetTable} onDownload={downloadAudit}
+            onPrint={() => window.print()} printedOn={today()} wide={auditWide} onWideChange={setAuditWide} isStale={isStale} banner={mortalityBanner} />
+        </ErrorBoundary>
+      ) : (
+        <>
+          <ErrorBoundary>
+            <div className={isStale ? 'opacity-70 transition-opacity' : 'transition-opacity'}>
+              <RankingTable ranked={ranked} selectedId={selected?.id} onSelect={setSelectedId} rankKey={settings.rankKey} remainingExclusion={remainingExclusion} invalid={invalid} />
+              <div className="mt-5">
+                <AssetDetail entry={selected} />
+              </div>
+              <div className="mt-5">
+                <IngComparison entry={selected} breakevens={ingBreakeven.breakevens} grid={ingBreakeven.grid} isStale={ingBreakeven.isStale} error={ingBreakeven.error} />
+              </div>
+            </div>
+          </ErrorBoundary>
+          <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+            <MethodologyPanel />
+            <DeferredPanel />
+          </div>
+        </>
       )}
-      <ErrorBoundary>
-        <div className={isStale ? 'opacity-70 transition-opacity' : 'transition-opacity'}>
-          <RankingTable ranked={ranked} selectedId={selected?.id} onSelect={setSelectedId} rankKey={settings.rankKey} remainingExclusion={remainingExclusion} invalid={invalid} />
-          <div className="mt-5">
-            <AssetDetail entry={selected} />
-          </div>
-          <div className="mt-5">
-            <IngComparison entry={selected} breakevens={ingBreakeven.breakevens} grid={ingBreakeven.grid} isStale={ingBreakeven.isStale} error={ingBreakeven.error} />
-          </div>
-        </div>
-      </ErrorBoundary>
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-        <MethodologyPanel />
-        <DeferredPanel />
-      </div>
     </AppShell>
   );
 }

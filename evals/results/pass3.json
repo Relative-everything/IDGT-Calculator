@@ -1,0 +1,5998 @@
+{
+  "summary": {
+    "label": "pass3",
+    "seed": 20260927,
+    "sweep": 1500,
+    "personas": 27,
+    "handCases": 29,
+    "scenariosEvaluated": 1527,
+    "scenariosMarried": 666,
+    "marriedFullCurve": 161,
+    "scenariosRejected": 0,
+    "scenariosWithAnyFailure": 0,
+    "pipeline": "src/hooks/computeModel.js (the app's own function)",
+    "seconds": 84.877,
+    "totals": {
+      "checks": 661,
+      "failingChecks": 0,
+      "assertions": 206013,
+      "failures": 0
+    },
+    "layers": {
+      "L1 hand calc": {
+        "checks": 128,
+        "failingChecks": 0,
+        "assertions": 128,
+        "failures": 0
+      },
+      "L5 UI wiring": {
+        "checks": 329,
+        "failingChecks": 0,
+        "assertions": 73577,
+        "failures": 0
+      },
+      "L2 oracle agreement": {
+        "checks": 72,
+        "failingChecks": 0,
+        "assertions": 97890,
+        "failures": 0
+      },
+      "L3 invariants & theorems": {
+        "checks": 27,
+        "failingChecks": 0,
+        "assertions": 30914,
+        "failures": 0
+      },
+      "L4 metamorphic": {
+        "checks": 59,
+        "failingChecks": 0,
+        "assertions": 2194,
+        "failures": 0
+      },
+      "L6 breakevens & data": {
+        "checks": 46,
+        "failingChecks": 0,
+        "assertions": 1310,
+        "failures": 0
+      }
+    },
+    "blocked": 0
+  },
+  "failing": [],
+  "blocked": [],
+  "jumps": [],
+  "rejected": [],
+  "rejectedReasons": [],
+  "tagStats": {
+    "persona": {
+      "n": 27,
+      "failed": 0
+    },
+    "lossAsset": {
+      "n": 164,
+      "failed": 0
+    },
+    "mortalityTable": {
+      "n": 1059,
+      "failed": 0
+    },
+    "straddling": {
+      "n": 375,
+      "failed": 0
+    },
+    "prior:none": {
+      "n": 695,
+      "failed": 0
+    },
+    "married": {
+      "n": 656,
+      "failed": 0
+    },
+    "spousePrior:partial": {
+      "n": 126,
+      "failed": 0
+    },
+    "spouseOlder": {
+      "n": 289,
+      "failed": 0
+    },
+    "saleAppliesToBaseline": {
+      "n": 1038,
+      "failed": 0
+    },
+    "flpInterest": {
+      "n": 200,
+      "failed": 0
+    },
+    "deterministic": {
+      "n": 441,
+      "failed": 0
+    },
+    "legislativeExclusion": {
+      "n": 288,
+      "failed": 0
+    },
+    "discount": {
+      "n": 542,
+      "failed": 0
+    },
+    "annualExclusions": {
+      "n": 566,
+      "failed": 0
+    },
+    "single": {
+      "n": 844,
+      "failed": 0
+    },
+    "smallGift": {
+      "n": 157,
+      "failed": 0
+    },
+    "spousePrior:none": {
+      "n": 390,
+      "failed": 0
+    },
+    "sameSexCouple": {
+      "n": 101,
+      "failed": 0
+    },
+    "swapCustom": {
+      "n": 355,
+      "failed": 0
+    },
+    "swapNonNeutral": {
+      "n": 204,
+      "failed": 0
+    },
+    "burnShare<100": {
+      "n": 599,
+      "failed": 0
+    },
+    "ingFee": {
+      "n": 872,
+      "failed": 0
+    },
+    "belowExclusion": {
+      "n": 286,
+      "failed": 0
+    },
+    "prior:exhausted": {
+      "n": 259,
+      "failed": 0
+    },
+    "preSaleBusiness": {
+      "n": 161,
+      "failed": 0
+    },
+    "taxable": {
+      "n": 556,
+      "failed": 0
+    },
+    "sale": {
+      "n": 313,
+      "failed": 0
+    },
+    "discountAtDeath": {
+      "n": 464,
+      "failed": 0
+    },
+    "table:legacy": {
+      "n": 158,
+      "failed": 0
+    },
+    "bondFund": {
+      "n": 163,
+      "failed": 0
+    },
+    "uhnw": {
+      "n": 283,
+      "failed": 0
+    },
+    "prior:giftTaxPaid": {
+      "n": 133,
+      "failed": 0
+    },
+    "beneNiitOff": {
+      "n": 288,
+      "failed": 0
+    },
+    "realEstate": {
+      "n": 172,
+      "failed": 0
+    },
+    "prior:partial": {
+      "n": 261,
+      "failed": 0
+    },
+    "flatAsset": {
+      "n": 143,
+      "failed": 0
+    },
+    "ingStateTaxOnGrantor": {
+      "n": 287,
+      "failed": 0
+    },
+    "highGrowth": {
+      "n": 154,
+      "failed": 0
+    },
+    "swapNeutralCustom": {
+      "n": 151,
+      "failed": 0
+    },
+    "prior:custom": {
+      "n": 152,
+      "failed": 0
+    },
+    "spousePrior:giftTaxPaid": {
+      "n": 27,
+      "failed": 0
+    },
+    "growthStock": {
+      "n": 186,
+      "failed": 0
+    },
+    "portabilityOff": {
+      "n": 92,
+      "failed": 0
+    },
+    "spousePrior:exhausted": {
+      "n": 72,
+      "failed": 0
+    },
+    "spousePrior:custom": {
+      "n": 41,
+      "failed": 0
+    }
+  },
+  "wiring": [
+    {
+      "control": "grantor.age",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": 128576.875083414,
+      "npvOpt": 330062.66303526575,
+      "ing": -32659.706459637284,
+      "oracle": {
+        "npvNone": 128576.87508341407,
+        "npvOpt": 330062.6630352667,
+        "ing": -32659.706459637597
+      },
+      "agrees": true
+    },
+    {
+      "control": "grantor.sex",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": 352658.8446328124,
+      "npvOpt": 633707.939695418,
+      "ing": -99740.65685182273,
+      "oracle": {
+        "npvNone": 352658.84463281295,
+        "npvOpt": 633707.9396954192,
+        "ing": -99740.65685182317
+      },
+      "agrees": true
+    },
+    {
+      "control": "grantor.useDeathYear",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": 286842.2093392854,
+      "npvOpt": 840557.1877450711,
+      "ing": -55359.316680392236,
+      "oracle": {
+        "npvNone": 286842.20933928574,
+        "npvOpt": 840557.1877450721,
+        "ing": -55359.316680392294
+      },
+      "agrees": true
+    },
+    {
+      "control": "grantor.deathYear",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": -3645.6755159012973,
+      "npvOpt": 329342.66946005495,
+      "ing": -4066.795720171522,
+      "oracle": {
+        "npvNone": -3645.675515898682,
+        "npvOpt": 329342.6694600578,
+        "ing": -4066.7957201715244
+      },
+      "agrees": true
+    },
+    {
+      "control": "grantor.deathYear (table mode: ignored)",
+      "expect": {
+        "idgt": "same",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": false,
+        "ing": false
+      },
+      "npvNone": 272543.9373181907,
+      "npvOpt": 514010.4571590161,
+      "ing": -74074.48034584006,
+      "oracle": {
+        "npvNone": 272543.93731819105,
+        "npvOpt": 514010.45715901675,
+        "ing": -74074.48034584042
+      },
+      "agrees": true
+    },
+    {
+      "control": "grantor.sex (death-year mode: ignored)",
+      "expect": {
+        "idgt": "same",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": false,
+        "ing": false
+      },
+      "npvNone": 286842.2093392854,
+      "npvOpt": 840557.1877450711,
+      "ing": -55359.316680392236,
+      "oracle": {
+        "npvNone": 286842.20933928574,
+        "npvOpt": 840557.1877450721,
+        "ing": -55359.316680392294
+      },
+      "agrees": true
+    },
+    {
+      "control": "grantor.lifeTable (legacy 2021 table)",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": 252724.52416732514,
+      "npvOpt": 485987.5723257458,
+      "ing": -67821.93315177548,
+      "oracle": {
+        "npvNone": 252724.5241673254,
+        "npvOpt": 485987.5723257472,
+        "ing": -67821.93315177584
+      },
+      "agrees": true
+    },
+    {
+      "control": "grantor.lifeTable (death-year mode: ignored)",
+      "expect": {
+        "idgt": "same",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": false,
+        "ing": false
+      },
+      "npvNone": 286842.2093392854,
+      "npvOpt": 840557.1877450711,
+      "ing": -55359.316680392236,
+      "oracle": {
+        "npvNone": 286842.20933928574,
+        "npvOpt": 840557.1877450721,
+        "ing": -55359.316680392294
+      },
+      "agrees": true
+    },
+    {
+      "control": "grantor.fedOrd",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": 272543.9373181906,
+      "npvOpt": 506063.87955597637,
+      "ing": -81124.38172427673,
+      "oracle": {
+        "npvNone": 272543.9373181913,
+        "npvOpt": 506063.87955597625,
+        "ing": -81124.3817242767
+      },
+      "agrees": true
+    },
+    {
+      "control": "grantor.stateOrd",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": 272543.9373181908,
+      "npvOpt": 535220.5468645573,
+      "ing": -58917.19238219491,
+      "oracle": {
+        "npvNone": 272543.9373181915,
+        "npvOpt": 535220.5468645585,
+        "ing": -58917.19238219502
+      },
+      "agrees": true
+    },
+    {
+      "control": "grantor.niit",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": 346871.8053559515,
+      "npvOpt": 523084.030281931,
+      "ing": -67277.36234136506,
+      "oracle": {
+        "npvNone": 346871.80535595224,
+        "npvOpt": 523084.0302819316,
+        "ing": -67277.36234136476
+      },
+      "agrees": true
+    },
+    {
+      "control": "grantor.fedLtcg (trust sale, family would not sell)",
+      "expect": {
+        "idgt": "moves",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": false
+      },
+      "npvNone": 192354.0413912938,
+      "npvOpt": 258538.8711741969,
+      "ing": -210191.96470783805,
+      "oracle": {
+        "npvNone": 192354.04139129407,
+        "npvOpt": 258538.87117419593,
+        "ing": -210191.96470783805
+      },
+      "agrees": true
+    },
+    {
+      "control": "grantor.stateLtcg (trust sale, family would not sell)",
+      "expect": {
+        "idgt": "moves",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": false
+      },
+      "npvNone": 182948.93385690355,
+      "npvOpt": 249133.76363980543,
+      "ing": -210191.96470783805,
+      "oracle": {
+        "npvNone": 182948.93385690372,
+        "npvOpt": 249133.76363980473,
+        "ing": -210191.96470783805
+      },
+      "agrees": true
+    },
+    {
+      "control": "grantor.fedLtcg (sale in both worlds, same basis: gain tax cancels)",
+      "expect": {
+        "idgt": "same",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": false,
+        "ing": true
+      },
+      "npvNone": 304274.8210505211,
+      "npvOpt": 370459.6508334241,
+      "ing": -98271.18504861074,
+      "oracle": {
+        "npvNone": 304274.8210505214,
+        "npvOpt": 370459.65083342325,
+        "ing": -98271.18504861071
+      },
+      "agrees": true
+    },
+    {
+      "control": "grantor.married",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": 93142.99458134838,
+      "npvOpt": 391200.17939904396,
+      "ing": -130219.52896152111,
+      "oracle": {
+        "npvNone": 93142.99458134876,
+        "npvOpt": 391200.17939904594,
+        "ing": -130219.52896152143
+      },
+      "agrees": true
+    },
+    {
+      "control": "grantor.spouseAge (married)",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": -71698.43970231837,
+      "npvOpt": 255250.67332029674,
+      "ing": -89821.87720340378,
+      "oracle": {
+        "npvNone": -71698.43970231833,
+        "npvOpt": 255250.6733202969,
+        "ing": -89821.87720340384
+      },
+      "agrees": true
+    },
+    {
+      "control": "grantor.spouseSex (married)",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": 37261.35393076268,
+      "npvOpt": 351258.79971251806,
+      "ing": -115657.4264348052,
+      "oracle": {
+        "npvNone": 37261.353930762976,
+        "npvOpt": 351258.799712521,
+        "ing": -115657.42643480508
+      },
+      "agrees": true
+    },
+    {
+      "control": "grantor.portability (married, $20M: sheltered with it, taxed without)",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": 488205.0030848523,
+      "npvOpt": 691384.9457739613,
+      "ing": -126028.88024684312,
+      "oracle": {
+        "npvNone": 488205.0030848519,
+        "npvOpt": 691384.9457739634,
+        "ing": -126028.88024684368
+      },
+      "agrees": true
+    },
+    {
+      "control": "grantor.portability (spouse first, taxable either way: flat rate, NPV unchanged)",
+      "expect": {
+        "idgt": "same",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": false,
+        "ing": false
+      },
+      "npvNone": -172718.47974510686,
+      "npvOpt": 69563.60946745561,
+      "ing": 941.3751479260312,
+      "oracle": {
+        "npvNone": -172718.4797451072,
+        "npvOpt": 69563.60946745561,
+        "ing": 941.3751479294756
+      },
+      "agrees": true
+    },
+    {
+      "control": "grantor.age (married)",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": 2118.298406436584,
+      "npvOpt": 244554.96546052606,
+      "ing": -96249.49623224208,
+      "oracle": {
+        "npvNone": 2118.2984064365965,
+        "npvOpt": 244554.96546052824,
+        "ing": -96249.49623224209
+      },
+      "agrees": true
+    },
+    {
+      "control": "grantor.sex (married)",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": 156321.49475487173,
+      "npvOpt": 492943.86992731434,
+      "ing": -151495.50952297414,
+      "oracle": {
+        "npvNone": 156321.49475487217,
+        "npvOpt": 492943.86992731603,
+        "ing": -151495.50952297475
+      },
+      "agrees": true
+    },
+    {
+      "control": "grantor.lifeTable (married, legacy 2021 table)",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": 62872.444123269684,
+      "npvOpt": 358026.9163696392,
+      "ing": -121528.00664352303,
+      "oracle": {
+        "npvNone": 62872.44412327001,
+        "npvOpt": 358026.9163696415,
+        "ing": -121528.00664352339
+      },
+      "agrees": true
+    },
+    {
+      "control": "grantor.lifeTable (married, death-year mode: ignored)",
+      "expect": {
+        "idgt": "same",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": false,
+        "ing": false
+      },
+      "npvNone": -177858.5866198644,
+      "npvOpt": 528630.5086727334,
+      "ing": -109325.56023182461,
+      "oracle": {
+        "npvNone": -177858.58661986463,
+        "npvOpt": 528630.5086727313,
+        "ing": -109325.56023182475
+      },
+      "agrees": true
+    },
+    {
+      "control": "grantor.useDeathYear (married)",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": -177858.5866198644,
+      "npvOpt": 528630.5086727334,
+      "ing": -109325.56023182461,
+      "oracle": {
+        "npvNone": -177858.58661986463,
+        "npvOpt": 528630.5086727313,
+        "ing": -109325.56023182475
+      },
+      "agrees": true
+    },
+    {
+      "control": "grantor.deathYear (married, assumed deaths)",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": 198858.81083691693,
+      "npvOpt": 266922.0146585349,
+      "ing": -40619.78548572265,
+      "oracle": {
+        "npvNone": 198858.8108369172,
+        "npvOpt": 266922.01465853525,
+        "ing": -40619.7854857227
+      },
+      "agrees": true
+    },
+    {
+      "control": "grantor.spouseDeathYear (married, assumed deaths: spouse now dies first)",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": -436153.44004021597,
+      "npvOpt": 117561.53836556709,
+      "ing": -55359.31668039393,
+      "oracle": {
+        "npvNone": -436153.4400402171,
+        "npvOpt": 117561.53836556924,
+        "ing": -55359.316680394
+      },
+      "agrees": true
+    },
+    {
+      "control": "grantor.spouseDeathYear (married, table mode: ignored)",
+      "expect": {
+        "idgt": "same",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": false,
+        "ing": false
+      },
+      "npvNone": 93142.99458134838,
+      "npvOpt": 391200.17939904396,
+      "ing": -130219.52896152111,
+      "oracle": {
+        "npvNone": 93142.99458134876,
+        "npvOpt": 391200.17939904594,
+        "ing": -130219.52896152143
+      },
+      "agrees": true
+    },
+    {
+      "control": "grantor.spouseAge (married, death-year mode: ignored)",
+      "expect": {
+        "idgt": "same",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": false,
+        "ing": false
+      },
+      "npvNone": -177858.5866198644,
+      "npvOpt": 528630.5086727334,
+      "ing": -109325.56023182461,
+      "oracle": {
+        "npvNone": -177858.58661986463,
+        "npvOpt": 528630.5086727313,
+        "ing": -109325.56023182475
+      },
+      "agrees": true
+    },
+    {
+      "control": "grantor.spouseSex (married, death-year mode: ignored)",
+      "expect": {
+        "idgt": "same",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": false,
+        "ing": false
+      },
+      "npvNone": -177858.5866198644,
+      "npvOpt": 528630.5086727334,
+      "ing": -109325.56023182461,
+      "oracle": {
+        "npvNone": -177858.58661986463,
+        "npvOpt": 528630.5086727313,
+        "ing": -109325.56023182475
+      },
+      "agrees": true
+    },
+    {
+      "control": "grantor.spouseAge (single: ignored)",
+      "expect": {
+        "idgt": "same",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": false,
+        "ing": false
+      },
+      "npvNone": 272543.9373181907,
+      "npvOpt": 514010.4571590161,
+      "ing": -74074.48034584006,
+      "oracle": {
+        "npvNone": 272543.93731819105,
+        "npvOpt": 514010.45715901675,
+        "ing": -74074.48034584042
+      },
+      "agrees": true
+    },
+    {
+      "control": "grantor.spouseSex (single: ignored)",
+      "expect": {
+        "idgt": "same",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": false,
+        "ing": false
+      },
+      "npvNone": 272543.9373181907,
+      "npvOpt": 514010.4571590161,
+      "ing": -74074.48034584006,
+      "oracle": {
+        "npvNone": 272543.93731819105,
+        "npvOpt": 514010.45715901675,
+        "ing": -74074.48034584042
+      },
+      "agrees": true
+    },
+    {
+      "control": "grantor.portability (single: ignored)",
+      "expect": {
+        "idgt": "same",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": false,
+        "ing": false
+      },
+      "npvNone": 272543.9373181907,
+      "npvOpt": 514010.4571590161,
+      "ing": -74074.48034584006,
+      "oracle": {
+        "npvNone": 272543.93731819105,
+        "npvOpt": 514010.45715901675,
+        "ing": -74074.48034584042
+      },
+      "agrees": true
+    },
+    {
+      "control": "grantor.spouseDeathYear (single: ignored)",
+      "expect": {
+        "idgt": "same",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": false,
+        "ing": false
+      },
+      "npvNone": 286842.2093392854,
+      "npvOpt": 840557.1877450711,
+      "ing": -55359.316680392236,
+      "oracle": {
+        "npvNone": 286842.20933928574,
+        "npvOpt": 840557.1877450721,
+        "ing": -55359.316680392294
+      },
+      "agrees": true
+    },
+    {
+      "control": "estate.spousePriorGifts (married, spouse first: DSUE $15M → $3M)",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": -172718.47974510686,
+      "npvOpt": 69563.60946745561,
+      "ing": 941.3751479260312,
+      "oracle": {
+        "npvNone": -172718.4797451072,
+        "npvOpt": 69563.60946745561,
+        "ing": 941.3751479294756
+      },
+      "agrees": true
+    },
+    {
+      "control": "estate.spousePriorGiftYear (married: $12M above the 2019 exclusion)",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": -242282.08921256248,
+      "npvOpt": 0,
+      "ing": 1568.958579880163,
+      "oracle": {
+        "npvNone": -242282.08921256283,
+        "npvOpt": 0,
+        "ing": 1568.9585798801631
+      },
+      "agrees": true
+    },
+    {
+      "control": "estate.spousePriorExclusionMode + spousePriorGiftExclusion (married)",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": -242282.08921256248,
+      "npvOpt": 0,
+      "ing": 1568.958579880163,
+      "oracle": {
+        "npvNone": -242282.08921256283,
+        "npvOpt": 0,
+        "ing": 1568.9585798801631
+      },
+      "agrees": true
+    },
+    {
+      "control": "estate.spousePriorGiftYear (married, no spouse gifts: ignored)",
+      "expect": {
+        "idgt": "same",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": false,
+        "ing": false
+      },
+      "npvNone": 93142.99458134838,
+      "npvOpt": 391200.17939904396,
+      "ing": -130219.52896152111,
+      "oracle": {
+        "npvNone": 93142.99458134876,
+        "npvOpt": 391200.17939904594,
+        "ing": -130219.52896152143
+      },
+      "agrees": true
+    },
+    {
+      "control": "estate.spousePriorGifts (single: ignored)",
+      "expect": {
+        "idgt": "same",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": false,
+        "ing": false
+      },
+      "npvNone": 272543.9373181907,
+      "npvOpt": 514010.4571590161,
+      "ing": -74074.48034584006,
+      "oracle": {
+        "npvNone": 272543.93731819105,
+        "npvOpt": 514010.45715901675,
+        "ing": -74074.48034584042
+      },
+      "agrees": true
+    },
+    {
+      "control": "estate.otherEstate (married)",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": 394420.4899810274,
+      "npvOpt": 597600.4326701339,
+      "ing": -126028.8802468538,
+      "oracle": {
+        "npvNone": 394420.48998102796,
+        "npvOpt": 597600.4326701353,
+        "ing": -126028.88024685398
+      },
+      "agrees": true
+    },
+    {
+      "control": "settings.burnShare (married)",
+      "expect": {
+        "idgt": "moves",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": false
+      },
+      "npvNone": -18765.99950029739,
+      "npvOpt": 248957.32008234013,
+      "ing": -130219.52896152111,
+      "oracle": {
+        "npvNone": -18765.999500298272,
+        "npvOpt": 248957.32008233905,
+        "ing": -130219.52896152143
+      },
+      "agrees": true
+    },
+    {
+      "control": "settings.ingAdminRate (married)",
+      "expect": {
+        "idgt": "same",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": false,
+        "ing": true
+      },
+      "npvNone": 93142.99458134838,
+      "npvOpt": 391200.17939904396,
+      "ing": -290871.43138814915,
+      "oracle": {
+        "npvNone": 93142.99458134876,
+        "npvOpt": 391200.17939904594,
+        "ing": -290871.431388149
+      },
+      "agrees": true
+    },
+    {
+      "control": "asset.basis (married: both keep and ING stepped up)",
+      "expect": {
+        "idgt": "moves",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": false
+      },
+      "npvNone": 124203.73737763477,
+      "npvOpt": 402891.057541541,
+      "ing": -130219.52896152111,
+      "oracle": {
+        "npvNone": 124203.73737763509,
+        "npvOpt": 402891.0575415416,
+        "ing": -130219.52896152143
+      },
+      "agrees": true
+    },
+    {
+      "control": "estate.beneFedLtcg (married)",
+      "expect": {
+        "idgt": "moves",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": false
+      },
+      "npvNone": 223520.43689583312,
+      "npvOpt": 431930.08293301356,
+      "ing": -130219.52896152111,
+      "oracle": {
+        "npvNone": 223520.43689583338,
+        "npvOpt": 431930.08293301455,
+        "ing": -130219.52896152143
+      },
+      "agrees": true
+    },
+    {
+      "control": "estate.otherEstate (straddling estate)",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": -332330.21074530313,
+      "npvOpt": 158808.3074650352,
+      "ing": -82984.66616059805,
+      "oracle": {
+        "npvNone": -332330.2107453034,
+        "npvOpt": 158808.30746503524,
+        "ing": -82984.666160598
+      },
+      "agrees": true
+    },
+    {
+      "control": "estate.otherEstate (taxable every year either way: NPV independent of size)",
+      "expect": {
+        "idgt": "same",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": false,
+        "ing": false
+      },
+      "npvNone": 272543.93731819076,
+      "npvOpt": 514010.45715901564,
+      "ing": -74074.48034583843,
+      "oracle": {
+        "npvNone": 272543.937318191,
+        "npvOpt": 514010.4571590169,
+        "ing": -74074.48034583902
+      },
+      "agrees": true
+    },
+    {
+      "control": "estate.otherEstateGrowth",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": 272543.9373181904,
+      "npvOpt": 882155.7192733067,
+      "ing": -42926.39126868327,
+      "oracle": {
+        "npvNone": 272543.9373181911,
+        "npvOpt": 882155.719273308,
+        "ing": -42926.39126868328
+      },
+      "agrees": true
+    },
+    {
+      "control": "estate.exclusion (straddling estate)",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": 272543.9373181907,
+      "npvOpt": 514010.457159016,
+      "ing": -74074.48034583744,
+      "oracle": {
+        "npvNone": 272543.93731819134,
+        "npvOpt": 514010.4571590164,
+        "ing": -74074.4803458375
+      },
+      "agrees": true
+    },
+    {
+      "control": "estate.exclusion (taxable every year either way: NPV unchanged)",
+      "expect": {
+        "idgt": "same",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": false,
+        "ing": false
+      },
+      "npvNone": 272543.9373181911,
+      "npvOpt": 514010.4571590166,
+      "ing": -74074.48034584003,
+      "oracle": {
+        "npvNone": 272543.9373181913,
+        "npvOpt": 514010.45715901686,
+        "ing": -74074.48034584014
+      },
+      "agrees": true
+    },
+    {
+      "control": "estate.exclusionIndexing (straddling estate)",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": -354805.97717200004,
+      "npvOpt": 171888.06795262825,
+      "ing": -78712.94353844466,
+      "oracle": {
+        "npvNone": -354805.97717200045,
+        "npvOpt": 171888.0679526291,
+        "ing": -78712.94353844477
+      },
+      "agrees": true
+    },
+    {
+      "control": "estate.priorGifts (straddling estate)",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": 272543.9373181905,
+      "npvOpt": 514010.45715901593,
+      "ing": -74074.48034583741,
+      "oracle": {
+        "npvNone": 272543.93731819105,
+        "npvOpt": 514010.4571590163,
+        "ing": -74074.48034583747
+      },
+      "agrees": true
+    },
+    {
+      "control": "estate.priorGiftYear (straddling estate)",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": -490769.69830761425,
+      "npvOpt": 67810.03507142214,
+      "ing": -92661.12503518806,
+      "oracle": {
+        "npvNone": -490769.698307615,
+        "npvOpt": 67810.0350714224,
+        "ing": -92661.12503518823
+      },
+      "agrees": true
+    },
+    {
+      "control": "estate.priorExclusionMode + priorGiftExclusion (straddling estate)",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": -504098.4130422152,
+      "npvOpt": 55457.81479223991,
+      "ing": -96602.47708330702,
+      "oracle": {
+        "npvNone": -504098.41304221586,
+        "npvOpt": 55457.81479224014,
+        "ing": -96602.47708330721
+      },
+      "agrees": true
+    },
+    {
+      "control": "estate.priorGiftYear (no prior gifts: ignored)",
+      "expect": {
+        "idgt": "same",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": false,
+        "ing": false
+      },
+      "npvNone": 272543.9373181907,
+      "npvOpt": 514010.4571590161,
+      "ing": -74074.48034584006,
+      "oracle": {
+        "npvNone": 272543.93731819105,
+        "npvOpt": 514010.45715901675,
+        "ing": -74074.48034584042
+      },
+      "agrees": true
+    },
+    {
+      "control": "estate.estateTaxRate",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": 377027.80446610687,
+      "npvOpt": 598501.3810384274,
+      "ing": -67901.6069836867,
+      "oracle": {
+        "npvNone": 377027.80446610734,
+        "npvOpt": 598501.381038428,
+        "ing": -67901.60698368674
+      },
+      "agrees": true
+    },
+    {
+      "control": "estate.beneFedLtcg",
+      "expect": {
+        "idgt": "moves",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": false
+      },
+      "npvNone": 370343.76368366583,
+      "npvOpt": 542964.1432611969,
+      "ing": -74074.48034584006,
+      "oracle": {
+        "npvNone": 370343.76368366624,
+        "npvOpt": 542964.1432611978,
+        "ing": -74074.48034584042
+      },
+      "agrees": true
+    },
+    {
+      "control": "estate.beneStateLtcg",
+      "expect": {
+        "idgt": "moves",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": false
+      },
+      "npvNone": 370343.76368366583,
+      "npvOpt": 542964.1432611969,
+      "ing": -74074.48034584006,
+      "oracle": {
+        "npvNone": 370343.76368366624,
+        "npvOpt": 542964.1432611978,
+        "ing": -74074.48034584042
+      },
+      "agrees": true
+    },
+    {
+      "control": "estate.beneNiit",
+      "expect": {
+        "idgt": "moves",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": false
+      },
+      "npvNone": 346871.80535595183,
+      "npvOpt": 535655.5328135409,
+      "ing": -74074.48034584006,
+      "oracle": {
+        "npvNone": 346871.8053559521,
+        "npvOpt": 535655.5328135418,
+        "ing": -74074.48034584042
+      },
+      "agrees": true
+    },
+    {
+      "control": "estate.yearsToSale",
+      "expect": {
+        "idgt": "moves",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": false
+      },
+      "npvNone": 354336.656778407,
+      "npvOpt": 537979.910282801,
+      "ing": -74074.48034584006,
+      "oracle": {
+        "npvNone": 354336.65677840734,
+        "npvOpt": 537979.9102828021,
+        "ing": -74074.48034584042
+      },
+      "agrees": true
+    },
+    {
+      "control": "estate.discountRate",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": 170332.44798313561,
+      "npvOpt": 319815.3109106425,
+      "ing": -44585.5336818783,
+      "oracle": {
+        "npvNone": 170332.4479831358,
+        "npvOpt": 319815.31091064325,
+        "ing": -44585.53368187855
+      },
+      "agrees": true
+    },
+    {
+      "control": "estate.maxYears (display only)",
+      "expect": {
+        "idgt": "same",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": false,
+        "ing": false
+      },
+      "npvNone": 272543.9373181907,
+      "npvOpt": 514010.4571590161,
+      "ing": -74074.48034584006,
+      "oracle": {
+        "npvNone": 272543.93731819105,
+        "npvOpt": 514010.45715901675,
+        "ing": -74074.48034584042
+      },
+      "agrees": true
+    },
+    {
+      "control": "settings.rankKey (ranking only)",
+      "expect": {
+        "idgt": "same",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": false,
+        "ing": false
+      },
+      "npvNone": 272543.9373181907,
+      "npvOpt": 514010.4571590161,
+      "ing": -74074.48034584006,
+      "oracle": {
+        "npvNone": 272543.93731819105,
+        "npvOpt": 514010.45715901675,
+        "ing": -74074.48034584042
+      },
+      "agrees": true
+    },
+    {
+      "control": "settings.discountAtDeath (discount 30%)",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": 237852.61344252244,
+      "npvOpt": 373050.28836212674,
+      "ing": -88567.84784812357,
+      "oracle": {
+        "npvNone": 237852.61344252282,
+        "npvOpt": 373050.2883621271,
+        "ing": -88567.8478481234
+      },
+      "agrees": true
+    },
+    {
+      "control": "settings.discountAtDeath (no discount: ignored)",
+      "expect": {
+        "idgt": "same",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": false,
+        "ing": false
+      },
+      "npvNone": 272543.9373181907,
+      "npvOpt": 514010.4571590161,
+      "ing": -74074.48034584006,
+      "oracle": {
+        "npvNone": 272543.93731819105,
+        "npvOpt": 514010.45715901675,
+        "ing": -74074.48034584042
+      },
+      "agrees": true
+    },
+    {
+      "control": "settings.saleAppliesToBaseline (sale)",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": 168841.2725553225,
+      "npvOpt": 235026.10233822445,
+      "ing": -210191.96470783805,
+      "oracle": {
+        "npvNone": 168841.27255532262,
+        "npvOpt": 235026.10233822343,
+        "ing": -210191.96470783805
+      },
+      "agrees": true
+    },
+    {
+      "control": "settings.saleAppliesToBaseline (no sale: ignored)",
+      "expect": {
+        "idgt": "same",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": false,
+        "ing": false
+      },
+      "npvNone": 272543.9373181907,
+      "npvOpt": 514010.4571590161,
+      "ing": -74074.48034584006,
+      "oracle": {
+        "npvNone": 272543.93731819105,
+        "npvOpt": 514010.45715901675,
+        "ing": -74074.48034584042
+      },
+      "agrees": true
+    },
+    {
+      "control": "settings.swapCustom (non-neutral values)",
+      "expect": {
+        "idgt": "moves",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": false
+      },
+      "npvNone": 272543.9373181907,
+      "npvOpt": 467029.8949749768,
+      "ing": -74074.48034584006,
+      "oracle": {
+        "npvNone": 272543.93731819105,
+        "npvOpt": 467029.89497497753,
+        "ing": -74074.48034584042
+      },
+      "agrees": true
+    },
+    {
+      "control": "settings.swapCustom switched on at non-default rates, values untouched (must stay neutral)",
+      "expect": {
+        "idgt": "same",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": false,
+        "ing": false
+      },
+      "npvNone": 272543.9373181906,
+      "npvOpt": 676499.8997620747,
+      "ing": -43031.97040982082,
+      "oracle": {
+        "npvNone": 272543.937318191,
+        "npvOpt": 676499.8997620792,
+        "ing": -43031.970409820846
+      },
+      "agrees": true
+    },
+    {
+      "control": "settings.swapCustom switched on with a shrinking other estate (−1%), values untouched",
+      "expect": {
+        "idgt": "same",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": false,
+        "ing": false
+      },
+      "npvNone": -446440.12848678906,
+      "npvOpt": 50206.09519957392,
+      "ing": -170889.8600078565,
+      "oracle": {
+        "npvNone": -446440.12848678965,
+        "npvOpt": 50206.095199573945,
+        "ing": -170889.86000785683
+      },
+      "agrees": true
+    },
+    {
+      "control": "estate \"exclusion fully used in 2023\" shortcut (straddling estate)",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": 272543.93731819047,
+      "npvOpt": 514010.45715901593,
+      "ing": -74074.48034583744,
+      "oracle": {
+        "npvNone": 272543.93731819105,
+        "npvOpt": 514010.45715901634,
+        "ing": -74074.48034583745
+      },
+      "agrees": true
+    },
+    {
+      "control": "settings.swapCustom (off: custom values ignored)",
+      "expect": {
+        "idgt": "same",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": false,
+        "ing": false
+      },
+      "npvNone": 272543.9373181907,
+      "npvOpt": 514010.4571590161,
+      "ing": -74074.48034584006,
+      "oracle": {
+        "npvNone": 272543.93731819105,
+        "npvOpt": 514010.45715901675,
+        "ing": -74074.48034584042
+      },
+      "agrees": true
+    },
+    {
+      "control": "settings.swapBasisPct",
+      "expect": {
+        "idgt": "moves",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": false
+      },
+      "npvNone": 272543.9373181907,
+      "npvOpt": 372524.6858004379,
+      "ing": -74074.48034584006,
+      "oracle": {
+        "npvNone": 272543.93731819105,
+        "npvOpt": 372524.68580043764,
+        "ing": -74074.48034584042
+      },
+      "agrees": true
+    },
+    {
+      "control": "settings.swapGrowth",
+      "expect": {
+        "idgt": "moves",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": false
+      },
+      "npvNone": 272543.9373181907,
+      "npvOpt": 904101.4631001215,
+      "ing": -74074.48034584006,
+      "oracle": {
+        "npvNone": 272543.93731819105,
+        "npvOpt": 904101.4631001247,
+        "ing": -74074.48034584042
+      },
+      "agrees": true
+    },
+    {
+      "control": "settings.swapYield",
+      "expect": {
+        "idgt": "moves",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": false
+      },
+      "npvNone": 272543.9373181907,
+      "npvOpt": 893176.9662728135,
+      "ing": -74074.48034584006,
+      "oracle": {
+        "npvNone": 272543.93731819105,
+        "npvOpt": 893176.9662728137,
+        "ing": -74074.48034584042
+      },
+      "agrees": true
+    },
+    {
+      "control": "settings.swapTaxRate",
+      "expect": {
+        "idgt": "moves",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": false
+      },
+      "npvNone": 272543.9373181907,
+      "npvOpt": 475610.8910265588,
+      "ing": -74074.48034584006,
+      "oracle": {
+        "npvNone": 272543.93731819105,
+        "npvOpt": 475610.8910265608,
+        "ing": -74074.48034584042
+      },
+      "agrees": true
+    },
+    {
+      "control": "settings.burnShare",
+      "expect": {
+        "idgt": "moves",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": false
+      },
+      "npvNone": 156805.0814465523,
+      "npvOpt": 370219.738216934,
+      "ing": -74074.48034584006,
+      "oracle": {
+        "npvNone": 156805.08144655178,
+        "npvOpt": 370219.73821693234,
+        "ing": -74074.48034584042
+      },
+      "agrees": true
+    },
+    {
+      "control": "settings.ingFedOrd",
+      "expect": {
+        "idgt": "same",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": false,
+        "ing": true
+      },
+      "npvNone": 272543.9373181907,
+      "npvOpt": 514010.4571590161,
+      "ing": -63489.176634408235,
+      "oracle": {
+        "npvNone": 272543.93731819105,
+        "npvOpt": 514010.45715901675,
+        "ing": -63489.176634408286
+      },
+      "agrees": true
+    },
+    {
+      "control": "settings.ingFedLtcg (sale)",
+      "expect": {
+        "idgt": "same",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": false,
+        "ing": true
+      },
+      "npvNone": 304274.8210505213,
+      "npvOpt": 370459.650833423,
+      "ing": -36759.10534719605,
+      "oracle": {
+        "npvNone": 304274.8210505215,
+        "npvOpt": 370459.65083342214,
+        "ing": -36759.1053471962
+      },
+      "agrees": true
+    },
+    {
+      "control": "settings.ingStateRate",
+      "expect": {
+        "idgt": "same",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": false,
+        "ing": true
+      },
+      "npvNone": 272543.9373181907,
+      "npvOpt": 514010.4571590161,
+      "ing": -94968.22058149827,
+      "oracle": {
+        "npvNone": 272543.93731819105,
+        "npvOpt": 514010.45715901675,
+        "ing": -94968.22058149849
+      },
+      "agrees": true
+    },
+    {
+      "control": "settings.ingAdminRate",
+      "expect": {
+        "idgt": "same",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": false,
+        "ing": true
+      },
+      "npvNone": 272543.9373181907,
+      "npvOpt": 514010.4571590161,
+      "ing": -198847.04256726828,
+      "oracle": {
+        "npvNone": 272543.93731819105,
+        "npvOpt": 514010.45715901675,
+        "ing": -198847.0425672689
+      },
+      "agrees": true
+    },
+    {
+      "control": "settings.ingStateTaxOnGrantor",
+      "expect": {
+        "idgt": "same",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": false,
+        "ing": true
+      },
+      "npvNone": 272543.9373181907,
+      "npvOpt": 514010.4571590161,
+      "ing": -89930.34425120016,
+      "oracle": {
+        "npvNone": 272543.93731819105,
+        "npvOpt": 514010.45715901675,
+        "ing": -89930.34425120059
+      },
+      "agrees": true
+    },
+    {
+      "control": "asset.fmv",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": 516777.212367852,
+      "npvOpt": 1011754.9055644973,
+      "ing": -148148.96069167796,
+      "oracle": {
+        "npvNone": 516777.212367853,
+        "npvOpt": 1011754.9055644987,
+        "ing": -148148.9606916784
+      },
+      "agrees": true
+    },
+    {
+      "control": "asset.discount",
+      "expect": {
+        "idgt": "moves",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": false
+      },
+      "npvNone": 313437.1161505098,
+      "npvOpt": 554903.6359913353,
+      "ing": -74074.48034584006,
+      "oracle": {
+        "npvNone": 313437.11615051003,
+        "npvOpt": 554903.6359913357,
+        "ing": -74074.48034584042
+      },
+      "agrees": true
+    },
+    {
+      "control": "asset.basis",
+      "expect": {
+        "idgt": "moves",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": false
+      },
+      "npvNone": 315009.93072098354,
+      "npvOpt": 538505.6526537957,
+      "ing": -74074.48034584006,
+      "oracle": {
+        "npvNone": 315009.93072098383,
+        "npvOpt": 538505.6526537966,
+        "ing": -74074.48034584042
+      },
+      "agrees": true
+    },
+    {
+      "control": "asset.growth",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": 478843.1375487068,
+      "npvOpt": 788653.1762748433,
+      "ing": -155420.67772596833,
+      "oracle": {
+        "npvNone": 478843.1375487075,
+        "npvOpt": 788653.1762748443,
+        "ing": -155420.67772596874
+      },
+      "agrees": true
+    },
+    {
+      "control": "asset.yield",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": 650739.0104296516,
+      "npvOpt": 845450.944173247,
+      "ing": -249557.90021686716,
+      "oracle": {
+        "npvNone": 650739.0104296528,
+        "npvOpt": 845450.9441732479,
+        "ing": -249557.90021686742
+      },
+      "agrees": true
+    },
+    {
+      "control": "asset.saleYear",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": 291891.1369186814,
+      "npvOpt": 356577.85867298074,
+      "ing": -104372.48233569662,
+      "oracle": {
+        "npvNone": 291891.13691868185,
+        "npvOpt": 356577.85867298295,
+        "ing": -104372.48233569684
+      },
+      "agrees": true
+    },
+    {
+      "control": "asset.postSaleGrowth (sale)",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": 489412.75992818945,
+      "npvOpt": 489412.75992818945,
+      "ing": -266358.8891857327,
+      "oracle": {
+        "npvNone": 489412.7599281899,
+        "npvOpt": 489412.7599281899,
+        "ing": -266358.8891857331
+      },
+      "agrees": true
+    },
+    {
+      "control": "asset.postSaleYield (sale)",
+      "expect": {
+        "idgt": "moves",
+        "ing": "moves"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": true
+      },
+      "npvNone": 532540.7145346048,
+      "npvOpt": 532540.7145346048,
+      "ing": -177688.66794732652,
+      "oracle": {
+        "npvNone": 532540.7145346052,
+        "npvOpt": 532540.7145346052,
+        "ing": -177688.6679473269
+      },
+      "agrees": true
+    },
+    {
+      "control": "asset.annualExclusions",
+      "expect": {
+        "idgt": "moves",
+        "ing": "same"
+      },
+      "moved": {
+        "idgt": true,
+        "ing": false
+      },
+      "npvNone": 311392.4572088937,
+      "npvOpt": 552858.9770497193,
+      "ing": -74074.48034584006,
+      "oracle": {
+        "npvNone": 311392.45720889396,
+        "npvOpt": 552858.97704972,
+        "ing": -74074.48034584042
+      },
+      "agrees": true
+    }
+  ],
+  "checks": [
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC01 row.none.1.dH",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC01 row.none.1.dH",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC01 npvNone",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC01 npvNone",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC02 row.none.1.dH",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC02 row.none.1.dH",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC02 npvNone",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC02 npvNone",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC03 row.none.1.dH",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC03 row.none.1.dH",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC03 npvNone",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC03 npvNone",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC04 curve.1",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC04 curve.1",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC04 npvOpt",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC04 npvOpt",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC04 sStar",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC04 sStar",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC05 derived.G",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC05 derived.G",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC05 derived.BT0",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC05 derived.BT0",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC05 row.none.5.dH",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC05 row.none.5.dH",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC05 npvNone",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC05 npvNone",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC06 row.none.2.dH",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC06 row.none.2.dH",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC06 npvNone",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC06 npvNone",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC07 npvNone",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC07 npvNone",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC07 expectedDeathYear",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC07 expectedDeathYear",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC08 ing.npv",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC08 ing.npv",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC09 ing.row.1.Vn",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC09 ing.row.1.Vn",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC09 ing.npv",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC09 ing.npv",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC10 row.none.1.dH",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC10 row.none.1.dH",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC11 derived.Ug",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC11 derived.Ug",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC11 derived.G",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC11 derived.G",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC11 derived.BT0",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC11 derived.BT0",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC12 row.none.1.dH",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC12 row.none.1.dH",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC13 curveFeasible.1",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC13 curveFeasible.1",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC13 sStar",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC13 sStar",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-M1 row.none.2.dsueHold",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-M1 row.none.2.dsueHold",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-M1 row.none.2.dsueGift",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-M1 row.none.2.dsueGift",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-M1 row.none.2.ETb",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-M1 row.none.2.ETb",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-M1 row.none.2.ETs",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-M1 row.none.2.ETs",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-M1 row.none.2.dH",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-M1 row.none.2.dH",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-M1 npvNone",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-M1 npvNone",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-M2 row.none.2.Vs",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-M2 row.none.2.Vs",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-M2 row.none.2.dH",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-M2 row.none.2.dH",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-M2 npvNone",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-M2 npvNone",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-M3 row.none.2.dsueHold",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-M3 row.none.2.dsueHold",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-M3 row.none.2.dH",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-M3 row.none.2.dH",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-M3 npvNone",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-M3 npvNone",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-M4 row.none.2.ETb",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-M4 row.none.2.ETb",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-M4 row.none.2.ETs",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-M4 row.none.2.ETs",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-M4 npvNone",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-M4 npvNone",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-M5 row.none.2.ETb",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-M5 row.none.2.ETb",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-M5 row.none.2.ETs",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-M5 row.none.2.ETs",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-M5 npvNone",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-M5 npvNone",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-M6 row.none.2.ET1",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-M6 row.none.2.ET1",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-M6 row.none.2.dsueGift",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-M6 row.none.2.dsueGift",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-M6 npvNone",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-M6 npvNone",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-M7 row.none.2.dsueHold",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-M7 row.none.2.dsueHold",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-M7 row.none.2.ETb",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-M7 row.none.2.ETb",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-M7 row.none.2.dH",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-M7 row.none.2.dH",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-M8 curve.1",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-M8 curve.1",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-M8 npvNone",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-M8 npvNone",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-M9 ing.npv",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-M9 ing.npv",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-M10 row.none.1.grantorFirst",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-M10 row.none.1.grantorFirst",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-M10 row.none.1.dH",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-M10 row.none.1.dH",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-M10 npvNone",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-M10 npvNone",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-L1 q1",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-L1 q1",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-L2 q1",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-L2 q1",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-L3 survive20",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-L3 survive20",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-L4 e",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-L4 e",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-L5 e",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-L5 e",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-L6 second-death distribution",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "engine: HC-L6 expected second-death year",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-L6 second-death distribution",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L1 hand calc",
+      "name": "oracle: HC-L6 expected second-death year",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: age",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: lifeTableId",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: lx",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: deathYearOverride",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: married",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: ageSpouse",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: lxSpouse",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: deathYearOverrideSpouse",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: portability",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: PS",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: XPS",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: tauOrd",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: tauCg",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: stateOrd",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: stateCg",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: niit",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: tauBene",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: tauE",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: d",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: rE",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: pi",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: X0",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: P",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: XP",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: E0",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: k",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: NDisp",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: FMV",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: B0",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: g",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: y",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: S",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: gr",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: yr",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: delta",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: annualExclusions",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: bSw",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: gSw",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: ySw",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: tauSw",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: discountAtDeath",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: saleAppliesToBaseline",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: burnShare",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: ingFedOrd",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: ingFedLtcg",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: ingStateRate",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: ingAdminRate",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "mapping: ingStateTaxOnGrantor",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "derived.Ug",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "derived.R",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "derived.Uc",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "derived.G",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "derived.BT0",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "horizon N",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "death probabilities q",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "expected death year",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "NPV no swap",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "swap curve covers s = 0 … N_swap",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "swap-year feasibility",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "NPV by swap year (whole curve, or the sampled years)",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "optimal swap year s*",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "NPV at s*",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "deathbed-swap value",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "NPV per $ taxable gift (none)",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "NPV per $ taxable gift (opt)",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (no swap): one row per year of the (second) death",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (no swap): V",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (no swap): Vs",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (no swap): Eb",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (no swap): Es",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (no swap): T",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (no swap): TEb",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (no swap): TEs",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (no swap): ETb",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (no swap): ETs",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (no swap): SUb",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (no swap): SUs",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (no swap): Hb",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (no swap): Hs",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (no swap): dH",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (s*): one row per year of the (second) death",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (s*): V",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (s*): Vs",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (s*): Eb",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (s*): Es",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (s*): T",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (s*): TEb",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (s*): TEs",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (s*): ETb",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (s*): ETs",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (s*): SUb",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (s*): SUs",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (s*): Hb",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (s*): Hs",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (s*): dH",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ING NPV",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ING minus IDGT (best swap)",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ING minus IDGT (no swap)",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ING verdict",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ING ledger: Vn",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ING ledger: En",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ING ledger: TEn",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ING ledger: ETn",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ING ledger: SUn",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ING ledger: Hn",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ING ledger: dH",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L3 invariants & theorems",
+      "name": "warning BUILT_IN_LOSS iff basis > FMV",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L3 invariants & theorems",
+      "name": "warning ZERO_TAXABLE_GIFT iff taxable gift = 0",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L3 invariants & theorems",
+      "name": "warning PRIOR_GIFT_TAX iff prior gifts exceeded their exclusion",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L3 invariants & theorems",
+      "name": "warning SALE_BEYOND_HORIZON iff S > N",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L3 invariants & theorems",
+      "name": "no married-couple warning for a single grantor",
+      "pass": 861,
+      "fail": 0
+    },
+    {
+      "layer": "L3 invariants & theorems",
+      "name": "warning GRANTOR_ILLIQUID iff the other estate goes negative",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L3 invariants & theorems",
+      "name": "warning ING_FEE_EXCEEDS_YIELD iff the ING must liquidate to pay its fee",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L3 invariants & theorems",
+      "name": "NPV(s*) ≥ NPV(no swap)",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L3 invariants & theorems",
+      "name": "IDGT components sum to NPV (none)",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L3 invariants & theorems",
+      "name": "IDGT components sum to NPV (s*)",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L3 invariants & theorems",
+      "name": "rows reproduce the NPV: Σ q_t DF_t ΔH_t = NPV(s*)",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L3 invariants & theorems",
+      "name": "ING components sum to ING NPV",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L3 invariants & theorems",
+      "name": "bridge ends at the ING NPV",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L3 invariants & theorems",
+      "name": "ΔH_t(s*) = ΔH_t(none) for t < s*",
+      "pass": 488,
+      "fail": 0
+    },
+    {
+      "layer": "L3 invariants & theorems",
+      "name": "deathbed-swap tile text is true (no false \"upper bound\")",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L3 invariants & theorems",
+      "name": "Σ q = 1",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L3 invariants & theorems",
+      "name": "all ledger values finite",
+      "pass": 1527,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "married: engine and oracle both in married mode",
+      "pass": 666,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "married: horizons N_G and N_S",
+      "pass": 666,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "married: grantor death probabilities q^G",
+      "pass": 666,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "married: spouse death probabilities q^S",
+      "pass": 666,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "married: expected grantor death year",
+      "pass": 666,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (no swap): ET1",
+      "pass": 666,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (no swap): dsueHold",
+      "pass": 666,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (no swap): dsueGift",
+      "pass": 666,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (no swap): grantorFirst",
+      "pass": 666,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (s*): ET1",
+      "pass": 666,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (s*): dsueHold",
+      "pass": 666,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (s*): dsueGift",
+      "pass": 666,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ledger (s*): grantorFirst",
+      "pass": 666,
+      "fail": 0
+    },
+    {
+      "layer": "L2 oracle agreement",
+      "name": "ING ledger: dsue",
+      "pass": 666,
+      "fail": 0
+    },
+    {
+      "layer": "L3 invariants & theorems",
+      "name": "warning PORTABILITY_OFF iff married without the election",
+      "pass": 666,
+      "fail": 0
+    },
+    {
+      "layer": "L3 invariants & theorems",
+      "name": "warning FIRST_DEATH_TAX iff the add-back is taxed at a possible first death",
+      "pass": 666,
+      "fail": 0
+    },
+    {
+      "layer": "L3 invariants & theorems",
+      "name": "warning SPOUSE_PRIOR_GIFT_TAX iff the spouse's prior gifts exceeded their exclusion",
+      "pass": 666,
+      "fail": 0
+    },
+    {
+      "layer": "L3 invariants & theorems",
+      "name": "married: Σ q^G = Σ q^S = Σ q^L = 1",
+      "pass": 666,
+      "fail": 0
+    },
+    {
+      "layer": "L3 invariants & theorems",
+      "name": "married: expected second death ≥ each life's expected death",
+      "pass": 666,
+      "fail": 0
+    },
+    {
+      "layer": "L3 invariants & theorems",
+      "name": "married: DSUE after the gift ≤ DSUE without it (Reg. §20.2010-2(c): the gift used exclusion)",
+      "pass": 666,
+      "fail": 0
+    },
+    {
+      "layer": "L3 invariants & theorems",
+      "name": "married: 0 ≤ P(grantor died first | second death in t) ≤ 1",
+      "pass": 666,
+      "fail": 0
+    },
+    {
+      "layer": "L3 invariants & theorems",
+      "name": "married: first-death tax ≥ 0, and only when gift tax was paid",
+      "pass": 666,
+      "fail": 0
+    },
+    {
+      "layer": "L3 invariants & theorems",
+      "name": "married: horizons N = max(N_G, N_S) and the swap search stops at N_G",
+      "pass": 666,
+      "fail": 0
+    },
+    {
+      "layer": "L3 invariants & theorems",
+      "name": "married: the ING ports the same DSUE as keeping the asset (an incomplete gift uses no exclusion)",
+      "pass": 666,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "scale invariance: NPV(none) ×3",
+      "pass": 128,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "scale invariance: NPV(s*) ×3",
+      "pass": 128,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "scale invariance: ING NPV ×3",
+      "pass": 128,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "discount 0% ⇒ \"discount at death\" toggle has no effect",
+      "pass": 87,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "no sale ⇒ \"sale also if kept\" toggle and post-sale rates have no effect",
+      "pass": 103,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "no prior gifts ⇒ prior-gift exclusion has no effect",
+      "pass": 58,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "custom swap entered at the neutral values ≡ default consideration",
+      "pass": 98,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "ING design fields never change the IDGT result",
+      "pass": 128,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "display horizon never changes NPVs",
+      "pass": 128,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "spouse fields never change a single grantor's result",
+      "pass": 74,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "married, no spouse gifts ⇒ the spouse's prior-gift exclusion has no effect",
+      "pass": 34,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "married: spouse certain to die first, portability off ≡ single grantor",
+      "pass": 12,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "married: spouse first with portability ≡ single with the exclusion raised by the spouse's DSUE",
+      "pass": 11,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "NY/CA flag with a 0% home-state rate has no effect",
+      "pass": 33,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of ING NPV in ingAdminRate",
+      "pass": 40,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of IDGT NPV(none) in y",
+      "pass": 40,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of ING NPV in y",
+      "pass": 40,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of IDGT NPV(none) in g",
+      "pass": 40,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of ING NPV in g",
+      "pass": 40,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of IDGT NPV(none) in burnShare",
+      "pass": 40,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of IDGT NPV(none) in delta",
+      "pass": 40,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of ING NPV in delta",
+      "pass": 40,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of IDGT NPV(none) in E0",
+      "pass": 40,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of ING NPV in E0",
+      "pass": 40,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of IDGT NPV(none) in B0",
+      "pass": 40,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of ING NPV in B0",
+      "pass": 40,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of IDGT NPV(none) in annualExclusions",
+      "pass": 40,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of IDGT NPV(none) in rE",
+      "pass": 40,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of ING NPV in rE",
+      "pass": 40,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of ING NPV in ingStateRate",
+      "pass": 40,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of IDGT NPV(none) in pi",
+      "pass": 40,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of ING NPV in pi",
+      "pass": 40,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of IDGT NPV(none) in tauBene",
+      "pass": 40,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of ING NPV in tauBene",
+      "pass": 40,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of IDGT NPV(none) in X0",
+      "pass": 40,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of ING NPV in X0",
+      "pass": 40,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of IDGT NPV(none) in P",
+      "pass": 40,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of ING NPV in P",
+      "pass": 40,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of married IDGT NPV(none) in E0",
+      "pass": 4,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of married ING NPV in E0",
+      "pass": 4,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of married IDGT NPV(none) in X0",
+      "pass": 4,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of married ING NPV in X0",
+      "pass": 4,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of married IDGT NPV(none) in P",
+      "pass": 4,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of married ING NPV in P",
+      "pass": 4,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of married IDGT NPV(none) in PS",
+      "pass": 4,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of married ING NPV in PS",
+      "pass": 4,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of married IDGT NPV(none) in XPS",
+      "pass": 4,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of married ING NPV in XPS",
+      "pass": 4,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of married IDGT NPV(none) in pi",
+      "pass": 4,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of married ING NPV in pi",
+      "pass": 4,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of married IDGT NPV(none) in rE",
+      "pass": 4,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of married ING NPV in rE",
+      "pass": 4,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of married IDGT NPV(none) in y",
+      "pass": 4,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of married ING NPV in y",
+      "pass": 4,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of married IDGT NPV(none) in delta",
+      "pass": 4,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of married ING NPV in delta",
+      "pass": 4,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of married IDGT NPV(none) in B0",
+      "pass": 4,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of married IDGT NPV(none) in burnShare",
+      "pass": 4,
+      "fail": 0
+    },
+    {
+      "layer": "L4 metamorphic",
+      "name": "continuity of married ING NPV in ingAdminRate",
+      "pass": 4,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.age → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.age → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.age → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.sex → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.sex → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.sex → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.useDeathYear → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.useDeathYear → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.useDeathYear → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.deathYear → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.deathYear → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.deathYear → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.deathYear (table mode: ignored) → IDGT same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.deathYear (table mode: ignored) → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.deathYear (table mode: ignored) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.sex (death-year mode: ignored) → IDGT same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.sex (death-year mode: ignored) → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.sex (death-year mode: ignored) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.lifeTable (legacy 2021 table) → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.lifeTable (legacy 2021 table) → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.lifeTable (legacy 2021 table) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.lifeTable (death-year mode: ignored) → IDGT same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.lifeTable (death-year mode: ignored) → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.lifeTable (death-year mode: ignored) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.fedOrd → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.fedOrd → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.fedOrd → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.stateOrd → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.stateOrd → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.stateOrd → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.niit → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.niit → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.niit → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.fedLtcg (trust sale, family would not sell) → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.fedLtcg (trust sale, family would not sell) → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.fedLtcg (trust sale, family would not sell) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.stateLtcg (trust sale, family would not sell) → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.stateLtcg (trust sale, family would not sell) → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.stateLtcg (trust sale, family would not sell) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.fedLtcg (sale in both worlds, same basis: gain tax cancels) → IDGT same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.fedLtcg (sale in both worlds, same basis: gain tax cancels) → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.fedLtcg (sale in both worlds, same basis: gain tax cancels) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.married → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.married → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.married → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.spouseAge (married) → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.spouseAge (married) → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.spouseAge (married) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.spouseSex (married) → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.spouseSex (married) → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.spouseSex (married) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.portability (married, $20M: sheltered with it, taxed without) → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.portability (married, $20M: sheltered with it, taxed without) → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.portability (married, $20M: sheltered with it, taxed without) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.portability (spouse first, taxable either way: flat rate, NPV unchanged) → IDGT same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.portability (spouse first, taxable either way: flat rate, NPV unchanged) → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.portability (spouse first, taxable either way: flat rate, NPV unchanged) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.age (married) → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.age (married) → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.age (married) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.sex (married) → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.sex (married) → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.sex (married) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.lifeTable (married, legacy 2021 table) → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.lifeTable (married, legacy 2021 table) → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.lifeTable (married, legacy 2021 table) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.lifeTable (married, death-year mode: ignored) → IDGT same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.lifeTable (married, death-year mode: ignored) → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.lifeTable (married, death-year mode: ignored) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.useDeathYear (married) → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.useDeathYear (married) → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.useDeathYear (married) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.deathYear (married, assumed deaths) → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.deathYear (married, assumed deaths) → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.deathYear (married, assumed deaths) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.spouseDeathYear (married, assumed deaths: spouse now dies first) → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.spouseDeathYear (married, assumed deaths: spouse now dies first) → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.spouseDeathYear (married, assumed deaths: spouse now dies first) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.spouseDeathYear (married, table mode: ignored) → IDGT same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.spouseDeathYear (married, table mode: ignored) → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.spouseDeathYear (married, table mode: ignored) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.spouseAge (married, death-year mode: ignored) → IDGT same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.spouseAge (married, death-year mode: ignored) → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.spouseAge (married, death-year mode: ignored) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.spouseSex (married, death-year mode: ignored) → IDGT same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.spouseSex (married, death-year mode: ignored) → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.spouseSex (married, death-year mode: ignored) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.spouseAge (single: ignored) → IDGT same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.spouseAge (single: ignored) → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.spouseAge (single: ignored) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.spouseSex (single: ignored) → IDGT same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.spouseSex (single: ignored) → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.spouseSex (single: ignored) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.portability (single: ignored) → IDGT same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.portability (single: ignored) → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.portability (single: ignored) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.spouseDeathYear (single: ignored) → IDGT same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.spouseDeathYear (single: ignored) → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: grantor.spouseDeathYear (single: ignored) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.spousePriorGifts (married, spouse first: DSUE $15M → $3M) → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.spousePriorGifts (married, spouse first: DSUE $15M → $3M) → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.spousePriorGifts (married, spouse first: DSUE $15M → $3M) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.spousePriorGiftYear (married: $12M above the 2019 exclusion) → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.spousePriorGiftYear (married: $12M above the 2019 exclusion) → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.spousePriorGiftYear (married: $12M above the 2019 exclusion) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.spousePriorExclusionMode + spousePriorGiftExclusion (married) → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.spousePriorExclusionMode + spousePriorGiftExclusion (married) → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.spousePriorExclusionMode + spousePriorGiftExclusion (married) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.spousePriorGiftYear (married, no spouse gifts: ignored) → IDGT same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.spousePriorGiftYear (married, no spouse gifts: ignored) → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.spousePriorGiftYear (married, no spouse gifts: ignored) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.spousePriorGifts (single: ignored) → IDGT same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.spousePriorGifts (single: ignored) → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.spousePriorGifts (single: ignored) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.otherEstate (married) → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.otherEstate (married) → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.otherEstate (married) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.burnShare (married) → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.burnShare (married) → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.burnShare (married) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.ingAdminRate (married) → IDGT same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.ingAdminRate (married) → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.ingAdminRate (married) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: asset.basis (married: both keep and ING stepped up) → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: asset.basis (married: both keep and ING stepped up) → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: asset.basis (married: both keep and ING stepped up) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.beneFedLtcg (married) → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.beneFedLtcg (married) → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.beneFedLtcg (married) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.otherEstate (straddling estate) → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.otherEstate (straddling estate) → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.otherEstate (straddling estate) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.otherEstate (taxable every year either way: NPV independent of size) → IDGT same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.otherEstate (taxable every year either way: NPV independent of size) → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.otherEstate (taxable every year either way: NPV independent of size) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.otherEstateGrowth → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.otherEstateGrowth → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.otherEstateGrowth → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.exclusion (straddling estate) → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.exclusion (straddling estate) → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.exclusion (straddling estate) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.exclusion (taxable every year either way: NPV unchanged) → IDGT same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.exclusion (taxable every year either way: NPV unchanged) → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.exclusion (taxable every year either way: NPV unchanged) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.exclusionIndexing (straddling estate) → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.exclusionIndexing (straddling estate) → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.exclusionIndexing (straddling estate) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.priorGifts (straddling estate) → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.priorGifts (straddling estate) → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.priorGifts (straddling estate) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.priorGiftYear (straddling estate) → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.priorGiftYear (straddling estate) → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.priorGiftYear (straddling estate) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.priorExclusionMode + priorGiftExclusion (straddling estate) → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.priorExclusionMode + priorGiftExclusion (straddling estate) → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.priorExclusionMode + priorGiftExclusion (straddling estate) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.priorGiftYear (no prior gifts: ignored) → IDGT same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.priorGiftYear (no prior gifts: ignored) → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.priorGiftYear (no prior gifts: ignored) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.estateTaxRate → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.estateTaxRate → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.estateTaxRate → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.beneFedLtcg → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.beneFedLtcg → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.beneFedLtcg → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.beneStateLtcg → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.beneStateLtcg → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.beneStateLtcg → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.beneNiit → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.beneNiit → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.beneNiit → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.yearsToSale → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.yearsToSale → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.yearsToSale → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.discountRate → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.discountRate → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.discountRate → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.maxYears (display only) → IDGT same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.maxYears (display only) → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate.maxYears (display only) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.rankKey (ranking only) → IDGT same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.rankKey (ranking only) → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.rankKey (ranking only) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.discountAtDeath (discount 30%) → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.discountAtDeath (discount 30%) → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.discountAtDeath (discount 30%) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.discountAtDeath (no discount: ignored) → IDGT same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.discountAtDeath (no discount: ignored) → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.discountAtDeath (no discount: ignored) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.saleAppliesToBaseline (sale) → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.saleAppliesToBaseline (sale) → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.saleAppliesToBaseline (sale) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.saleAppliesToBaseline (no sale: ignored) → IDGT same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.saleAppliesToBaseline (no sale: ignored) → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.saleAppliesToBaseline (no sale: ignored) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.swapCustom (non-neutral values) → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.swapCustom (non-neutral values) → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.swapCustom (non-neutral values) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.swapCustom switched on at non-default rates, values untouched (must stay neutral) → IDGT same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.swapCustom switched on at non-default rates, values untouched (must stay neutral) → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.swapCustom switched on at non-default rates, values untouched (must stay neutral) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.swapCustom switched on with a shrinking other estate (−1%), values untouched → IDGT same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.swapCustom switched on with a shrinking other estate (−1%), values untouched → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.swapCustom switched on with a shrinking other estate (−1%), values untouched → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate \"exclusion fully used in 2023\" shortcut (straddling estate) → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate \"exclusion fully used in 2023\" shortcut (straddling estate) → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: estate \"exclusion fully used in 2023\" shortcut (straddling estate) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.swapCustom (off: custom values ignored) → IDGT same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.swapCustom (off: custom values ignored) → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.swapCustom (off: custom values ignored) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.swapBasisPct → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.swapBasisPct → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.swapBasisPct → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.swapGrowth → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.swapGrowth → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.swapGrowth → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.swapYield → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.swapYield → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.swapYield → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.swapTaxRate → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.swapTaxRate → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.swapTaxRate → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.burnShare → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.burnShare → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.burnShare → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.ingFedOrd → IDGT same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.ingFedOrd → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.ingFedOrd → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.ingFedLtcg (sale) → IDGT same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.ingFedLtcg (sale) → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.ingFedLtcg (sale) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.ingStateRate → IDGT same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.ingStateRate → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.ingStateRate → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.ingAdminRate → IDGT same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.ingAdminRate → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.ingAdminRate → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.ingStateTaxOnGrantor → IDGT same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.ingStateTaxOnGrantor → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: settings.ingStateTaxOnGrantor → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: asset.fmv → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: asset.fmv → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: asset.fmv → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: asset.discount → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: asset.discount → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: asset.discount → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: asset.basis → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: asset.basis → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: asset.basis → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: asset.growth → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: asset.growth → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: asset.growth → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: asset.yield → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: asset.yield → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: asset.yield → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: asset.saleYear → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: asset.saleYear → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: asset.saleYear → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: asset.postSaleGrowth (sale) → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: asset.postSaleGrowth (sale) → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: asset.postSaleGrowth (sale) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: asset.postSaleYield (sale) → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: asset.postSaleYield (sale) → ING moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: asset.postSaleYield (sale) → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: asset.annualExclusions → IDGT moves",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: asset.annualExclusions → ING same",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "control: asset.annualExclusions → pipeline = oracle",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "panel: table name and verification flag (single, SSA 2023)",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "panel: grantor life expectancy = oracle (single, SSA 2023)",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "panel: table name and verification flag (married, SSA 2023)",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "panel: grantor life expectancy = oracle (married, SSA 2023)",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "panel: spouse and second-death life expectancies = oracle (married, SSA 2023)",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "panel: table name and verification flag (single, legacy 2021)",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "panel: grantor life expectancy = oracle (single, legacy 2021)",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "panel: table name and verification flag (married, legacy 2021)",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "panel: grantor life expectancy = oracle (married, legacy 2021)",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "panel: spouse and second-death life expectancies = oracle (married, legacy 2021)",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "portfolio ranking (opt)",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "portfolio ranking (none)",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "portfolio ranking (married, opt)",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "portfolio ranking (married, none)",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "breakeven burnShare: \"always\" reading agrees with the oracle at ends and midpoint",
+      "pass": 12,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "breakeven stateRate: \"always\" reading agrees with the oracle at ends and midpoint",
+      "pass": 12,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "breakeven otherEstate: bracket straddles an oracle sign change",
+      "pass": 9,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "breakeven otherEstate: side reported above the root matches the oracle",
+      "pass": 9,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "breakeven otherEstate: \"always\" reading agrees with the oracle at ends and midpoint",
+      "pass": 3,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "breakeven burnShare (married): \"always\" reading agrees with the oracle at ends and midpoint",
+      "pass": 4,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "breakeven stateRate (married): \"always\" reading agrees with the oracle at ends and midpoint",
+      "pass": 4,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "breakeven otherEstate (married): bracket straddles an oracle sign change",
+      "pass": 2,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "breakeven otherEstate (married): side reported above the root matches the oracle",
+      "pass": 2,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "breakeven otherEstate (married): \"always\" reading agrees with the oracle at ends and midpoint",
+      "pass": 2,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "breakeven grid cells = oracle Δ",
+      "pass": 3,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "breakeven grid cells = oracle Δ (married)",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "basic exclusion 2011",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "basic exclusion 2012",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "basic exclusion 2013",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "basic exclusion 2014",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "basic exclusion 2015",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "basic exclusion 2016",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "basic exclusion 2017",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "basic exclusion 2018",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "basic exclusion 2019",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "basic exclusion 2020",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "basic exclusion 2021",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "basic exclusion 2022",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "basic exclusion 2023",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "basic exclusion 2024",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "basic exclusion 2025",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "basic exclusion 2026",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "life table: src/data module = extracted source CSV (720 published values)",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "life table: source PDF is the one the registry records (SHA-256)",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "life table: survivors from the published q within 1 life of the published l (male, ages 0–119)",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "life table: life expectancy from q = published e_x within 0.01 (male, ages 1–110)",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "life table: registry checksums = published survivors (±1 life)",
+      "pass": 6,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "life table: survivors from the published q within 1 life of the published l (female, ages 0–119)",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "life table: life expectancy from q = published e_x within 0.01 (female, ages 1–110)",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "mortality: the default life table is verified against its published source",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "mortality: the legacy 2021 table is flagged unverified and the app says so",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "mortality: every registry table has a source, a check date and a verification flag",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "mortality: death-year probabilities = Π(1 − q)·q from the published column (male, every age 0–119)",
+      "pass": 120,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "mortality: legacy table radix 100,000, non-increasing, 120 ages (male)",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "mortality: legacy table death-year probabilities = oracle (male)",
+      "pass": 3,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "mortality: death-year probabilities = Π(1 − q)·q from the published column (female, every age 0–119)",
+      "pass": 120,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "mortality: legacy table radix 100,000, non-increasing, 120 ages (female)",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "mortality: legacy table death-year probabilities = oracle (female)",
+      "pass": 3,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "mortality: joint lives — q^G, q^S and the second-death distribution = oracle double sum (ages × sexes)",
+      "pass": 484,
+      "fail": 0
+    },
+    {
+      "layer": "L6 breakevens & data",
+      "name": "mortality: joint lives — Σ q^L = 1 and E[T_L] ≥ max(E[T_G], E[T_S])",
+      "pass": 484,
+      "fail": 0
+    }
+  ]
+}

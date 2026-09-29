@@ -6,7 +6,8 @@ import { evaluateIng } from '../../engine/ingModel.js';
 import { validateInputs } from '../../engine/validate.js';
 
 const grantor = { age: '65', sex: 'male', useDeathYear: false, deathYear: '20', fedOrd: '37', stateOrd: '5', niit: '3.8', fedLtcg: '20', stateLtcg: '5' };
-const estate = { otherEstate: '20,000,000', otherEstateGrowth: '3', exclusion: '15000000', exclusionIndexing: '2', priorGifts: '0', priorGiftYear: '2025', priorExclusionMode: 'year', priorGiftExclusion: '', estateTaxRate: '40', beneFedLtcg: '20', beneStateLtcg: '5', beneNiit: true, yearsToSale: '1', discountRate: '4', maxYears: '35' };
+const estate = { otherEstate: '20,000,000', otherEstateGrowth: '3', exclusion: '15000000', exclusionIndexing: '2', priorGifts: '0', priorGiftYear: '2025', priorExclusionMode: 'year', priorGiftExclusion: '', estateTaxRate: '40', beneFedLtcg: '20', beneStateLtcg: '5', beneNiit: true, yearsToSale: '1', discountRate: '4', maxYears: '35',
+  spousePriorGifts: '0', spousePriorGiftYear: '2025', spousePriorExclusionMode: 'year', spousePriorGiftExclusion: '13990000' };
 const settings = { rankKey: 'opt', discountAtDeath: false, saleAppliesToBaseline: true, swapCustom: false, swapBasisPct: '100', swapGrowth: '0', swapYield: '5.5', swapTaxRate: '45.8',
   burnShare: '100', ingFedOrd: '37', ingFedLtcg: '20', ingStateRate: '0', ingAdminRate: '0', ingStateTaxOnGrantor: false };
 const asset = { id: 'a', name: 'A', fmv: '1000000', discount: '0', basis: '200000', growth: '7', yield: '2', saleYear: '0', postSaleGrowth: '6', postSaleYield: '1.5', annualExclusions: '0' };
@@ -19,9 +20,36 @@ describe('buildEngineInputs', () => {
     expect(inp.tauBene).toBeCloseTo(0.288, 12);
     expect(inp.E0).toBe(20_000_000);
     expect(inp.g).toBeCloseTo(0.07, 12);
-    expect(inp.lx.length).toBe(120);
+    expect(inp.lx.length).toBe(121); // default SSA 2023 table: ages 0–119 plus the closure l_120 = 0
+    expect(inp.lx[120]).toBe(0);
+    expect(inp.lifeTableId).toBe('ssa-2023-tr2026');
+    expect(inp.married).toBe(false);
     expect(inp.deathYearOverride).toBeNull();
     expect(validateInputs(inp).errors).toEqual([]);
+  });
+  it('the life-table choice selects the survivors column; the legacy table keeps its published l_x', () => {
+    const legacy = buildEngineInputs({ grantor: { ...grantor, lifeTable: 'ssa-2021-legacy' }, estate, settings, asset });
+    expect(legacy.lx.length).toBe(120);
+    expect(legacy.lx[65]).toBe(77402);
+    const unknown = buildEngineInputs({ grantor: { ...grantor, lifeTable: 'no-such-table' }, estate, settings, asset });
+    expect(unknown.lifeTableId).toBe('ssa-2023-tr2026');
+  });
+  it('married couple: spouse age, sex, death year, portability and prior gifts reach the engine', () => {
+    const couple = { ...grantor, married: true, spouseAge: '62', spouseSex: 'female', portability: false };
+    const est = { ...estate, spousePriorGifts: '5,000,000', spousePriorGiftYear: '2024', spousePriorExclusionMode: 'year', spousePriorGiftExclusion: '' };
+    const inp = buildEngineInputs({ grantor: couple, estate: est, settings, asset });
+    expect(inp.married).toBe(true);
+    expect(inp.ageSpouse).toBe(62);
+    expect(inp.lxSpouse.length).toBe(121);
+    expect(inp.lxSpouse[62]).not.toBe(inp.lx[62]); // female column
+    expect(inp.portability).toBe(false);
+    expect(inp.PS).toBe(5_000_000);
+    expect(inp.XPS).toBe(13_610_000);
+    expect(validateInputs(inp).errors).toEqual([]);
+    const det = buildEngineInputs({ grantor: { ...couple, useDeathYear: true, deathYear: '10', spouseDeathYear: '14' }, estate: est, settings, asset });
+    expect(det.lxSpouse).toBeNull();
+    expect(det.deathYearOverrideSpouse).toBe(14);
+    expect(validateUiFields({ grantor: { ...couple, spouseAge: '' }, estate: est, settings, asset }).map((e) => e.field)).toEqual(['spouseAge']);
   });
   it('prior-gift exclusion comes from the year table, or the custom amount', () => {
     expect(priorGiftExclusion({ priorExclusionMode: 'year', priorGiftYear: '2025' })).toBe(13_990_000);
@@ -39,6 +67,15 @@ describe('buildEngineInputs', () => {
     const ui = validateUiFields({ grantor: { ...grantor, stateOrd: '' }, estate: { ...estate, beneStateLtcg: 'x' }, settings, asset });
     expect(ui.map((e) => e.field)).toEqual(['stateOrd', 'beneStateLtcg']);
     expect(validateUiFields({ grantor, estate, settings, asset })).toEqual([]);
+  });
+  it('a prior-gift year with no exclusion on file is reported on the year (an imported file can hold any text)', () => {
+    const withGifts = { ...estate, priorGifts: '1000000', priorGiftYear: '1990' };
+    expect(validateUiFields({ grantor, estate: withGifts, settings, asset }).map((e) => e.field)).toEqual(['priorGiftYear']);
+    expect(validateUiFields({ grantor, estate: { ...withGifts, priorGiftYear: '2025' }, settings, asset })).toEqual([]);
+    expect(validateUiFields({ grantor, estate: { ...withGifts, priorExclusionMode: 'custom', priorGiftExclusion: '5000000' }, settings, asset })).toEqual([]);
+    expect(validateUiFields({ grantor, estate: { ...estate, priorGiftYear: '1990' }, settings, asset })).toEqual([]); // no prior gifts: not used
+    const couple = { ...estate, spousePriorGifts: '1000000', spousePriorGiftYear: 'n/a' };
+    expect(validateUiFields({ grantor: { ...grantor, married: true, spouseAge: '60' }, estate: couple, settings, asset }).map((e) => e.field)).toEqual(['spousePriorGiftYear']);
   });
   it('passes the state components and NIIT un-summed; the hook stays the single source of both stacks', () => {
     const inp = buildEngineInputs({ grantor, estate, settings, asset });
@@ -77,6 +114,8 @@ describe('every UI input changes an output', () => {
     ['grantor.niit', { grantor: { ...grantor, niit: '0' } }],
     ['grantor.fedLtcg', { grantor: { ...grantor, fedLtcg: '15' } }],
     ['grantor.stateLtcg', { grantor: { ...grantor, stateLtcg: '0' } }],
+    ['grantor.lifeTable', { grantor: { ...grantor, lifeTable: 'ssa-2021-legacy' } }],
+    ['grantor.married', { grantor: { ...grantor, married: true, spouseAge: '63', spouseSex: 'female', portability: true } }],
     ['estate.otherEstate', { estate: { ...base.estate, otherEstate: '40000000' } }],
     ['estate.otherEstateGrowth', { estate: { ...base.estate, otherEstateGrowth: '5' } }],
     ['estate.exclusion', { estate: { ...base.estate, exclusion: '16000000' } }],
@@ -110,11 +149,38 @@ describe('every UI input changes an output', () => {
       expect(changed(res), name).toBe(true);
     });
   }
+  it('an asset\'s source reference is a label only: it never reaches the engine', () => {
+    const a = buildEngineInputs(base);
+    const b = buildEngineInputs({ ...base, asset: { ...base.asset, source: 'Excel B7' } });
+    expect(b).toEqual(a);
+  });
   it('maxYears only changes the display share, never NPV', () => {
     const res = evaluateAsset(buildEngineInputs({ ...base, estate: { ...base.estate, maxYears: '10' } }));
     expect(res.npvOpt).toBe(baseline.npvOpt);
     expect(res.shareBeyondDisplay).not.toBe(baseline.shareBeyondDisplay);
   });
+});
+
+describe('every married-couple input changes an output', () => {
+  const couple = { ...grantor, married: true, spouseAge: '63', spouseSex: 'female', spouseDeathYear: '25', portability: true };
+  const est = { ...estate, otherEstate: '14000000', spousePriorGifts: '0', spousePriorGiftYear: '2025', spousePriorExclusionMode: 'year', spousePriorGiftExclusion: '13990000' };
+  const base = { grantor: couple, estate: est, settings, asset: { ...asset, saleYear: '4' } };
+  const run = (ui) => { const inp = buildEngineInputs(ui); const idgt = evaluateAsset(inp); return { idgt, ing: evaluateIng(inp, idgt) }; };
+  const ref = run(base);
+  const outputs = ({ idgt, ing }) => [idgt.npvNone, idgt.npvOpt, idgt.sStar, idgt.derived.expectedDeathYear, ing.npv];
+  const changed = (res) => outputs(res).some((v, i) => v !== outputs(ref)[i]);
+  const cases = [
+    ['grantor.spouseAge', { grantor: { ...couple, spouseAge: '50' } }],
+    ['grantor.spouseSex', { grantor: { ...couple, spouseSex: 'male' } }],
+    ['grantor.portability', { grantor: { ...couple, portability: false } }],
+    ['grantor.spouseDeathYear (assumed death years)', { grantor: { ...couple, useDeathYear: true, spouseDeathYear: '3' } }],
+    ['estate.spousePriorGifts', { estate: { ...est, spousePriorGifts: '13990000' } }],
+    ['estate.spousePriorGiftYear', { estate: { ...est, spousePriorGifts: '12000000', spousePriorGiftYear: '2019' } }],
+    ['estate.spousePriorGiftExclusion (custom)', { estate: { ...est, spousePriorGifts: '12000000', spousePriorExclusionMode: 'custom', spousePriorGiftExclusion: '11000000' } }],
+  ];
+  for (const [name, patch] of cases) {
+    it(name, () => expect(changed(run({ ...base, ...patch })), name).toBe(true));
+  }
 });
 
 describe('every ING comparison input changes an output', () => {

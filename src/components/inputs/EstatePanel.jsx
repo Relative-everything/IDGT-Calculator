@@ -8,7 +8,7 @@ import { fmtMoney } from '../format.js';
 const YEAR_OPTIONS = Object.keys(BASIC_EXCLUSION_BY_YEAR).map(Number).filter((y) => y < CURRENT_GIFT_YEAR).sort((a, b) => b - a)
   .map((y) => ({ value: String(y), label: `${y} (${fmtMoney(BASIC_EXCLUSION_BY_YEAR[y])})` }));
 
-export default function EstatePanel({ estate, onChange, errors }) {
+export default function EstatePanel({ estate, onChange, errors, married }) {
   const set = (field) => (value) => onChange({ ...estate, [field]: value });
   const err = (f) => errors?.[f];
   const exhaustPrior = () => {
@@ -16,11 +16,17 @@ export default function EstatePanel({ estate, onChange, errors }) {
     const amt = BASIC_EXCLUSION_BY_YEAR[Number(year)];
     onChange({ ...estate, priorGifts: String(amt ?? ''), priorExclusionMode: 'year' });
   };
+  const exhaustSpousePrior = () => {
+    const amt = BASIC_EXCLUSION_BY_YEAR[Number(estate.spousePriorGiftYear)];
+    onChange({ ...estate, spousePriorGifts: String(amt ?? ''), spousePriorExclusionMode: 'year' });
+  };
   return (
     <Card title="Estate & transfer tax" subtitle="Everything outside the candidate asset, and the federal transfer-tax parameters.">
       <div className="grid grid-cols-2 gap-3">
-        <NumberField id="otherEstate" label="Other estate (excl. this asset)" value={estate.otherEstate} onChange={set('otherEstate')} prefix="$" error={err('otherEstate') ?? err('E0')}
-          tip="Grantor's estate before the gift, excluding the candidate asset. Pays the income tax on trust income, any gift tax, and the swap consideration." />
+        <NumberField id="otherEstate" label={married ? "Couple's other estate (excl. this asset)" : 'Other estate (excl. this asset)'} value={estate.otherEstate} onChange={set('otherEstate')} prefix="$" error={err('otherEstate') ?? err('E0')}
+          tip={married
+            ? 'Both spouses\' estates before the gift, excluding the candidate asset. Everything passes to the survivor at the first death (marital deduction) and is taxed at the second. Pays the income tax on trust income while the grantor lives, any gift tax, and the swap consideration.'
+            : "Grantor's estate before the gift, excluding the candidate asset. Pays the income tax on trust income, any gift tax, and the swap consideration."} />
         <NumberField id="otherEstateGrowth" label="Other-estate growth (after tax)" value={estate.otherEstateGrowth} onChange={set('otherEstateGrowth')} suffix="%" error={err('otherEstateGrowth') ?? err('rE')}
           tip="Annual after-tax growth of the rest of the estate. The default swap consideration is calibrated to earn this rate after tax (return-neutral)." />
         <NumberField id="exclusion" label={`Basic exclusion (${CURRENT_GIFT_YEAR})`} value={estate.exclusion} onChange={set('exclusion')} prefix="$" error={err('exclusion') ?? err('X0')}
@@ -53,6 +59,30 @@ export default function EstatePanel({ estate, onChange, errors }) {
         </div>
       </div>
 
+      {married && (
+        <>
+          <h3 className="mt-4 text-xs font-semibold uppercase tracking-wide text-muted">Spouse's prior taxable gifts</h3>
+          <div className="mt-2 grid grid-cols-2 gap-3">
+            <NumberField id="spousePriorGifts" label="Spouse's prior taxable gifts" value={estate.spousePriorGifts} onChange={set('spousePriorGifts')} prefix="$" error={err('spousePriorGifts') ?? err('PS')}
+              tip="Adjusted taxable gifts the spouse has already made (e.g. a SLAT of the spouse's own). They reduce the DSUE the spouse leaves the grantor on dying first, and the spouse's own exclusion on surviving." />
+            {estate.spousePriorExclusionMode === 'custom' ? (
+              <NumberField id="spousePriorGiftExclusion" label="Exclusion when made" value={estate.spousePriorGiftExclusion} onChange={set('spousePriorGiftExclusion')} prefix="$" error={err('spousePriorGiftExclusion') ?? err('XPS')} />
+            ) : (
+              <SelectField id="spousePriorGiftYear" label="Year of spouse's gifts" value={estate.spousePriorGiftYear} onChange={set('spousePriorGiftYear')} options={YEAR_OPTIONS} />
+            )}
+            <div className="col-span-2 flex flex-wrap items-center gap-3 text-xs">
+              <button type="button" className="text-accent underline-offset-2 hover:underline" onClick={exhaustSpousePrior}>
+                Set to “exclusion fully used in {estate.spousePriorGiftYear}”
+              </button>
+              <button type="button" className="text-ink-2 underline-offset-2 hover:underline"
+                onClick={() => set('spousePriorExclusionMode')(estate.spousePriorExclusionMode === 'custom' ? 'year' : 'custom')}>
+                {estate.spousePriorExclusionMode === 'custom' ? 'Pick a year instead' : 'Enter the exclusion amount manually'}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
       <h3 className="mt-4 text-xs font-semibold uppercase tracking-wide text-muted">Heirs</h3>
       <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3">
         <NumberField id="beneFedLtcg" label="Federal LTCG" value={estate.beneFedLtcg} onChange={set('beneFedLtcg')} suffix="%" error={err('beneFedLtcg') ?? err('tauBene')} />
@@ -60,7 +90,7 @@ export default function EstatePanel({ estate, onChange, errors }) {
         <NumberField id="yearsToSale" label="Years after death until sale" value={estate.yearsToSale} onChange={set('yearsToSale')} suffix="yrs" error={err('yearsToSale') ?? err('k')}
           tip="Heirs' capital-gains tax on un-stepped-up gain is paid this many years after death." />
         <Toggle id="beneNiit" className="col-span-2 sm:col-span-3" label="Add NIIT to the heirs' rate" checked={estate.beneNiit} onChange={set('beneNiit')}
-          hint="A non-grantor trust after death hits the 3.8% surtax above ~$16,000 of undistributed NII; turn off only if gains will be distributed to heirs below the §1411 thresholds." />
+          hint="Adds the NIIT rate entered in the Grantor panel. A non-grantor trust after death hits the 3.8% surtax above ~$16,000 of undistributed NII; turn off only if gains will be distributed to heirs below the §1411 thresholds." />
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3">

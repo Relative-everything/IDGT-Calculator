@@ -48,6 +48,16 @@ describe('csv', () => {
     expect(csvCell('a\rb')).toBe('"a\rb"');
     expect(csvCell(-115086.29)).toBe('-115086.29');
     expect(csvCell('Growth stock')).toBe('Growth stock');
+    expect(csvCell('a;=1+1')).toBe(`"a;'=1+1"`); // a ';' list-separator Excel splits here and ignores the quotes
+    expect(csvCell('a; @SUM(1)\n-2+3')).toBe(`"a; '@SUM(1)\n'-2+3"`);
+    expect(csvCell('a;b')).toBe('"a;b"');
+    expect(csvCell('a\tb')).toBe('"a\tb"');
+  });
+  it('audit tick keys: household refs, asset fingerprints and the #k of an identical row; anything else is dropped', () => {
+    const { audit } = parseScenario(JSON.stringify({ audit: { ticks: {
+      'G.age': { v: '65' }, 'A:0badf00d': {}, 'A:0badf00d#2': {}, 'A:0badf00d#0': {}, 'A:0badf00d#1000': {}, 'A:0badf00d#x': {}, 'X.age': {},
+    } } }), { grantor: {}, estate: {}, settings: {}, asset: {} });
+    expect(Object.keys(audit.ticks).sort()).toEqual(['A:0badf00d', 'A:0badf00d#2', 'G.age']);
   });
   it('rankingToCsv emits one line per row with the neutralised name', () => {
     const row = { rank: 1, name: '=1+1', cumulativeTaxableGift: 1, result: { derived: { Ug: 1, Uc: 1, G: 0, expectedDeathYear: 2 }, npvNone: 1, sStar: 0, npvOpt: 1, eff: { opt: 1, none: 1 }, effPerFMV: { opt: 1 }, npvPF: 1, components: { opt: { freeze: 0, burn: 0, giftTax: 0, resid: 0, stepUp: 0 } } } };

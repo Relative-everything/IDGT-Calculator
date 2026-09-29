@@ -20,6 +20,11 @@ export const RATIO_TOLERANCE = 1e-9;
 export const RELATIVE_TOLERANCE = 1e-9;
 export const PROBABILITY_SUM_TOLERANCE = 1e-12;
 export const SWAP_TIE_TOLERANCE = 1e-6; // relative, applied as max(1, |NPV|) scaled
+// Ranking (model.md §9): efficiencies equal to this many significant digits are a tie, broken by NPV (larger first).
+// Proportionally identical assets (same rates and basis ratio, different size) have mathematically equal efficiency;
+// without rounding their order was decided by floating-point noise in the 16th digit (docs/changes/2026-09-27-math-evals,
+// F4). Rounding, not a tolerance band, keeps the sort comparator transitive.
+export const RANK_EFFICIENCY_SIGNIFICANT_DIGITS = 12;
 
 // Mortality table sentinel: an l_x array that never reaches zero is closed at its last index.
 export const TABLE_END_WARNING = 'MORTALITY_TABLE_TRUNCATED';

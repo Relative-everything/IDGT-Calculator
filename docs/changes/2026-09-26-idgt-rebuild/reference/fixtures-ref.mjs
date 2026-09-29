@@ -19,8 +19,8 @@ export function simulate(inp, swapYear /* 0 = none */) {
     bSw = 1, discountAtDeath = false, saleAppliesToBaseline = true, N,
     annualExclusions = 0,
   } = inp;
-  const gSw = inp.gSw ?? 0;
-  const ySw = inp.ySw ?? rE / (1 - tauOrd);
+  const gSw = inp.gSw ?? (rE >= 0 ? 0 : rE);
+  const ySw = inp.ySw ?? (rE >= 0 ? rE / (1 - tauOrd) : 0); // C-2; r_E < 0: depreciation, no income (math-evals F7)
   const tauSw = inp.tauSw ?? tauOrd;
   const v = 1 / (1 + d);
   const Ug = Math.max(0, FMV * (1 - delta) - annualExclusions); // annual exclusions cannot exceed the gift
@@ -29,7 +29,7 @@ export function simulate(inp, swapYear /* 0 = none */) {
   const Uc = Math.min(Ug, R);
   const G = tauE * Math.max(0, Ug - R);
   const GTPprior = tauE * Math.max(0, P - XP);
-  const BT0 = B0 + (G > 0 && Ug > 0 ? G * Math.max(0, Ug - B0) / Ug : 0); // §1015(d)(6)
+  const BT0 = B0 + (G > 0 && Ug > 0 ? Math.min(G, G * Math.max(0, FMV * (1 - delta) - B0) / Ug) : 0); // §1015(d)(6), Reg. §1.1015-5(c) (corrected 2026-09-27, math-evals F2)
   const Xt = (t) => X0 * Math.pow(1 + pi, t - 1);
   // bases are in taxable-base dollars: subtract gift-tax-payable / tauE, i.e. the taxable gift amounts
   const baseB = (TE, t) => TE + P - Math.max(0, P - XP) - Math.max(Xt(t), usedPrior);

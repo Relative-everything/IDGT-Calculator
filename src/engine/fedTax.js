@@ -44,8 +44,12 @@ export function deriveGift({ FMV, delta = 0, annualExclusions = 0, B0, X0, P = 0
   const R = Math.max(0, X0 - usedPrior); // exclusion remaining for this gift
   const Uc = Math.min(Ug, R); // exclusion consumed now
   const G = tauE * Math.max(0, Ug - R); // gift tax paid, tax-exclusive (§2502(c))
-  // §1015(d)(6): basis increased by gift tax attributable to net appreciation; never above FMV of the gift.
-  const BT0 = B0 + (G > 0 && Ug > 0 ? G * Math.max(0, Ug - B0) / Ug : 0);
+  // §1015(d)(6), Reg. §1.1015-5(c): basis increased by the gift tax × net appreciation ÷ amount of the gift, where net
+  // appreciation = FMV of the gifted interest − donor basis ((c)(2): annual exclusions do not reduce it) and the amount
+  // of the gift is the amount after the §2503(b) exclusion ((c)(3)) = U_g; the increase may not exceed the tax paid.
+  // (Corrected 2026-09-27, docs/changes/2026-09-27-math-evals finding F2: net appreciation was taken on U_g.)
+  const giftFmv = FMV * (1 - delta);
+  const BT0 = B0 + (G > 0 && Ug > 0 ? Math.min(G, G * Math.max(0, giftFmv - B0) / Ug) : 0);
   return { Ug, usedPrior, R, Uc, G, BT0 };
 }
 

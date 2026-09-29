@@ -18,8 +18,8 @@ export function simulateIdgt(inp, swapYear) {
   } = inp;
   const phi = burnShare;
   const bSw = inp.bSw ?? 1; // null means "use the default", as in the contract (model.md v1 §1)
-  const gSw = inp.gSw ?? 0;
-  const ySw = inp.ySw ?? rE / (1 - tauOrd);
+  const gSw = inp.gSw ?? (rE >= 0 ? 0 : rE);
+  const ySw = inp.ySw ?? (rE >= 0 ? rE / (1 - tauOrd) : 0); // C-2; r_E < 0: depreciation, no income (math-evals F7)
   const tauSw = inp.tauSw ?? tauOrd;
   const v = 1 / (1 + d);
   const vk = Math.pow(v, k);
@@ -28,7 +28,7 @@ export function simulateIdgt(inp, swapYear) {
   const R = Math.max(0, X0 - usedPrior);
   const Uc = Math.min(Ug, R);
   const G = tauE * Math.max(0, Ug - R);
-  const BT0 = B0 + (G > 0 && Ug > 0 ? G * Math.max(0, Ug - B0) / Ug : 0);
+  const BT0 = B0 + (G > 0 && Ug > 0 ? Math.min(G, G * Math.max(0, FMV * (1 - delta) - B0) / Ug) : 0); // Reg. §1.1015-5(c) (corrected 2026-09-27, math-evals F2)
   const Xt = (t) => X0 * Math.pow(1 + pi, t - 1);
   const baseB = (TE, t) => TE + P - Math.max(0, P - XP) - Math.max(Xt(t), usedPrior);
   const baseS = (TE, t) => TE + P + Ug - Math.max(0, P - XP) - Math.max(0, Ug - R) - Math.max(Xt(t), usedPrior + Uc);
@@ -134,7 +134,9 @@ export function simulateIdgt(inp, swapYear) {
 }
 
 /** One self-taxed trust path (model.md §3 recursion) with rates (tauO, tauC) and fee c.
- *  A fee beyond the after-tax yield liquidates a slice with pro-rata basis (Reg. §1.61-6(a)) and a taxable gain. */
+ *  A fee beyond the after-tax yield spends all of the yield cash and liquidates a grossed-up slice of the holding
+ *  with pro-rata basis (Reg. §1.61-6(a)) and a taxable gain. Corrected 2026-09-27 (docs/changes/2026-09-27-math-evals,
+ *  finding F1): the original branch V = V^pre + D − CGL kept the yield cash in the holding after spending it. */
 function trustPath(inp, tauO, tauC, c) {
   const { FMV, B0, g, y, S = 0, gr = g, yr = y, N } = inp;
   let V = FMV, B = B0;
@@ -145,16 +147,17 @@ function trustPath(inp, tauO, tauC, c) {
     const Y = yt * V;
     const tax = tauO * Y;
     const fee = c * V;
-    const Vpre = V * (1 + gt) + Y;
+    const H = V * (1 + gt); // the holding after growth, before the yield cash
     const D = Y - tax - fee;
     let gainL = 0, CGL = 0;
-    if (D >= 0) { V = Vpre - tax - fee; B += D; }
+    if (D >= 0) { V = H + D; B += D; }
     else {
-      const L = -D;
-      gainL = L * Math.max(0, 1 - B / Vpre);
+      const a = Math.max(0, 1 - B / H); // gain share of a pro-rata slice
+      const X = -D / (1 - tauC * a); // slice that nets the shortfall after the tax on its own gain
+      gainL = X * a;
       CGL = tauC * gainL;
-      B = B * (1 - L / Vpre);
-      V = Vpre + D - CGL;
+      B = B * (1 - X / H);
+      V = H - X;
     }
     let gainS = 0, CG = 0;
     if (S > 0 && t === S) { gainS = pos(V - B); CG = tauC * gainS; V -= CG; B = V; }
