@@ -76,15 +76,16 @@ Every upheld and split finding of all five rounds was fixed. The most important:
   Seed 31 now passes 679/679.
 
 ## Verification
-Final tree (after all three review rounds):
+Final tree (after all five review rounds):
 
 | Check | Result |
 |---|---|
-| Unit tests (`npm test -- --run`) | 329 passed, 1 skipped |
+| Unit tests (`npm test -- --run`) | 330 passed, 1 skipped |
 | Lint (`npm run lint`) | clean |
 | Quick eval (`node evals/run.mjs --quick`) | 674/674 checks, 32,726 assertions |
 | Full eval, seed 20260927 (`results/pass4.json`) | 676/676 checks, 215,786 assertions |
-| Hold-out eval, seed 4242, 2,000 scenarios (`results/holdout4.json`) | 678/678 checks, 285,606 assertions |
+| Hold-out eval, seed 4242, 2,000 scenarios (`results/holdout4.json`) | 678/678 checks, 285,605 assertions |
+| Unseen seed 31, 400 scenarios (not committed) | 679/679 checks, 63,790 assertions |
 | Mutation testing (`results/mutation.json`, baseline green) | 24/24 caught by the evals and 24/24 by the unit tests |
 
 Browser check (Chromium, production build, reviewer time zone America/Los_Angeles):
@@ -102,10 +103,16 @@ Browser check (Chromium, production build, reviewer time zone America/Los_Angele
 - With the unverified legacy table selected, the warning banner prints on the first landscape page. The Analysis
   page still prints portrait.
 - The Clear ticks confirmation appeared only when clicked. Ticking another row, unticking, or Reset disarmed it, and
-  it did not come back by itself. Focus moved to Confirm when armed and back to Clear ticks on Cancel.
+  it did not come back by itself.
+- Focus opened on Cancel. A held Enter (Chrome autorepeat) only toggled between Cancel and Clear ticks, and no tick was
+  lost.
+- After Confirm, focus rested on the "All ticks cleared." note in the toolbar, below the sticky header even with the
+  toolbar scrolled right up to the header.
 - A typed FMV of $12,345,678,901.23 kept its cents in the typed totals row and in the control totals.
-- A negative federal rate was flagged on the federal rate only. An FMV typed as "3 000 000" raised the space-grouping
-  flag.
+- A negative federal rate was flagged on the federal rate, and a negative basis in the same scenario was flagged
+  alongside it.
+- An FMV typed as "3 000 000" raised the space-grouping flag.
+- In the as-typed view, Σ FMV and the tie-out showed the same typed total.
 - There was no page-level horizontal scroll at 390 px and no console errors.
 
 ## Limits

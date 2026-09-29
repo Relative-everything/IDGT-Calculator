@@ -11,11 +11,11 @@
     "scenariosRejected": 0,
     "scenariosWithAnyFailure": 0,
     "pipeline": "src/hooks/computeModel.js (the app's own function)",
-    "seconds": 121.142,
+    "seconds": 146.464,
     "totals": {
       "checks": 678,
       "failingChecks": 0,
-      "assertions": 285606,
+      "assertions": 285605,
       "failures": 0
     },
     "layers": {
@@ -52,7 +52,7 @@
       "L6 breakevens & data": {
         "checks": 48,
         "failingChecks": 0,
-        "assertions": 1307,
+        "assertions": 1306,
         "failures": 0
       }
     },
@@ -5849,7 +5849,7 @@
     {
       "layer": "L6 breakevens & data",
       "name": "breakeven otherEstate: side reported above the root matches the oracle",
-      "pass": 6,
+      "pass": 5,
       "fail": 0
     },
     {
