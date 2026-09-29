@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import Card from '../ui/Card.jsx';
 import Button from '../ui/Button.jsx';
 import AuditFlags from './AuditFlags.jsx';
@@ -11,6 +11,8 @@ const MODES = [
   { value: 'typed', label: 'As typed', hint: 'exactly what was entered — compare with printed schedules and eMoney screens' },
   { value: 'model', label: 'Model values', hint: 'what the calculation uses, percentages as decimals — compare with Excel cells' },
 ];
+// A stable callback ref: focuses the element once, when it mounts.
+const focusOnMount = (el) => el?.focus();
 const FILTERS = [{ value: 'all', label: 'All rows' }, { value: 'unverified', label: 'Not yet verified' }, { value: 'flagged', label: 'Flagged' }];
 
 function Progress({ progress }) {
@@ -38,22 +40,17 @@ export default function InputsAudit({ register, mode, onModeChange, filter, onFi
   // The Clear ticks confirmation is armed for the tick set it was shown for (the object itself: every tick, import or
   // reset makes a new one), so any tick change disarms it and it never comes back by itself.
   // Focus: the confirmation opens on Cancel (the safe choice, so a held or repeated Enter cannot clear the ticks);
-  // Cancel returns focus to Clear ticks; Confirm moves it to the progress summary, since Clear ticks is then disabled.
+  // Cancel returns focus to Clear ticks; Confirm leaves a focused "All ticks cleared." note in the same toolbar place
+  // (Clear ticks is then disabled). The note goes as soon as a tick exists again.
   const [armedFor, setArmedFor] = useState(null);
   const [focusClear, setFocusClear] = useState(false);
-  const [announcement, setAnnouncement] = useState('');
-  const progressRef = useRef(null);
+  const [cleared, setCleared] = useState(false);
   const modeHint = MODES.find((m) => m.value === mode)?.hint;
   const anyTicks = register.progress.verified + register.progress.hidden > 0;
+  if (cleared && anyTicks) setCleared(false); // state derived from props, adjusted during render (React: no effect needed)
   const confirmClear = anyTicks && armedFor === ticks;
   const cancel = () => { setArmedFor(null); setFocusClear(true); };
-  const confirm = () => {
-    onClearTicks();
-    setArmedFor(null);
-    setFocusClear(false);
-    setAnnouncement('All ticks cleared.');
-    progressRef.current?.focus();
-  };
+  const confirm = () => { onClearTicks(); setArmedFor(null); setFocusClear(false); setCleared(true); };
   const shownAssets = register.assets.filter((r) => matchesFilter(r, filter)).length;
   const shownHousehold = register.household.filter((r) => matchesFilter(r, filter)).length;
   const filterText = FILTERS.find((f) => f.value === filter)?.label.toLowerCase();
@@ -68,7 +65,7 @@ export default function InputsAudit({ register, mode, onModeChange, filter, onFi
           </strong>
         )}
       </div>
-      <Card title="Inputs audit" subtitle="Every input as bare data, for checking against the source documents. Tick a row when it matches. A tick stays with its row and is hidden as soon as anything in that row changes (it returns if the change is undone); only live ticks are saved with Export JSON." aside={<div ref={progressRef} tabIndex={-1} className="rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-soft"><Progress progress={register.progress} /></div>}>
+      <Card title="Inputs audit" subtitle="Every input as bare data, for checking against the source documents. Tick a row when it matches. A tick stays with its row and is hidden as soon as anything in that row changes (it returns if the change is undone); only live ticks are saved with Export JSON." aside={<Progress progress={register.progress} />}>
         <div className="flex flex-wrap items-end gap-x-4 gap-y-3 print:hidden">
           <div>
             <span className="block text-xs font-medium text-ink-2">Show values</span>
@@ -105,8 +102,11 @@ export default function InputsAudit({ register, mode, onModeChange, filter, onFi
                   <Button variant="ghost" autoFocus onClick={cancel}>Cancel</Button>
                 </>
               )
-              : <Button variant="ghost" autoFocus={focusClear} onClick={() => { setArmedFor(ticks); setFocusClear(false); setAnnouncement(''); }} disabled={!anyTicks} title="Removes every tick, including hidden ones">Clear ticks</Button>}
-            <span role="status" aria-live="polite" className="sr-only">{confirmClear ? 'Clear all ticks? Confirm or cancel.' : announcement}</span>
+              : <Button variant="ghost" autoFocus={focusClear} onClick={() => { setArmedFor(ticks); setFocusClear(false); }} disabled={!anyTicks} title="Removes every tick, including hidden ones">Clear ticks</Button>}
+            {cleared && !confirmClear && (
+              <span ref={focusOnMount} tabIndex={-1} className="self-center rounded px-1 text-sm text-ink-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-soft">All ticks cleared.</span>
+            )}
+            <span role="status" aria-live="polite" className="sr-only">{confirmClear ? 'Clear all ticks? Confirm or cancel.' : cleared ? 'All ticks cleared.' : ''}</span>
           </div>
         </div>
         <p className="mt-3 text-xs text-muted print:hidden">

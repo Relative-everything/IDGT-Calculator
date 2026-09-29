@@ -517,7 +517,9 @@ export async function runEvals({ label = 'run', n, seed = DEFAULT_SEED, quick = 
   }
 
   // Discontinuity scans: NPV(no swap) and the ING NPV are continuous in every continuous input (all kinks are
-  // max(0, ·)); a jump that survives refinement to a 1e-12-wide interval is a defect.
+  // max(0, ·)). A jump that survives refinement to an interval a few ulps wide, and is more than 8× the change over the
+  // same width just outside it (what a smooth but steep function makes), is a defect. Calibrated 2026-09-29: with a
+  // fixed 1e-12 width and a $1 threshold, an NPV of $2.7e10 rising $1.2e12 per unit of growth was flagged as a jump.
   const SCAN = [
     ['ingAdminRate', () => [0, 0.03], 'ing'],
     ['y', () => [0, 0.08], 'both'],
@@ -571,12 +573,15 @@ export async function runEvals({ label = 'run', n, seed = DEFAULT_SEED, quick = 
         for (let i = 0; i < n; i += 1) {
           if (!(dys[i] > 8 * med + 1)) continue;
           let a = xs[i]; let b = xs[i + 1];
-          for (let it = 0; it < 60 && b - a > 1e-12 * Math.max(1, Math.abs(a)); it += 1) {
+          for (let it = 0; it < 80 && b - a > 4 * Number.EPSILON * Math.max(1, Math.abs(a)); it += 1) {
             const m = (a + b) / 2;
             if (Math.abs(f(m) - f(a)) >= Math.abs(f(b) - f(m))) b = m; else a = m;
           }
           const jump = f(b) - f(a);
-          if (Math.abs(jump) > 1) { found = { at: a, jump }; break; }
+          const w = b - a;
+          const change = (x, y) => { try { return Math.abs(f(y) - f(x)); } catch { return 0; } };
+          const beside = Math.max(change(a - w, a), change(b, b + w));
+          if (Math.abs(jump) > Math.max(1, 8 * beside)) { found = { at: a, jump, beside }; break; }
         }
         const who = kind === 'ing' ? 'ING NPV' : 'IDGT NPV(none)';
         record(LM, `continuity of ${c.inp.married ? 'married ' : ''}${who} in ${field}`, !found, { id: c.c.id, field, ...found });
@@ -787,9 +792,15 @@ export async function runEvals({ label = 'run', n, seed = DEFAULT_SEED, quick = 
     for (const key of ['burnShare', 'stateRate', 'otherEstate']) {
       const r = be[key];
       if (r.value != null && r.bracket) {
-        const fl = oracleDelta(T[key](r.bracket.lo)); const fh = oracleDelta(T[key](r.bracket.hi));
-        record(LB, `breakeven ${key}${tag}: bracket straddles an oracle sign change`, Math.sign(fl) !== Math.sign(fh) || fl === 0 || fh === 0, { id: c.id, value: r.value, fl, fh });
-        record(LB, `breakeven ${key}${tag}: side reported above the root matches the oracle`, r.ingWinsAbove === (fh > 0), { id: c.id, ingWinsAbove: r.ingWinsAbove, fh });
+        const { lo, hi } = r.bracket;
+        const fl = oracleDelta(T[key](lo)); const fh = oracleDelta(T[key](hi));
+        // a bracket end within the money tolerance of 0 is a root (calibrated 2026-09-29: an oracle Δ of 9e-9 dollars at
+        // the end had been read as a sign); the side above is then judged one bracket width further up
+        const isZero = (v) => Math.abs(v) <= moneyTol(Math.max(Math.abs(fl), Math.abs(fh)));
+        record(LB, `breakeven ${key}${tag}: bracket straddles an oracle sign change`, Math.sign(fl) !== Math.sign(fh) || isZero(fl) || isZero(fh), { id: c.id, value: r.value, fl, fh });
+        const above = key === 'burnShare' ? Math.min(1, hi + (hi - lo)) : hi + (hi - lo);
+        const fAbove = isZero(fh) && above > hi ? oracleDelta(T[key](above)) : fh;
+        if (!isZero(fAbove)) record(LB, `breakeven ${key}${tag}: side reported above the root matches the oracle`, r.ingWinsAbove === (fAbove > 0), { id: c.id, ingWinsAbove: r.ingWinsAbove, fh, fAbove });
       } else if (r.reason === engine.REASON_ING_ALWAYS || r.reason === engine.REASON_IDGT_ALWAYS) {
         const [lo, hi] = key === 'burnShare' ? [0, 1] : key === 'stateRate' ? [0, 0.2] : [0, Math.max(3 * inp.E0, 5 * inp.X0)];
         const pts = [lo, (lo + hi) / 2, hi].map((x) => oracleDelta(T[key](x)));
