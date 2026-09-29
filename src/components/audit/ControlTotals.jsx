@@ -1,0 +1,61 @@
+import { bare } from '../../hooks/inputRegister.js';
+import { fmtMoney } from '../format.js';
+
+const TOTALS = [
+  ['Σ Fair market value', 'FMV', 'D'],
+  ['Σ Cost basis', 'B0', 'E'],
+  ['Σ Annual exclusions', 'annualExclusions', 'G'],
+  ['Σ Unrealized gain', 'unrealizedGain', 'M'],
+  ['Σ Gift value after discount', 'giftValue', 'N'],
+  ['Σ Taxable gift', 'taxableGift', 'O'],
+  ['Σ Valuation discount', 'discountAmount', null],
+];
+
+function Figure({ value }) {
+  return (
+    <span className="flex flex-wrap items-baseline justify-end gap-x-2">
+      <span className="tabular font-mono text-[13px] text-ink">{bare(value, 'money')}</span>
+      <span className="tabular text-xs text-muted">{fmtMoney(value)}</span>
+    </span>
+  );
+}
+
+/** Batch control totals and the balance-sheet tie-out; bare figures first (to match a SUM cell), formatted beside. */
+export default function ControlTotals({ totals, tieOut }) {
+  return (
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div>
+        <h3 className="text-sm font-semibold text-ink">Batch control totals</h3>
+        <p className="mt-0.5 text-xs text-muted">Compare with the column totals of the source. The letter is the asset-register column.</p>
+        <dl className="mt-2 divide-y divide-line rounded-md border border-line text-[13px]">
+          <div className="flex items-baseline justify-between gap-3 px-3 py-1.5">
+            <dt className="text-ink-2">Assets (record count)</dt>
+            <dd className="tabular font-mono text-ink">{totals.count}</dd>
+          </div>
+          {TOTALS.map(([text, key, col]) => (
+            <div key={key} className="grid grid-cols-[1fr_auto] items-baseline gap-3 px-3 py-1.5">
+              <dt className="text-ink-2">{text}{col && <span className="ml-1.5 font-mono text-[11px] text-muted">col {col}</span>}
+                {totals[key].skipped > 0 && <span className="block text-xs text-bad">{totals[key].skipped} value{totals[key].skipped === 1 ? '' : 's'} not a number, left out of this total</span>}
+              </dt>
+              <dd><Figure value={totals[key].sum} /></dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+      <div>
+        <h3 className="text-sm font-semibold text-ink">Balance-sheet tie-out</h3>
+        <p className="mt-0.5 text-xs text-muted">Compare the total with the client's net worth on the balance sheet (e.g. the eMoney net-worth report).</p>
+        <dl className="mt-2 divide-y divide-line rounded-md border border-line text-[13px]">
+          <div className="grid grid-cols-[1fr_auto] items-baseline gap-3 px-3 py-1.5"><dt className="text-ink-2">Other estate (as entered)</dt><dd><Figure value={tieOut.otherEstate} /></dd></div>
+          <div className="grid grid-cols-[1fr_auto] items-baseline gap-3 px-3 py-1.5"><dt className="text-ink-2">+ Σ candidate assets at FMV</dt><dd><Figure value={tieOut.candidates} /></dd></div>
+          <div className="grid grid-cols-[1fr_auto] items-baseline gap-3 bg-surface-2 px-3 py-1.5 font-medium"><dt className="text-ink">= Total to compare with net worth</dt><dd><Figure value={tieOut.total} /></dd></div>
+        </dl>
+        <p className="mt-2 text-xs text-ink-2">
+          Each asset is priced against the other estate plus that asset alone. If the other estate already includes the
+          candidates, this total double-counts them; if it excludes them all, each asset's run leaves the others out,
+          which changes results only when the estate is near the exclusion.
+        </p>
+      </div>
+    </div>
+  );
+}

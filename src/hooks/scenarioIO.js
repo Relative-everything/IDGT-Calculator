@@ -7,6 +7,11 @@ import { LIFE_TABLES, LIFE_TABLE_BY_ID } from '../data/lifeTables/index.js';
 export const SCENARIO_VERSION = 1;
 export const MAX_IMPORT_ASSETS = 50;
 export const MAX_IMPORT_BYTES = 2 * 1024 * 1024;
+// Inputs audit ticks (docs/changes/2026-09-28-inputs-audit/plan.md): household ticks are keyed by field reference
+// (G.age, E.otherEstate, S.burnShare) and record the value checked; asset ticks are keyed by a fingerprint of the row.
+export const MAX_AUDIT_TICKS = 2_000;
+const AUDIT_TICK_KEY = /^(?:[GES]\.[A-Za-z]{1,40}|A:[0-9a-f]{8})$/;
+const AUDIT_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 /** Stable unique id for asset rows; falls back when crypto.randomUUID is unavailable (non-secure http). */
 export function newId() {
@@ -20,7 +25,7 @@ const STRING_FIELDS = {
     'spousePriorGifts', 'spousePriorGiftYear', 'spousePriorGiftExclusion',
     'estateTaxRate', 'beneFedLtcg', 'beneStateLtcg', 'yearsToSale', 'discountRate', 'maxYears'],
   settings: ['swapBasisPct', 'swapGrowth', 'swapYield', 'swapTaxRate', 'burnShare', 'ingFedOrd', 'ingFedLtcg', 'ingStateRate', 'ingAdminRate'],
-  asset: ['name', 'fmv', 'discount', 'basis', 'growth', 'yield', 'saleYear', 'postSaleGrowth', 'postSaleYield', 'annualExclusions'],
+  asset: ['name', 'source', 'fmv', 'discount', 'basis', 'growth', 'yield', 'saleYear', 'postSaleGrowth', 'postSaleYield', 'annualExclusions'],
 };
 const BOOL_FIELDS = {
   grantor: ['useDeathYear', 'married', 'portability'],
@@ -54,11 +59,31 @@ function coerceSection(kind, raw, fallback) {
   return out;
 }
 
-export function serializeScenario({ grantor, estate, settings, assets }) {
-  return JSON.stringify({ version: SCENARIO_VERSION, savedAt: new Date().toISOString(), grantor, estate, settings, assets }, null, 2);
+/** Reviewer initials and ticks from an imported file: known key shapes only, strings capped, count capped. */
+export function coerceAudit(raw) {
+  const out = { reviewer: '', ticks: {} };
+  if (!isPlainObject(raw)) return out;
+  if (typeof raw.reviewer === 'string') out.reviewer = raw.reviewer.slice(0, 80);
+  if (!isPlainObject(raw.ticks)) return out;
+  let count = 0;
+  for (const [key, tick] of Object.entries(raw.ticks)) {
+    if (count >= MAX_AUDIT_TICKS) break;
+    if (!AUDIT_TICK_KEY.test(key) || !isPlainObject(tick)) continue;
+    const clean = {};
+    if (typeof tick.v === 'string') clean.v = tick.v.slice(0, 200);
+    if (typeof tick.at === 'string' && AUDIT_DATE.test(tick.at)) clean.at = tick.at;
+    out.ticks[key] = clean;
+    count += 1;
+  }
+  return out;
 }
 
-/** Returns { grantor, estate, settings, assets, dropped } or throws with a readable message. */
+export function serializeScenario({ grantor, estate, settings, assets, audit }) {
+  const hasAudit = audit && (audit.reviewer || Object.keys(audit.ticks ?? {}).length);
+  return JSON.stringify({ version: SCENARIO_VERSION, savedAt: new Date().toISOString(), grantor, estate, settings, assets, ...(hasAudit ? { audit } : {}) }, null, 2);
+}
+
+/** Returns { grantor, estate, settings, assets, audit, dropped } or throws with a readable message. */
 export function parseScenario(text, defaults) {
   if (typeof text === 'string' && text.length > MAX_IMPORT_BYTES) throw new Error('The file is too large to be a scenario.');
   let obj;
@@ -76,6 +101,7 @@ export function parseScenario(text, defaults) {
     estate: coerceSection('estate', obj.estate, defaults.estate),
     settings: coerceSection('settings', obj.settings, defaults.settings),
     assets: assets.length ? assets : [{ ...defaults.asset, id: newId() }],
+    audit: coerceAudit(obj.audit),
     dropped,
   };
 }

@@ -1,10 +1,10 @@
 {
   "summary": {
-    "mutations": 14,
+    "mutations": 18,
     "stale": 0,
-    "caughtByEval": 14,
-    "caughtByUnit": 14,
-    "caughtByEither": 14
+    "caughtByEval": 15,
+    "caughtByUnit": 18,
+    "caughtByEither": 18
   },
   "results": [
     {
@@ -41,15 +41,15 @@
         }
       ],
       "caughtByUnit": true,
-      "unitTests": "2 failed | 261 passed | 1 skipped (264)",
-      "seconds": 22.012
+      "unitTests": "2 failed | 284 passed | 1 skipped (287)",
+      "seconds": 23.206
     },
     {
       "id": "M02",
       "defect": "legacy table choice silently falls back to the default table",
       "file": "src/hooks/buildInputs.js",
       "caughtByEval": true,
-      "evalFailingChecks": 75,
+      "evalFailingChecks": 76,
       "evalExamples": [
         {
           "layer": "L2 oracle agreement",
@@ -78,8 +78,8 @@
         }
       ],
       "caughtByUnit": true,
-      "unitTests": "2 failed | 261 passed | 1 skipped (264)",
-      "seconds": 22.956
+      "unitTests": "2 failed | 284 passed | 1 skipped (287)",
+      "seconds": 22.066
     },
     {
       "id": "M03",
@@ -115,8 +115,8 @@
         }
       ],
       "caughtByUnit": true,
-      "unitTests": "4 failed | 259 passed | 1 skipped (264)",
-      "seconds": 22.495
+      "unitTests": "4 failed | 282 passed | 1 skipped (287)",
+      "seconds": 21.897
     },
     {
       "id": "M04",
@@ -152,8 +152,8 @@
         }
       ],
       "caughtByUnit": true,
-      "unitTests": "1 failed | 262 passed | 1 skipped (264)",
-      "seconds": 22.681
+      "unitTests": "1 failed | 285 passed | 1 skipped (287)",
+      "seconds": 22.337
     },
     {
       "id": "M05",
@@ -189,8 +189,8 @@
         }
       ],
       "caughtByUnit": true,
-      "unitTests": "4 failed | 259 passed | 1 skipped (264)",
-      "seconds": 21.726
+      "unitTests": "4 failed | 282 passed | 1 skipped (287)",
+      "seconds": 22.329
     },
     {
       "id": "M06",
@@ -226,8 +226,8 @@
         }
       ],
       "caughtByUnit": true,
-      "unitTests": "1 failed | 262 passed | 1 skipped (264)",
-      "seconds": 22.034
+      "unitTests": "1 failed | 285 passed | 1 skipped (287)",
+      "seconds": 22.94
     },
     {
       "id": "M07",
@@ -263,8 +263,8 @@
         }
       ],
       "caughtByUnit": true,
-      "unitTests": "1 failed | 262 passed | 1 skipped (264)",
-      "seconds": 21.394
+      "unitTests": "1 failed | 285 passed | 1 skipped (287)",
+      "seconds": 21.934
     },
     {
       "id": "M08",
@@ -300,8 +300,8 @@
         }
       ],
       "caughtByUnit": true,
-      "unitTests": "1 failed | 262 passed | 1 skipped (264)",
-      "seconds": 22.143
+      "unitTests": "1 failed | 285 passed | 1 skipped (287)",
+      "seconds": 22.459
     },
     {
       "id": "M09",
@@ -337,8 +337,8 @@
         }
       ],
       "caughtByUnit": true,
-      "unitTests": "3 failed | 260 passed | 1 skipped (264)",
-      "seconds": 21.884
+      "unitTests": "3 failed | 283 passed | 1 skipped (287)",
+      "seconds": 22.526
     },
     {
       "id": "M10",
@@ -374,8 +374,8 @@
         }
       ],
       "caughtByUnit": true,
-      "unitTests": "1 failed | 262 passed | 1 skipped (264)",
-      "seconds": 22.273
+      "unitTests": "1 failed | 285 passed | 1 skipped (287)",
+      "seconds": 22.532
     },
     {
       "id": "M11",
@@ -411,8 +411,8 @@
         }
       ],
       "caughtByUnit": true,
-      "unitTests": "1 failed | 262 passed | 1 skipped (264)",
-      "seconds": 22.376
+      "unitTests": "1 failed | 285 passed | 1 skipped (287)",
+      "seconds": 22.12
     },
     {
       "id": "M12",
@@ -428,8 +428,8 @@
         }
       ],
       "caughtByUnit": true,
-      "unitTests": "1 failed | 262 passed | 1 skipped (264)",
-      "seconds": 22.734
+      "unitTests": "1 failed | 285 passed | 1 skipped (287)",
+      "seconds": 22.442
     },
     {
       "id": "M13",
@@ -445,8 +445,8 @@
         }
       ],
       "caughtByUnit": true,
-      "unitTests": "1 failed | 262 passed | 1 skipped (264)",
-      "seconds": 21.609
+      "unitTests": "1 failed | 285 passed | 1 skipped (287)",
+      "seconds": 21.649
     },
     {
       "id": "M14",
@@ -482,8 +482,58 @@
         }
       ],
       "caughtByUnit": true,
-      "unitTests": "1 failed | 262 passed | 1 skipped (264)",
-      "seconds": 21.814
+      "unitTests": "1 failed | 285 passed | 1 skipped (287)",
+      "seconds": 22.669
+    },
+    {
+      "id": "M15",
+      "defect": "audit page shows the wrong engine input for the income yield",
+      "file": "src/hooks/inputRegister.js",
+      "caughtByEval": false,
+      "evalFailingChecks": 0,
+      "evalExamples": [],
+      "caughtByUnit": true,
+      "unitTests": "1 failed | 285 passed | 1 skipped (287)",
+      "seconds": 22.256
+    },
+    {
+      "id": "M16",
+      "defect": "audit page's taxable gift ignores the annual exclusions",
+      "file": "src/engine/inputAudit.js",
+      "caughtByEval": true,
+      "evalFailingChecks": 1,
+      "evalExamples": [
+        {
+          "layer": "L5 UI wiring",
+          "check": "inputs audit: taxable gift shown = the engine's U_g",
+          "fail": 93
+        }
+      ],
+      "caughtByUnit": true,
+      "unitTests": "2 failed | 284 passed | 1 skipped (287)",
+      "seconds": 22.388
+    },
+    {
+      "id": "M17",
+      "defect": "an asset tick survives edits (fingerprint covers the name only)",
+      "file": "src/hooks/inputRegister.js",
+      "caughtByEval": false,
+      "evalFailingChecks": 0,
+      "evalExamples": [],
+      "caughtByUnit": true,
+      "unitTests": "1 failed | 285 passed | 1 skipped (287)",
+      "seconds": 22.741
+    },
+    {
+      "id": "M18",
+      "defect": "control totals silently count an unreadable cell as zero",
+      "file": "src/engine/inputAudit.js",
+      "caughtByEval": false,
+      "evalFailingChecks": 0,
+      "evalExamples": [],
+      "caughtByUnit": true,
+      "unitTests": "2 failed | 284 passed | 1 skipped (287)",
+      "seconds": 21.828
     }
   ]
 }

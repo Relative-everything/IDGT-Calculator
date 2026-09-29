@@ -20,6 +20,8 @@ const int = (v) => {
   const n = parseNum(v);
   return Number.isInteger(n) ? n : NaN;
 };
+/** The same parsers, for the inputs audit page (inputRegister.js): it must read every field exactly as the model does. */
+export { pct as parsePct, int as parseWhole };
 
 /** UI field labels for validation messages. */
 export const UI_LABELS = {

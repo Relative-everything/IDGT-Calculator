@@ -3,6 +3,7 @@ import NumberField from '../ui/NumberField.jsx';
 import Button from '../ui/Button.jsx';
 import { newId, MAX_IMPORT_ASSETS } from '../../hooks/scenarioIO.js';
 import { parseNum } from '../../hooks/buildInputs.js';
+import { makeAsset } from '../../hooks/defaults.js';
 
 function AssetCard({ asset, index, errors, onChange, onRemove, onDuplicate, canRemove }) {
   const set = (field) => (value) => onChange({ ...asset, [field]: value });
@@ -21,6 +22,17 @@ function AssetCard({ asset, index, errors, onChange, onRemove, onDuplicate, canR
         <Button variant="ghost" onClick={onDuplicate} title="Duplicate">⧉</Button>
         <Button variant="danger" onClick={onRemove} disabled={!canRemove} title="Remove">✕</Button>
       </div>
+      <label className="mt-1.5 flex items-center gap-2 text-xs text-muted" htmlFor={`source-${asset.id}`}>
+        <span className="shrink-0">Source ref</span>
+        <input
+          id={`source-${asset.id}`}
+          value={asset.source ?? ''}
+          onChange={(e) => set('source')(e.target.value)}
+          placeholder="e.g. Excel B7, eMoney · Schwab …1234"
+          title="Where this asset's figures come from. A label for the inputs audit; never used in the calculation."
+          className="min-w-0 flex-1 rounded border border-line bg-transparent px-1.5 py-0.5 text-xs text-ink-2 placeholder:text-muted focus:border-accent focus:outline-none"
+        />
+      </label>
       <div className="mt-2 grid grid-cols-2 gap-3">
         <NumberField id={`fmv-${asset.id}`} label="Fair market value" value={asset.fmv} onChange={set('fmv')} prefix="$" error={err('fmv') ?? err('FMV')} />
         <NumberField id={`basis-${asset.id}`} label="Cost basis" value={asset.basis} onChange={set('basis')} prefix="$" error={err('basis') ?? err('B0')} />
@@ -53,10 +65,7 @@ export default function AssetsPanel({ assets, onChange, errorsById }) {
     const i = assets.findIndex((a) => a.id === asset.id);
     onChange([...assets.slice(0, i + 1), copy, ...assets.slice(i + 1)]);
   };
-  const add = () => assets.length < MAX_IMPORT_ASSETS && onChange([...assets, {
-    id: newId(), name: `Asset ${assets.length + 1}`, fmv: '1000000', discount: '0', basis: '200000',
-    growth: '7', yield: '2', saleYear: '0', postSaleGrowth: '6', postSaleYield: '1.5', annualExclusions: '0',
-  }]);
+  const add = () => assets.length < MAX_IMPORT_ASSETS && onChange([...assets, makeAsset({ name: `Asset ${assets.length + 1}` })]);
   return (
     <Card title="Candidate assets" subtitle="Each asset is evaluated on its own against the estate above." aside={<Button variant="primary" onClick={add} disabled={assets.length >= MAX_IMPORT_ASSETS}>+ Add asset</Button>}>
       <div className="space-y-3">

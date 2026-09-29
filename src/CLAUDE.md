@@ -78,7 +78,9 @@ Do not resolve silently.
   passed such a reference). Verify against `evals/` — a clean-room oracle built from the statute and cash flows — and
   run `npm run eval` after any engine change; add a hand case and a control row for any new mechanism or field.
 - Leaving UI inputs unwired to the engine. `src/hooks/__tests__/buildInputs.test.js` asserts every
-  input moves an output; extend it when adding a field.
+  input moves an output; extend it when adding a field. Also list the field in the inputs audit catalog
+  (`src/hooks/inputRegister.js`, with its engine key and when it is in use): `inputRegister.test.js` fails until you do,
+  and the eval suite checks that the audit page shows exactly the engine's value.
 - Summing "benefit buckets" measured against different baselines (double counting). Use the ledger.
 - Treating the ING's state-tax saving as a benefit without netting the estate tax on the extra wealth, or
   its "location" effect (tax paid from the trust instead of the estate) as a tax benefit. The ledger nets
@@ -87,7 +89,8 @@ Do not resolve silently.
   grantor-domicile resident-trust states and the NY/CA grantor-level rules change it.
 
 ## Current commit
-See docs/changes/2026-09-27-life-tables/handback.md (latest: SSA 2023 life table, table registry, married couples),
+See docs/changes/2026-09-28-inputs-audit/handback.md (latest: inputs audit page),
+docs/changes/2026-09-27-life-tables/handback.md (SSA 2023 life table, table registry, married couples),
 docs/changes/2026-09-27-math-evals/handback.md (eval suite and seven math/UI fixes),
 docs/changes/2026-09-27-ing-comparison/handback.md (ING comparison),
 docs/changes/2026-09-27-pages-branch-source/handback.md and docs/changes/2026-09-26-ci-deploy/handback.md

@@ -75,6 +75,26 @@ Contract: [`docs/changes/2026-09-27-life-tables/model.md`](docs/changes/2026-09-
 handback in the same folder. Married-couple golden values are hand-derived and reproduced by the clean-room oracle —
 **awaiting builder confirmation**.
 
+## Inputs audit
+The **Inputs audit** tab (next to Analysis; bookmark `#audit`) lists every input as bare data for checking against the
+source documents, which matters when many assets are keyed in from a spreadsheet or a balance sheet:
+- **Asset register** laid out like a sheet (columns A–R, one row per asset, a totals row), shown **as typed** or **as
+  the model reads it** (percentages as decimals: Excel stores 7% as 0.07). Derived columns: unrealized gain, gift value
+  after discount, taxable gift, share of the total. Each asset has a free-text **Source ref** (e.g. "Excel B7",
+  "eMoney · Schwab …1234") that is never used in the math.
+- **Control totals** (record count, Σ FMV, Σ basis, Σ gain, Σ taxable gift, …) to compare with the source's column
+  totals, and a **balance-sheet tie-out**: other estate + Σ candidates, to compare with the client's net worth.
+- **Household register**: every other input with a stable reference (`G.age`, `E.otherEstate`, `S.burnShare`), its
+  unit, and whether the model uses it (and why not), plus the derived rate stacks.
+- **Flags** for the usual keying slips: a percentage typed as a decimal (0.07), a decimal comma ("3,5" would be read
+  as 35%), points or irregular commas as digit grouping, amounts that look like thousands, duplicate names or rows,
+  basis above value, and every validation error on the field it belongs to.
+- A **tick** per row that clears itself when anything in the row changes; ticks and the reviewer's initials are saved
+  with Export JSON. **Copy asset table** (tab-separated, to paste beside the source), **Download audit CSV** (same
+  columns and letters), **Print**, and **Full width** for long lists.
+The eval suite checks on every scenario that the values the page shows are exactly the engine's inputs.
+[Plan and handback](docs/changes/2026-09-28-inputs-audit/).
+
 ## Inputs that matter most
 Life table, grantor age/sex (or an assumed death year) — and for a married couple the spouse's age/sex, the
 portability election and the spouse's prior gifts — other estate and its after-tax growth, basic exclusion

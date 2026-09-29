@@ -140,6 +140,11 @@ describe('every UI input changes an output', () => {
       expect(changed(res), name).toBe(true);
     });
   }
+  it('an asset\'s source reference is a label only: it never reaches the engine', () => {
+    const a = buildEngineInputs(base);
+    const b = buildEngineInputs({ ...base, asset: { ...base.asset, source: 'Excel B7' } });
+    expect(b).toEqual(a);
+  });
   it('maxYears only changes the display share, never NPV', () => {
     const res = evaluateAsset(buildEngineInputs({ ...base, estate: { ...base.estate, maxYears: '10' } }));
     expect(res.npvOpt).toBe(baseline.npvOpt);

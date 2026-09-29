@@ -103,3 +103,35 @@ export function expectedEngineInputs({ grantor, estate, settings, asset }) {
     ingStateTaxOnGrantor: Boolean(settings.ingStateTaxOnGrantor),
   };
 }
+
+// ---- the inputs audit page (src/hooks/inputRegister.js) -----------------------------------------------------------
+// What the page should show as each field's model value, written from the field labels here, NOT from the page's own
+// catalog: a field keyed to the wrong engine input there then disagrees with this table. Refs: G. grantor, E. estate,
+// S. settings, A. asset. MEANING names the engine input the label implies (value from expectedEngineInputs); PARSE names
+// how a field that feeds no single input is read ('pct' = percent to decimal, 'money', 'int', 'same' = as stored).
+export const AUDIT_FIELD_MEANING = {
+  'G.lifeTable': 'lifeTableId', 'G.age': 'age', 'G.deathYear': 'deathYearOverride', 'G.stateOrd': 'stateOrd', 'G.niit': 'niit',
+  'G.stateLtcg': 'stateCg', 'G.married': 'married', 'G.spouseAge': 'ageSpouse', 'G.spouseDeathYear': 'deathYearOverrideSpouse',
+  'G.portability': 'portability', 'E.spousePriorGifts': 'PS', 'E.otherEstate': 'E0', 'E.otherEstateGrowth': 'rE', 'E.exclusion': 'X0',
+  'E.exclusionIndexing': 'pi', 'E.estateTaxRate': 'tauE', 'E.discountRate': 'd', 'E.priorGifts': 'P', 'E.yearsToSale': 'k',
+  'E.maxYears': 'NDisp', 'S.discountAtDeath': 'discountAtDeath', 'S.saleAppliesToBaseline': 'saleAppliesToBaseline',
+  'S.burnShare': 'burnShare', 'S.swapBasisPct': 'bSw', 'S.swapGrowth': 'gSw', 'S.swapYield': 'ySw', 'S.swapTaxRate': 'tauSw',
+  'S.ingFedOrd': 'ingFedOrd', 'S.ingFedLtcg': 'ingFedLtcg', 'S.ingStateRate': 'ingStateRate', 'S.ingAdminRate': 'ingAdminRate',
+  'S.ingStateTaxOnGrantor': 'ingStateTaxOnGrantor',
+  'A.fmv': 'FMV', 'A.basis': 'B0', 'A.discount': 'delta', 'A.annualExclusions': 'annualExclusions', 'A.growth': 'g', 'A.yield': 'y',
+  'A.saleYear': 'S', 'A.postSaleGrowth': 'gr', 'A.postSaleYield': 'yr',
+};
+export const AUDIT_FIELD_PARSE = {
+  'G.fedOrd': 'pct', 'G.fedLtcg': 'pct', 'G.sex': 'same', 'G.spouseSex': 'same', 'G.useDeathYear': 'same',
+  'E.beneFedLtcg': 'pct', 'E.beneStateLtcg': 'pct', 'E.beneNiit': 'same', 'E.priorExclusionMode': 'same', 'E.priorGiftYear': 'int',
+  'E.priorGiftExclusion': 'money', 'E.spousePriorExclusionMode': 'same', 'E.spousePriorGiftYear': 'int', 'E.spousePriorGiftExclusion': 'money',
+  'S.rankKey': 'same', 'S.swapCustom': 'same', 'A.name': 'same', 'A.source': 'same',
+};
+/** Reads a typed value the way its label says (for the fields in AUDIT_FIELD_PARSE). */
+export function auditParse(kind, raw) {
+  if (kind === 'pct') return rate(raw);
+  if (kind === 'money') return num(raw);
+  if (kind === 'int') { const v = num(raw); return Number.isInteger(v) ? v : NaN; }
+  return raw;
+}
+

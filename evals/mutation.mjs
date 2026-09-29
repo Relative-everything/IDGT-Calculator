@@ -7,7 +7,8 @@
 // Each mutation injects ONE realistic defect into the source (a single exact-string replacement), runs the quick eval
 // suite and the engine/hook unit tests, records whether each turned red, and restores the file byte for byte (also on
 // failure or Ctrl-C). A mutation whose target string is no longer in the source is reported as STALE, never as caught:
-// update the target when the code it guards changes. Results: evals/results/mutation.json (not committed).
+// update the target when the code it guards changes. Results: evals/results/mutation.json (the committed record of a
+// full run); a subset run writes evals/results/mutation-subset.json.
 
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
@@ -48,6 +49,15 @@ export const MUTATIONS = [
   ['M14', 'same-year deaths double-counted in the NPV (half weight also given to spouse-first)', 'src/engine/marriedModel.js',
     'for (let j = 1; j <= Math.min(i - 1, NS); j += 1) {\n    const w = qS[j - 1];\n    if (w !== 0) sum += w * vi * pairSpouseFirst(c, r, j, null);',
     'for (let j = 1; j <= Math.min(i, NS); j += 1) {\n    const w = qS[j - 1] * (j === i ? 0.5 : 1);\n    if (w !== 0) sum += w * vi * pairSpouseFirst(c, r, j, null);'],
+  // inputs audit page (docs/changes/2026-09-28-inputs-audit/plan.md)
+  ['M15', 'audit page shows the wrong engine input for the income yield', 'src/hooks/inputRegister.js',
+    "{ key: 'yield', label: 'Income yield', kind: 'pct', engine: 'y', frac: 'return' },", "{ key: 'yield', label: 'Income yield', kind: 'pct', engine: 'g', frac: 'return' },"],
+  ['M16', "audit page's taxable gift ignores the annual exclusions", 'src/engine/inputAudit.js',
+    'taxableGift: Math.max(0, giftValue - annualExclusions),', 'taxableGift: Math.max(0, giftValue),'],
+  ['M17', 'an asset tick survives edits (fingerprint covers the name only)', 'src/hooks/inputRegister.js',
+    "return fnv1a(JSON.stringify(ASSET_FIELDS.map((f) => String(asset[f.key] ?? ''))));", "return fnv1a(String(asset.name ?? ''));"],
+  ['M18', 'control totals silently count an unreadable cell as zero', 'src/engine/inputAudit.js',
+    'if (Number.isFinite(v)) sum += v;\n      else skipped += 1;', 'sum += Number.isFinite(v) ? v : 0;'],
 ];
 
 const only = new Set(process.argv.slice(2));
@@ -86,5 +96,6 @@ const summary = {
 };
 console.log(`\n${summary.caughtByEither}/${summary.mutations} caught (eval ${summary.caughtByEval}, unit tests ${summary.caughtByUnit}); ${summary.stale} stale`);
 mkdirSync(join(ROOT, 'evals', 'results'), { recursive: true });
-writeFileSync(join(ROOT, 'evals', 'results', 'mutation.json'), JSON.stringify({ summary, results }, null, 2));
+// the committed record is a run of every mutation; a subset run writes beside it
+writeFileSync(join(ROOT, 'evals', 'results', only.size ? 'mutation-subset.json' : 'mutation.json'), JSON.stringify({ summary, results }, null, 2));
 process.exitCode = summary.caughtByEither === summary.mutations && summary.stale === 0 ? 0 : 1;

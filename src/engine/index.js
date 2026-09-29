@@ -13,4 +13,5 @@ export { lxColumn, validateLx, deathProbabilities, expectedDeathYear, lifeExpect
 export { evaluateMarried, evaluateIngMarried, marriedLives } from './marriedModel.js';
 export { validateInputs, validateIngInputs, resolveIngInputs, neutralSwapProfile } from './validate.js';
 export { rankAssets } from './ranking.js';
+export { assetAuditFacts, controlTotals, shareOfTotal, balanceSheetTieOut } from './inputAudit.js';
 export * from './constants.js';

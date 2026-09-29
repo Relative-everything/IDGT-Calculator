@@ -187,6 +187,9 @@ one golden with DSUE = 5,000,000. Split-gift election (§2513) as an input that 
 spouse.
 
 ## Phase 6 — Sensitivity, scenario compare, exports (Lite/Full)
+Partly in place since 2026-09-28: the Inputs audit tab (docs/changes/2026-09-28-inputs-audit/) exports every input as
+CSV and prints (print stylesheet + `window.print()`); the pages hide the header and input panels when printed. A natural
+next step there is a bulk "paste assets from Excel" import in the register's column order. Still to build:
 Sensitivity table/tornado: ±1 pp on g, y, r_E, d and ±5 years of age, reusing `evaluateAsset`;
 scenario compare: load two JSON scenarios side by side (no storage); Monte Carlo: lognormal g and y
 with a seed (deterministic tests on the sample mean); PDF: print stylesheet + `window.print()`

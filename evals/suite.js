@@ -24,12 +24,13 @@ import { LIFE_TABLES, LIFE_TABLE_BY_ID, DEFAULT_LIFE_TABLE_ID } from '../src/dat
 import { makeScenarios, rng } from './scenarios/generator.js';
 import { PERSONAS, DEFAULTS } from './scenarios/personas.js';
 import { HAND_CASES, MORTALITY_HAND_CASES } from './scenarios/handcalc.js';
-import { expectedEngineInputs, BEA_BY_YEAR, DEFAULT_TABLE } from './oracle/ui.js';
+import { expectedEngineInputs, BEA_BY_YEAR, DEFAULT_TABLE, AUDIT_FIELD_MEANING, AUDIT_FIELD_PARSE, auditParse } from './oracle/ui.js';
 import { oracleEvaluate, oracleIng, oracleRank, deathDistribution } from './oracle/evaluate.js';
 import { oracleCouple, coupleLives } from './oracle/couple.js';
 import { ssa2023FromCsv, survivorsFromRates, deathYearsFromRates, secondDeathByPairs, lifeExpectancy, SSA_2023_PDF, TERMINAL_AGE } from './oracle/lives.js';
 import { engineView, oracleView, coupleView, readPath } from './graders/views.js';
 import { runPipeline, PIPELINE_SOURCE } from './graders/pipeline.js';
+import { buildInputRegister, HOUSEHOLD_FIELDS, ASSET_FIELDS } from '../src/hooks/inputRegister.js';
 
 // The deathbed-swap tile's sub-line (src/components/format.js once F3 is fixed; the pre-fix text otherwise).
 let deathbedNote = null;
@@ -292,8 +293,10 @@ export async function runEvals({ label = 'run', n, seed = DEFAULT_SEED, quick = 
   const rejected = [];
   const tagStats = {};
   let marriedSeen = 0;
+  let caseIndex = 0;
 
   for (const c of allCases) {
+    caseIndex += 1;
     const state = { grantor: c.grantor, estate: c.estate, settings: c.settings, asset: c.asset };
     // L5a — mapping: the app's UI → engine mapping equals the planner-facing meaning of every field
     const got = buildEngineInputs(state);
@@ -307,6 +310,40 @@ export async function runEvals({ label = 'run', n, seed = DEFAULT_SEED, quick = 
       else ok = g === w;
       record('L5 UI wiring', `mapping: ${k}`, ok, { id: c.id, engine: Array.isArray(g) ? `[${g.length}]` : g, expected: Array.isArray(w) ? `[${w.length}]` : w });
     }
+    // L5b — the inputs audit page (src/hooks/inputRegister.js) shows exactly what the engine uses, and what the planner-facing
+    // meaning of each field implies: an audit page that disagreed with the model would certify the wrong numbers.
+    const reg = buildInputRegister({ grantor: c.grantor, estate: c.estate, settings: c.settings, assets: [c.asset] });
+    const sameValue = (a, b) => (typeof b === 'number' ? (Number.isNaN(b) ? typeof a === 'number' && Number.isNaN(a) : typeof a === 'number' && Math.abs(a - b) <= 1e-12 * Math.max(1, Math.abs(b))) : a === b);
+    const shown = [
+      ...reg.household.map((row) => [row.ref, HOUSEHOLD_FIELDS.find((f) => f.state[0].toUpperCase() === row.ref[0] && f.key === row.key)?.engine, row.model]),
+      ...ASSET_FIELDS.map((f) => [`A1.${f.key}`, f.engine, reg.assets[0].cells[f.key].model]),
+    ].filter(([, key]) => key);
+    const offEngine = shown.find(([, key, model]) => !sameValue(model, got[key]));
+    record('L5 UI wiring', 'inputs audit: every model value shown = the engine input', !offEngine, { id: c.id, ref: offEngine?.[0], shown: offEngine?.[2], engine: offEngine ? got[offEngine[1]] : undefined });
+    // ...and what each label means, keyed by the oracle's own field table (never by the page's catalog)
+    const everyField = [
+      ...reg.household.map((row) => [row.ref, row.raw, row.model]),
+      ...ASSET_FIELDS.map((f) => [`A.${f.key}`, reg.assets[0].cells[f.key].raw, reg.assets[0].cells[f.key].model]),
+    ];
+    const unlisted = everyField.find(([ref]) => !(ref in AUDIT_FIELD_MEANING) && !(ref in AUDIT_FIELD_PARSE));
+    record('L5 UI wiring', 'inputs audit: every field on the page has an independent expected meaning', !unlisted, { id: c.id, ref: unlisted?.[0] });
+    const expectedShown = (ref, raw) => (ref in AUDIT_FIELD_MEANING ? want[AUDIT_FIELD_MEANING[ref]] : auditParse(AUDIT_FIELD_PARSE[ref], raw));
+    const offMeaning = everyField.find(([ref, raw, model]) => !unlisted && !sameValue(model, expectedShown(ref, raw)));
+    record('L5 UI wiring', 'inputs audit: every model value shown = the planner-facing meaning of its label', !offMeaning,
+      { id: c.id, ref: offMeaning?.[0], shown: offMeaning?.[2], expected: offMeaning ? expectedShown(offMeaning[0], offMeaning[1]) : undefined });
+    if (caseIndex % 5 === 0) {
+      // a tick certifies the checked values: it holds on them and clears when any value in the row changes
+      const ticks = { [reg.assets[0].tickKey]: { at: '2026-09-28' } };
+      const kept = buildInputRegister({ grantor: c.grantor, estate: c.estate, settings: c.settings, assets: [c.asset], audit: { ticks } }).assets[0].verified;
+      const survived = ASSET_FIELDS.filter((f) => buildInputRegister({ grantor: c.grantor, estate: c.estate, settings: c.settings,
+        assets: [{ ...c.asset, [f.key]: `${c.asset[f.key] ?? ''}1` }], audit: { ticks } }).assets[0].verified).map((f) => f.key);
+      record('L5 UI wiring', 'inputs audit: a tick holds on the checked values and clears when any value in its row changes', kept && survived.length === 0, { id: c.id, kept, survived });
+      // an unreadable cell is left out of a control total and counted, never read as 0
+      const two = buildInputRegister({ grantor: c.grantor, estate: c.estate, settings: c.settings, assets: [c.asset, { ...c.asset, basis: 'n/a', fmv: 'tbd' }] });
+      const okTotals = two.totals.count === 2 && two.totals.B0.skipped === 1 && sameValue(two.totals.B0.sum, got.B0)
+        && two.totals.FMV.skipped === 1 && sameValue(two.totals.FMV.sum, got.FMV);
+      record('L5 UI wiring', 'inputs audit: an unreadable value is left out of a control total and counted', okTotals, { id: c.id, totals: { B0: two.totals.B0, FMV: two.totals.FMV } });
+    }
     const uiErrors = validateUiFields(state);
     const { errors } = engine.validateInputs(got);
     if (uiErrors.length || errors.length) { rejected.push({ id: c.id, tags: c.tags, errors: [...uiErrors, ...errors].map((e) => `${e.field}: ${e.message}`) }); continue; }
@@ -314,6 +351,7 @@ export async function runEvals({ label = 'run', n, seed = DEFAULT_SEED, quick = 
     try { res = engine.evaluateAsset(got); ing = engine.evaluateIng(got, res); } catch (e) { record('L2 oracle agreement', 'engine evaluates valid input', false, { id: c.id, error: e.message }); continue; }
     const full = c.source === 'persona' || !want.married || marriedSeen % FULL_EVERY === 0;
     if (want.married) marriedSeen += 1;
+    record('L5 UI wiring', "inputs audit: taxable gift shown = the engine's U_g", reg.assets[0].derived.taxableGift === res.derived.Ug, { id: c.id, shown: reg.assets[0].derived.taxableGift, engine: res.derived.Ug });
     const O = oracleFor(want, { sStar: res.sStar, full });
     const scale = Math.abs(got.E0) + Math.abs(got.FMV) + Math.max(...res.rows.none.map((r) => Math.abs(r.Hb)));
     const before = [...checks.values()].reduce((a, x) => a + x.fail, 0);
@@ -583,6 +621,7 @@ export async function runEvals({ label = 'run', n, seed = DEFAULT_SEED, quick = 
     ['asset.postSaleGrowth (sale)', withSale, set(withSale, 'asset', { postSaleGrowth: '8' }), { idgt: 'moves', ing: 'moves' }],
     ['asset.postSaleYield (sale)', withSale, set(withSale, 'asset', { postSaleYield: '4' }), { idgt: 'moves', ing: 'moves' }],
     ['asset.annualExclusions', base, set(base, 'asset', { annualExclusions: '190000' }), { idgt: 'moves', ing: 'same' }],
+    ['asset.source (label for the inputs audit only)', base, set(base, 'asset', { source: 'Excel B7' }), { idgt: 'same', ing: 'same' }],
   ];
   const wiring = [];
   const runState = (st) => runPipeline({ grantor: st.grantor, estate: st.estate, settings: st.settings, assets: [st.asset] });
