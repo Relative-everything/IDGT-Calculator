@@ -97,5 +97,13 @@ select {
 /* Recessive scrollbars on wide tables */
 .scroll-x { overflow-x: auto; scrollbar-width: thin; }
 
+/* Print: this rule is unlayered, so a Tailwind print:overflow-visible utility cannot override it; wide tables must not be
+   clipped on paper. The inputs audit prints on landscape pages (its asset register has 18 columns). */
+@media print {
+  .scroll-x { overflow: visible; }
+  .print-landscape { page: landscape; }
+}
+@page landscape { size: landscape; margin: 0.4in; }
+
 details > summary { cursor: pointer; list-style: none; }
 details > summary::-webkit-details-marker { display: none; }

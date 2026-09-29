@@ -57,7 +57,15 @@ export const MUTATIONS = [
   ['M17', 'an asset tick survives edits (fingerprint covers the name only)', 'src/hooks/inputRegister.js',
     "return fnv1a(JSON.stringify(ASSET_FIELDS.map((f) => String(asset[f.key] ?? ''))));", "return fnv1a(String(asset.name ?? ''));"],
   ['M18', 'control totals silently count an unreadable cell as zero', 'src/engine/inputAudit.js',
-    'if (Number.isFinite(v)) sum += v;\n      else skipped += 1;', 'sum += Number.isFinite(v) ? v : 0;'],
+    'if (Number.isFinite(v)) sum += cents ? Math.round(v * CENTS_PER_DOLLAR) : v;\n      else skipped += 1;',
+    'sum += Number.isFinite(v) ? (cents ? Math.round(v * CENTS_PER_DOLLAR) : v) : 0;'],
+  ['M19', 'two identical asset rows share one tick (the occurrence number is dropped)', 'src/hooks/inputRegister.js',
+    "return { key: `A:${fp}${k > 1 ? `#${k}` : ''}`, fingerprint: fp };", 'return { key: `A:${fp}`, fingerprint: fp };'],
+  ['M20', 'the totals row sums unrounded values, so it does not foot the cells shown', 'src/hooks/inputRegister.js',
+    "['FMV', 'B0', 'annualExclusions', 'unrealizedGain', 'discountAmount', 'giftValue', 'taxableGift'], { cents: true });",
+    "['FMV', 'B0', 'annualExclusions', 'unrealizedGain', 'discountAmount', 'giftValue', 'taxableGift']);"],
+  ['M21', 'an error on the grantor ordinary stack is flagged on the federal rate only', 'src/hooks/inputRegister.js',
+    "tauOrd: ['fedOrd', 'stateOrd', 'niit'],", "tauOrd: ['fedOrd'],"],
 ];
 
 const only = new Set(process.argv.slice(2));

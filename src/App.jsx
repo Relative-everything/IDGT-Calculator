@@ -15,19 +15,26 @@ import ErrorBoundary from './components/ui/ErrorBoundary.jsx';
 import InputsAudit from './components/audit/InputsAudit.jsx';
 import { useIdgtModel } from './hooks/useIdgtModel.js';
 import { useInputRegister } from './hooks/useInputRegister.js';
-import { assetTableTsv, registerToCsv } from './hooks/inputRegister.js';
+import { assetTableTsv, registerToCsv, liveTicks } from './hooks/inputRegister.js';
 import { useIngBreakeven } from './hooks/useIngBreakeven.js';
 import { serializeScenario, parseScenario, rankingToCsv, MAX_IMPORT_BYTES } from './hooks/scenarioIO.js';
 import { DEFAULT_GRANTOR, DEFAULT_ESTATE, DEFAULT_SETTINGS, DEFAULT_ASSETS, makeAsset } from './hooks/defaults.js';
 
 const defaultsForImport = () => ({ grantor: DEFAULT_GRANTOR, estate: DEFAULT_ESTATE, settings: DEFAULT_SETTINGS, asset: makeAsset() });
 const EMPTY_AUDIT = { reviewer: '', ticks: {} };
-const today = () => new Date().toISOString().slice(0, 10);
+// The reviewer's calendar date (local time, not UTC: an evening tick in the Americas must not carry tomorrow's date).
+const today = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
 // The view is kept in the URL hash (#audit) so the audit page can be bookmarked; state itself is never stored (repo rule).
 const initialView = () => (typeof window !== 'undefined' && window.location.hash === '#audit' ? 'audit' : 'analysis');
 
+// CSVs start with a UTF-8 byte-order mark so Excel on Windows reads Σ, · and accented names correctly.
+const UTF8_BOM = '\uFEFF';
 function download(name, text, type) {
-  const blob = new Blob([text], { type });
+  const csv = type === 'text/csv';
+  const blob = new Blob([csv ? UTF8_BOM + text : text], { type: csv ? 'text/csv;charset=utf-8' : type });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = name; a.click();
@@ -48,7 +55,7 @@ export default function App() {
   const [auditWide, setAuditWide] = useState(false);
   const fileRef = useRef(null);
 
-  const { perAsset, ranked, remainingExclusion, neutralSwap, swapRates, mortality, isStale } = useIdgtModel({ grantor, estate, settings, assets });
+  const { perAsset, ranked, remainingExclusion, neutralSwap, swapRates, mortality, isStale, snapshot } = useIdgtModel({ grantor, estate, settings, assets });
 
   const errorsById = useMemo(() => {
     const out = {};
@@ -59,7 +66,7 @@ export default function App() {
   const invalid = perAsset.filter((a) => a.errors.length);
   const selected = ranked.find((r) => r.id === selectedId) ?? ranked[0] ?? null;
   const ingBreakeven = useIngBreakeven(selected);
-  const register = useInputRegister({ grantor, estate, settings, assets, perAsset, audit });
+  const register = useInputRegister({ ...snapshot, perAsset, audit });
 
   const changeView = (next) => {
     setView(next);
@@ -81,9 +88,12 @@ export default function App() {
   };
   const downloadAudit = () => download(`idgt-inputs-audit-${auditMode === 'typed' ? 'as-typed' : 'model-values'}.csv`,
     registerToCsv(register, auditMode, { reviewer: audit.reviewer, generatedAt: new Date().toISOString() }), 'text/csv');
+  const clearTicks = () => setAudit((a) => ({ ...a, ticks: {} }));
 
   const reset = () => { setGrantor(DEFAULT_GRANTOR); setEstate(DEFAULT_ESTATE); setSettings(DEFAULT_SETTINGS); setAssets(DEFAULT_ASSETS()); setAudit(EMPTY_AUDIT); setSelectedId(null); setNotice('Inputs reset to defaults.'); };
-  const exportJson = () => download('idgt-scenario.json', serializeScenario({ grantor, estate, settings, assets, audit }), 'application/json');
+  // Only live ticks are saved: a tick on a row that has changed since does not travel with the file.
+  const exportJson = () => download('idgt-scenario.json',
+    serializeScenario({ grantor, estate, settings, assets, audit: { ...audit, ticks: liveTicks({ grantor, estate, settings, assets }, audit.ticks) } }), 'application/json');
   const exportCsv = () => download('idgt-ranking.csv', rankingToCsv(ranked), 'text/csv');
   const importJson = (file) => {
     if (file.size > MAX_IMPORT_BYTES) { setNotice(`Could not load ${file.name}: the file is too large to be a scenario.`); return; }
@@ -145,8 +155,8 @@ export default function App() {
         <ErrorBoundary>
           <InputsAudit register={register} mode={auditMode} onModeChange={setAuditMode} filter={auditFilter} onFilterChange={setAuditFilter}
             reviewer={audit.reviewer} onReviewerChange={(reviewer) => setAudit((a) => ({ ...a, reviewer }))} onTick={tick}
-            onClearTicks={() => setAudit((a) => ({ ...a, ticks: {} }))} onCopy={copyAssetTable} onDownload={downloadAudit}
-            onPrint={() => window.print()} printedOn={today()} wide={auditWide} onWideChange={setAuditWide} />
+            onClearTicks={clearTicks} onCopy={copyAssetTable} onDownload={downloadAudit}
+            onPrint={() => window.print()} printedOn={today()} wide={auditWide} onWideChange={setAuditWide} isStale={isStale} />
         </ErrorBoundary>
       ) : (
         <>

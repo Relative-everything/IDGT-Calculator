@@ -2,7 +2,8 @@
 // exactly the values the engine uses, and its flags, totals, ticks and exports behave as documented.
 import { describe, it, expect } from 'vitest';
 import {
-  buildInputRegister, HOUSEHOLD_FIELDS, ASSET_FIELDS, ASSET_COLUMNS, assetFingerprint, assetTableRows, assetTableTsv, registerToCsv,
+  buildInputRegister, HOUSEHOLD_FIELDS, ASSET_FIELDS, ASSET_COLUMNS, assetFingerprint, assetTickKey, assetTableRows, assetTableTsv, registerToCsv,
+  liveTicks, matchesFilter,
 } from '../inputRegister.js';
 import { DEFAULT_GRANTOR, DEFAULT_ESTATE, DEFAULT_SETTINGS, DEFAULT_ASSETS, makeAsset } from '../defaults.js';
 import { buildEngineInputs } from '../buildInputs.js';
@@ -76,8 +77,24 @@ describe('control totals and the balance-sheet tie-out', () => {
     expect(reg.totals.FMV).toEqual({ sum: 9_000_000, skipped: 0 });
     expect(reg.totals.B0).toEqual({ sum: 700_000, skipped: 1 });
     expect(reg.totals.taxableGift.sum).toBeCloseTo(1_000_000 + 2_100_000 + 3_750_000, 6);
-    expect(reg.tieOut).toEqual({ otherEstate: 20_000_000, candidates: 9_000_000, total: 29_000_000 });
+    expect(reg.tieOut).toEqual({ otherEstate: 20_000_000, candidates: 9_000_000, total: 29_000_000, candidatesSkipped: 0 });
     expect(reg.assets.map((r) => r.derived.share)).toEqual([1 / 9, 3 / 9, 5 / 9]);
+    st.assets[2] = { ...st.assets[2], fmv: 'tbd' };
+    expect(buildInputRegister(st).tieOut.candidatesSkipped).toBe(1); // the tie-out says a value was left out
+  });
+  it('money totals foot the cents shown on each row, so SUM() over the pasted column equals the totals row', () => {
+    // Hand case: $1,000.01 at a 33.3% discount = $667.00667, shown as 667.01 on each of three rows. The rows foot to
+    // 2001.03; the unrounded sum, 2001.02001, would print as 2001.02 and never tie to the pasted cells.
+    const st = single();
+    st.assets = [1, 2, 3].map((i) => makeAsset({ name: `Unit ${i}`, fmv: '1000.01', discount: '33.3', basis: '0' }));
+    const reg = buildInputRegister(st);
+    const t = assetTableRows(reg, 'model');
+    const col = ASSET_COLUMNS.findIndex((c) => c.key === 'giftValue');
+    expect(t.rows.map((r) => r[col])).toEqual(['667.01', '667.01', '667.01']);
+    expect(t.totals[col]).toBe('2001.03');
+    expect(reg.totals.giftValue.sum).toBe(2001.03);
+    expect(t.totals[ASSET_COLUMNS.findIndex((c) => c.key === 'share')]).toBe('1'); // the shares shown, summed
+    expect(assetTableRows(reg, 'typed').totals[ASSET_COLUMNS.findIndex((c) => c.key === 'share')]).toBe('100');
   });
 });
 
@@ -124,6 +141,81 @@ describe('data-entry flags', () => {
     expect(rowCodes(1)).toContain('BASIS_ABOVE_FMV');
     expect(rowCodes(2)).toEqual([]);
   });
+  it('duplicate figures are found on what the model reads: formatting and unused post-sale rates do not hide them', () => {
+    const st = single();
+    st.assets.push({ ...st.assets[0], id: 'dup', name: 'Other name', fmv: '1,000,000', postSaleGrowth: '9' });
+    const reg = buildInputRegister(st);
+    expect(reg.assets[3].flags.map((f) => f.code)).toContain('DUPLICATE_ROW');
+    expect(reg.assets[3].flags.map((f) => f.code)).not.toContain('DUPLICATE_NAME');
+  });
+  it('a share typed as 1 (Excel for 100%) is flagged on the burn share and the consideration basis', () => {
+    const st = single();
+    st.settings = { ...st.settings, burnShare: '1', swapCustom: true, swapBasisPct: '1' };
+    const reg = buildInputRegister(st);
+    const codes = (ref) => reg.household.find((r) => r.ref === ref).flags.map((f) => f.code);
+    expect(codes('S.burnShare')).toContain('PCT_AS_FRACTION');
+    expect(codes('S.swapBasisPct')).toContain('PCT_AS_FRACTION');
+    st.settings = { ...st.settings, burnShare: '70' };
+    expect(buildInputRegister(st).household.find((r) => r.ref === 'S.burnShare').flags).toEqual([]);
+  });
+  it('a value the model does not use is still checked, as "confirm", and does not count toward the tab badge', () => {
+    const st = single();
+    st.grantor = { ...st.grantor, spouseAge: 'sixty' }; // single grantor: not used
+    st.settings = { ...st.settings, swapGrowth: '0.07' }; // custom consideration off: not used
+    const reg = buildInputRegister(withModel(st));
+    const flags = (ref) => reg.household.find((r) => r.ref === ref).flags;
+    expect(flags('G.spouseAge').map((f) => [f.code, f.severity])).toEqual([['NOT_A_NUMBER', 'confirm']]);
+    expect(flags('S.swapGrowth').map((f) => [f.code, f.severity])).toEqual([['PCT_AS_FRACTION', 'confirm']]);
+    expect(reg.flags.filter((f) => f.severity !== 'confirm')).toEqual([]);
+  });
+  it('a whole schedule typed in thousands is flagged once, even when no single amount is below $1,000', () => {
+    const st = single();
+    st.estate = { ...st.estate, otherEstate: '20000' };
+    st.assets = st.assets.map((a) => ({ ...a, fmv: String(Number(a.fmv) / 1000), basis: String(Number(a.basis) / 1000) }));
+    const reg = buildInputRegister(st);
+    expect(reg.flags.filter((f) => f.code === 'SMALL_SCHEDULE').map((f) => f.ref)).toEqual(['General']);
+    expect(reg.flags.some((f) => f.code === 'SMALL_AMOUNT')).toBe(false);
+    expect(buildInputRegister(single()).flags.some((f) => f.code === 'SMALL_SCHEDULE')).toBe(false);
+  });
+});
+
+describe('validation errors land on every field that feeds them', () => {
+  const refsOf = (reg, code = 'INVALID') => reg.flags.filter((f) => f.code === code).map((f) => f.ref).sort();
+  it.each([
+    ['an estate tax rate of 0', (st) => { st.estate.estateTaxRate = '0'; }, ['E.estateTaxRate']],
+    ['a grantor ordinary stack of 100% or more: each part of it', (st) => { st.grantor.fedOrd = '99'; }, ['G.fedOrd', 'G.niit', 'G.stateOrd']],
+    ["an heirs' rate stack of 100% or more, NIIT on", (st) => { st.estate.beneFedLtcg = '99'; }, ['E.beneFedLtcg', 'E.beneNiit', 'E.beneStateLtcg', 'G.niit']],
+    ["an heirs' rate stack of 100% or more, NIIT off", (st) => { st.estate.beneFedLtcg = '99'; st.estate.beneNiit = false; st.estate.beneStateLtcg = '5'; }, ['E.beneFedLtcg', 'E.beneStateLtcg']],
+    ['a negative basis', (st) => { st.assets[0].basis = '-1'; }, ['A1.basis']],
+    ['a negative sale year', (st) => { st.assets[0].saleYear = '-2'; }, ['A1.saleYear']],
+    ['a prior-gift year with no exclusion on file', (st) => { st.estate.priorGifts = '1000000'; st.estate.priorGiftYear = '1990'; }, ['E.priorGiftYear']],
+    ['a negative custom prior-gift exclusion', (st) => { st.estate.priorGifts = '1000000'; st.estate.priorExclusionMode = 'custom'; st.estate.priorGiftExclusion = '-5'; }, ['E.priorGiftExclusion']],
+  ])('%s', (_, patch, refs) => {
+    const st = single();
+    st.assets = [st.assets[0]];
+    patch(st);
+    expect(refsOf(buildInputRegister(withModel(st)))).toEqual(refs);
+  });
+  it("a married spouse's negative age lands on the spouse's age", () => {
+    const st = married();
+    st.assets = [st.assets[0]];
+    st.grantor.spouseAge = '-3';
+    expect(refsOf(buildInputRegister(withModel(st)))).toEqual(['G.spouseAge']);
+  });
+  it("the ING value factor names the asset on the fee row, and shows on that asset's growth cell", () => {
+    const st = single();
+    st.settings.ingAdminRate = '1';
+    st.assets[1] = { ...st.assets[1], growth: '-99.5', yield: '0' }; // 1 + g + y > 0 but the ING loses everything in a year
+    const reg = buildInputRegister(withModel(st));
+    expect(refsOf(reg)).toEqual(['A2.growth', 'S.ingAdminRate']);
+    const fee = reg.household.find((r) => r.ref === 'S.ingAdminRate').flags.find((f) => f.code === 'INVALID');
+    expect(fee.message.startsWith(`Asset #2 ${st.assets[1].name}: The ING would lose`)).toBe(true);
+  });
+  it('a sale after the horizon is a "confirm" on the sale year', () => {
+    const st = single();
+    st.assets[0] = { ...st.assets[0], saleYear: '60', postSaleGrowth: '5', postSaleYield: '1' };
+    expect(refsOf(buildInputRegister(withModel(st)), 'SALE_BEYOND_HORIZON')).toEqual(['A1.saleYear']);
+  });
 });
 
 describe('what is in use', () => {
@@ -169,7 +261,39 @@ describe('ticks certify what was checked', () => {
   it('progress counts the rows in use plus every asset', () => {
     const reg = buildInputRegister(single());
     const inUse = reg.household.filter((r) => r.status.code === 'used' || r.status.code === 'scope').length;
-    expect(reg.progress).toEqual({ verified: 0, total: inUse + 3 });
+    expect(reg.progress).toEqual({ verified: 0, total: inUse + 3, hidden: 0 });
+  });
+  it('two identical rows need a tick each: ticking one does not verify its double', () => {
+    const st = single();
+    st.assets.push({ ...st.assets[0], id: 'double' });
+    const first = assetTickKey(st.assets[0]);
+    const reg = buildInputRegister({ ...st, audit: { ticks: { [first]: { at: '2026-09-28' } } } });
+    expect(reg.assets.map((r) => r.verified)).toEqual([true, false, false, false]);
+    expect(reg.progress.verified).toBe(1);
+    expect(reg.assets[3].tickKey).toBe(`${first}#2`);
+    const both = buildInputRegister({ ...st, audit: { ticks: { [first]: { at: '2026-09-28' }, [`${first}#2`]: { at: '2026-09-28' } } } });
+    expect(both.assets.map((r) => r.verified)).toEqual([true, false, false, true]);
+  });
+  it('a tick on a changed row is hidden and counted, and only live ticks are exported', () => {
+    const st = single();
+    const ticks = {
+      'E.otherEstate': { v: '20000000', at: '2026-09-28' },
+      'G.fedOrd': { v: '35', at: '2026-09-28' }, // value changed since (37 now)
+      'G.spouseAge': { v: '62', at: '2026-09-28' }, // not in use for a single grantor
+      [assetTickKey(st.assets[1])]: { at: '2026-09-28' },
+      'A:0badf00d': { at: '2026-09-28' }, // a row that no longer exists
+    };
+    const reg = buildInputRegister({ ...st, audit: { ticks } });
+    expect(reg.progress.verified).toBe(2);
+    expect(reg.progress.hidden).toBe(3);
+    expect(Object.keys(liveTicks(st, ticks)).sort()).toEqual(['E.otherEstate', assetTickKey(st.assets[1])].sort());
+  });
+  it('row filters: unverified leaves out rows not in use; flagged keeps any row with a flag', () => {
+    expect(matchesFilter({ status: { code: 'unused' }, verified: false, flags: [] }, 'unverified')).toBe(false);
+    expect(matchesFilter({ status: { code: 'scope' }, verified: false, flags: [] }, 'unverified')).toBe(true);
+    expect(matchesFilter({ verified: true, flags: [] }, 'unverified')).toBe(false); // asset rows have no status
+    expect(matchesFilter({ verified: true, flags: [{ code: 'X' }] }, 'flagged')).toBe(true);
+    expect(matchesFilter({ verified: true, flags: [] }, 'all')).toBe(true);
   });
 });
 
@@ -197,8 +321,24 @@ describe('exports', () => {
     const reg = buildInputRegister(st);
     expect(registerToCsv(reg, 'typed').split('\n')[1]).toContain(`"'=HYPERLINK(""http://x"")"`);
     const pasted = assetTableTsv(reg, 'typed').split('\n')[1].split('\t');
-    expect(pasted[1]).toBe(`'=HYPERLINK("http://x")`);
+    expect(pasted[1]).toBe(`"'=HYPERLINK(""http://x"")"`); // quoted as Excel writes the clipboard, then read as text
     expect(pasted[2]).toBe("'+cmd");
+  });
+  it('a pasted cell cannot start a formula behind a quote, merge the table, or lose a text reference\'s digits', () => {
+    const st = single();
+    st.assets[0] = { ...st.assets[0], name: '"=1+1"', source: '"abc' };
+    st.assets[1] = { ...st.assets[1], name: 'x;=1+1;', source: '0042' };
+    const reg = buildInputRegister(st);
+    const lines = assetTableTsv(reg, 'typed').split('\n');
+    expect(lines.length).toBe(1 + 3 + 1); // header, three rows, totals
+    const [r1, r2] = [lines[1].split('\t'), lines[2].split('\t')];
+    expect(r1[1]).toBe(`"'""=1+1"""`); // a leading quote is neutralised, and the cell is quoted so it parses back whole
+    expect(r1[2]).toBe(`"'""abc"`); // an unmatched quote cannot open a cell that swallows the rest of the table
+    expect(r2[2]).toBe("'0042"); // a Source ref stays text; a numeric column stays a number
+    expect(r2[ASSET_COLUMNS.findIndex((c) => c.key === 'fmv')]).toBe('3000000');
+    const csv = registerToCsv(reg, 'typed').split('\n')[2];
+    expect(csv).toContain('"x;=1+1;"'); // quoted, so a ';'-separator Excel cannot split it into a formula cell
+    expect(csv).toContain(",'0042,");
   });
   it('ticks, the reviewer and source refs survive Export/Import JSON; unknown or malformed tick keys are dropped', () => {
     const st = single();

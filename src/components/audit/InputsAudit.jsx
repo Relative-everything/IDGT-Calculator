@@ -5,6 +5,7 @@ import AuditFlags from './AuditFlags.jsx';
 import ControlTotals from './ControlTotals.jsx';
 import AssetRegister from './AssetRegister.jsx';
 import HouseholdRegister from './HouseholdRegister.jsx';
+import { matchesFilter } from '../../hooks/inputRegister.js';
 
 const MODES = [
   { value: 'typed', label: 'As typed', hint: 'exactly what was entered — compare with printed schedules and eMoney screens' },
@@ -17,6 +18,11 @@ function Progress({ progress }) {
   return (
     <div className="min-w-[12rem]">
       <div className="text-right text-sm text-ink-2"><strong className="tabular text-ink">{progress.verified}</strong> of <span className="tabular">{progress.total}</span> rows verified</div>
+      {progress.hidden > 0 && (
+        <div className="text-right text-xs text-muted" title="Ticks on rows that changed after they were ticked. They return if the change is undone, and are not saved with Export JSON.">
+          {progress.hidden} tick{progress.hidden === 1 ? '' : 's'} hidden: row changed since
+        </div>
+      )}
       <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-2" role="progressbar" aria-valuemin={0} aria-valuemax={progress.total} aria-valuenow={progress.verified} aria-label="Rows verified">
         <div className="h-full rounded-full bg-good" style={{ width: `${Math.round(share * 1000) / 10}%` }} />
       </div>
@@ -28,15 +34,24 @@ function Progress({ progress }) {
  * The inputs audit page: every input as bare data with its reference, the batch control totals, data-entry flags and a
  * tick per row. The register comes from the hook (inputRegister.js); this page only lays it out.
  */
-export default function InputsAudit({ register, mode, onModeChange, filter, onFilterChange, reviewer, onReviewerChange, onTick, onClearTicks, onCopy, onDownload, onPrint, printedOn, wide, onWideChange }) {
+export default function InputsAudit({ register, mode, onModeChange, filter, onFilterChange, reviewer, onReviewerChange, onTick, onClearTicks, onCopy, onDownload, onPrint, printedOn, wide, onWideChange, isStale }) {
   const [confirmClear, setConfirmClear] = useState(false);
   const modeHint = MODES.find((m) => m.value === mode)?.hint;
+  const anyTicks = register.progress.verified + register.progress.hidden > 0;
+  const shownAssets = register.assets.filter((r) => matchesFilter(r, filter)).length;
+  const shownHousehold = register.household.filter((r) => matchesFilter(r, filter)).length;
+  const filterText = FILTERS.find((f) => f.value === filter)?.label.toLowerCase();
   return (
-    <div className="space-y-5">
+    <div className={`print-landscape space-y-5 transition-opacity ${isStale ? 'opacity-70' : ''}`} aria-busy={isStale || undefined}>
       <div className="hidden text-xs text-ink-2 print:block">
         IDGT Asset Analyzer · inputs audit · printed {printedOn}{reviewer ? ` · reviewer ${reviewer}` : ''} · values {mode === 'typed' ? 'as typed' : 'as the model reads them'}
+        {filter !== 'all' && (
+          <strong className="block text-ink">
+            Filtered: {filterText} rows only ({shownAssets} of {register.assets.length} asset rows, {shownHousehold} of {register.household.length} other inputs shown). The totals cover every asset.
+          </strong>
+        )}
       </div>
-      <Card title="Inputs audit" subtitle="Every input as bare data, for checking against the source documents. Tick a row when it matches; a tick clears itself if anything in that row changes." aside={<Progress progress={register.progress} />}>
+      <Card title="Inputs audit" subtitle="Every input as bare data, for checking against the source documents. Tick a row when it matches. A tick is hidden as soon as anything in its row changes (it returns if the change is undone), and only live ticks are saved with Export JSON." aside={<Progress progress={register.progress} />}>
         <div className="flex flex-wrap items-end gap-x-4 gap-y-3 print:hidden">
           <div>
             <span className="block text-xs font-medium text-ink-2">Show values</span>
@@ -66,9 +81,14 @@ export default function InputsAudit({ register, mode, onModeChange, filter, onFi
             <Button variant="ghost" onClick={() => onWideChange(!wide)} title={wide ? 'Show the input panels again to edit values' : 'Hide the input panels so the register shows more columns'}>
               {wide ? 'Show input panels' : 'Full width'}
             </Button>
-            {confirmClear
-              ? <Button variant="danger" onClick={() => { onClearTicks(); setConfirmClear(false); }}>Confirm: clear all ticks</Button>
-              : <Button variant="ghost" onClick={() => setConfirmClear(true)} disabled={register.progress.verified === 0}>Clear ticks</Button>}
+            {confirmClear && anyTicks
+              ? (
+                <>
+                  <Button variant="danger" onClick={() => { onClearTicks(); setConfirmClear(false); }}>Confirm: clear all ticks</Button>
+                  <Button variant="ghost" onClick={() => setConfirmClear(false)}>Cancel</Button>
+                </>
+              )
+              : <Button variant="ghost" onClick={() => setConfirmClear(true)} disabled={!anyTicks} title="Removes every tick, including hidden ones">Clear ticks</Button>}
           </div>
         </div>
         <p className="mt-3 text-xs text-muted print:hidden">
@@ -83,7 +103,7 @@ export default function InputsAudit({ register, mode, onModeChange, filter, onFi
         <ControlTotals totals={register.totals} tieOut={register.tieOut} />
       </Card>
 
-      <Card title="Asset register" subtitle="Laid out like a sheet: in the CSV, asset #n is on row n + 1 (row 1 is the header) and every column keeps its letter. Italic columns are derived by the model; dimmed cells are not used.">
+      <Card title="Asset register" subtitle="Laid out like a sheet: in the CSV and the copied table, asset #n is on row n + 1 (row 1 is the header) and every column keeps its letter. Italic columns are derived by the model; dimmed cells are not used.">
         <AssetRegister register={register} mode={mode} filter={filter} onTick={onTick} />
       </Card>
 

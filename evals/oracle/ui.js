@@ -127,6 +127,15 @@ export const AUDIT_FIELD_PARSE = {
   'E.priorGiftExclusion': 'money', 'E.spousePriorExclusionMode': 'same', 'E.spousePriorGiftYear': 'int', 'E.spousePriorGiftExclusion': 'money',
   'S.rankKey': 'same', 'S.swapCustom': 'same', 'A.name': 'same', 'A.source': 'same',
 };
+/**
+ * The typed fields that make up each combined model input, read off the definitions in expectedEngineInputs above: a
+ * validation error on the combined input must show on every one of them (the page cannot know which part is wrong).
+ */
+export const AUDIT_ERROR_PARTS = {
+  tauOrd: () => ['G.fedOrd', 'G.stateOrd', 'G.niit'],
+  tauCg: () => ['G.fedLtcg', 'G.stateLtcg', 'G.niit'],
+  tauBene: ({ estate }) => ['E.beneFedLtcg', 'E.beneStateLtcg', ...(estate.beneNiit ? ['E.beneNiit', 'G.niit'] : [])],
+};
 /** Reads a typed value the way its label says (for the fields in AUDIT_FIELD_PARSE). */
 export function auditParse(kind, raw) {
   if (kind === 'pct') return rate(raw);

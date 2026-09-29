@@ -7,10 +7,14 @@ import { LIFE_TABLES, LIFE_TABLE_BY_ID } from '../data/lifeTables/index.js';
 export const SCENARIO_VERSION = 1;
 export const MAX_IMPORT_ASSETS = 50;
 export const MAX_IMPORT_BYTES = 2 * 1024 * 1024;
+// Longest text a field keeps on import; the asset name and Source ref inputs stop at the same length, so a row (and its
+// tick fingerprint) survives Export/Import JSON unchanged.
+export const MAX_TEXT_FIELD_LENGTH = 200;
 // Inputs audit ticks (docs/changes/2026-09-28-inputs-audit/plan.md): household ticks are keyed by field reference
-// (G.age, E.otherEstate, S.burnShare) and record the value checked; asset ticks are keyed by a fingerprint of the row.
+// (G.age, E.otherEstate, S.burnShare) and record the value checked; asset ticks are keyed by a fingerprint of the row,
+// with #k for the k-th of several identical rows (inputRegister.assetTickKey).
 export const MAX_AUDIT_TICKS = 2_000;
-const AUDIT_TICK_KEY = /^(?:[GES]\.[A-Za-z]{1,40}|A:[0-9a-f]{8})$/;
+const AUDIT_TICK_KEY = /^(?:[GES]\.[A-Za-z]{1,40}|A:[0-9a-f]{8}(?:#[1-9][0-9]{0,2})?)$/;
 const AUDIT_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 /** Stable unique id for asset rows; falls back when crypto.randomUUID is unavailable (non-secure http). */
@@ -48,7 +52,7 @@ function coerceSection(kind, raw, fallback) {
   if (!isPlainObject(raw)) return out;
   for (const key of STRING_FIELDS[kind]) {
     const v = asString(raw[key]);
-    if (v !== undefined) out[key] = v.slice(0, 200);
+    if (v !== undefined) out[key] = v.slice(0, MAX_TEXT_FIELD_LENGTH);
   }
   for (const key of BOOL_FIELDS[kind]) {
     if (typeof raw[key] === 'boolean') out[key] = raw[key];
@@ -70,7 +74,7 @@ export function coerceAudit(raw) {
     if (count >= MAX_AUDIT_TICKS) break;
     if (!AUDIT_TICK_KEY.test(key) || !isPlainObject(tick)) continue;
     const clean = {};
-    if (typeof tick.v === 'string') clean.v = tick.v.slice(0, 200);
+    if (typeof tick.v === 'string') clean.v = tick.v.slice(0, MAX_TEXT_FIELD_LENGTH);
     if (typeof tick.at === 'string' && AUDIT_DATE.test(tick.at)) clean.at = tick.at;
     out.ticks[key] = clean;
     count += 1;
@@ -106,12 +110,16 @@ export function parseScenario(text, defaults) {
   };
 }
 
-/** CSV cell: numbers raw; strings quoted when needed and formula-leading text neutralised (CWE-1236). */
+/**
+ * CSV cell: numbers raw; strings quoted when needed and formula-leading text neutralised (CWE-1236). A cell holding a
+ * semicolon or a tab is quoted too: Excel in locales whose list separator is ';' splits unquoted cells on it, which
+ * would let a later fragment start with = and run as a formula.
+ */
 export function csvCell(v) {
   if (v == null) return '';
   if (typeof v === 'number') return Number.isFinite(v) ? String(v) : '';
   let s = String(v);
-  let quote = /[",\r\n]/.test(s);
+  let quote = /[",;\t\r\n]/.test(s);
   if (/^[=+\-@\t\r]/.test(s)) { s = `'${s}`; quote = true; }
   return quote ? `"${s.replace(/"/g, '""')}"` : s;
 }

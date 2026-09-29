@@ -4,6 +4,7 @@ import { buildInputRegister } from './inputRegister.js';
 
 /**
  * @param {{ grantor:object, estate:object, settings:object, assets:object[], perAsset:object[], audit:object }} state
+ *   pass the inputs that produced `perAsset` (useIdgtModel's snapshot), so the flags match the values shown
  */
 export function useInputRegister({ grantor, estate, settings, assets, perAsset, audit }) {
   return useMemo(

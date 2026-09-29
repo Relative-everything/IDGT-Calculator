@@ -5,6 +5,9 @@
 // compared with the same totals on the source (an Excel SUM row, a balance-sheet subtotal). Totals skip values that do
 // not parse and report how many they skipped, so an unreadable cell can never hide inside a total.
 
+/** Money is shown and footed to the cent. */
+export const CENTS_PER_DOLLAR = 100;
+
 /**
  * Facts of one asset row, from the inputs as the model reads them (decimals; money unrounded).
  *   giftValue       value of the gifted interest after the valuation discount (§2512(a); Reg. §25.2512-1)
@@ -31,21 +34,25 @@ export function shareOfTotal(value, total) {
 
 /**
  * Column sums over the asset rows.
+ * With `cents`, a money column foots the way a printed or Excel schedule does: every line is shown to the cent, so the
+ * total is the sum of the cent-rounded lines, added in whole cents (exact; no binary floating-point drift). Rounding is
+ * half up, as in the register's cells (inputRegister.bare), so the totals row equals SUM() over the pasted cells.
  * @param {object[]} rows - one object per asset with numeric fields
  * @param {string[]} fields
+ * @param {{ cents?: boolean }} [opts]
  * @returns {{ count:number } & Record<string, { sum:number, skipped:number }>}
  */
-export function controlTotals(rows, fields) {
+export function controlTotals(rows, fields, { cents = false } = {}) {
   const out = { count: rows.length };
   for (const f of fields) {
     let sum = 0;
     let skipped = 0;
     for (const r of rows) {
       const v = r[f];
-      if (Number.isFinite(v)) sum += v;
+      if (Number.isFinite(v)) sum += cents ? Math.round(v * CENTS_PER_DOLLAR) : v;
       else skipped += 1;
     }
-    out[f] = { sum, skipped };
+    out[f] = { sum: cents ? sum / CENTS_PER_DOLLAR : sum, skipped };
   }
   return out;
 }

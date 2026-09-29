@@ -1,4 +1,4 @@
-import { bare, cellValue, unitFor } from '../../hooks/inputRegister.js';
+import { bare, cellValue, unitFor, matchesFilter } from '../../hooks/inputRegister.js';
 import FlagChips from './FlagChips.jsx';
 import TickBox from './TickBox.jsx';
 import { SEVERITY_CELL, statusText, worstSeverity } from './auditLabels.js';
@@ -7,8 +7,7 @@ const auditable = (r) => r.status.code === 'used' || r.status.code === 'scope';
 
 /** Every other input, grouped as on the input panels, then the model inputs that combine several of them. */
 export default function HouseholdRegister({ register, mode, filter, onTick }) {
-  const rows = register.household.filter((r) => (
-    filter === 'unverified' ? auditable(r) && !r.verified : filter === 'flagged' ? r.flags.length > 0 : true));
+  const rows = register.household.filter((r) => matchesFilter(r, filter));
   const sections = [];
   for (const r of rows) {
     if (sections.at(-1)?.name !== r.section) sections.push({ name: r.section, rows: [] });
@@ -36,14 +35,14 @@ export default function HouseholdRegister({ register, mode, filter, onTick }) {
               const worst = worstSeverity(r.flags);
               const value = cellValue(r.kind, r.raw, r.model, mode);
               return (
-                <tr key={r.ref} className={`border-b border-line align-top ${unusedRow ? 'text-muted' : 'text-ink'}`}>
-                  <td className="whitespace-nowrap px-2 py-1 font-mono text-[11.5px] text-ink-2">{r.ref}</td>
+                <tr key={r.ref} className={`border-b border-line align-top print:break-inside-avoid ${unusedRow ? 'text-muted' : 'text-ink'}`}>
+                  <td className="whitespace-nowrap px-2 py-1 font-mono text-[11.5px] text-ink-2 print:text-[9px]">{r.ref}</td>
                   <td className="px-2 py-1">{r.label}</td>
                   <td className={`whitespace-nowrap px-2 py-1 text-right font-mono ${worst ? SEVERITY_CELL[worst] : ''}`} title={r.flags.map((f) => f.message).join('\n') || undefined}>
                     {value}{r.display && mode === 'typed' && <span className="ml-1.5 font-sans text-xs text-muted">{r.display}</span>}
                   </td>
                   <td className="whitespace-nowrap px-2 py-1 text-ink-2">{r.unit ?? unitFor(r.kind, mode)}</td>
-                  <td className="px-2 py-1 text-xs text-ink-2">{statusText(r.status)}</td>
+                  <td className="px-2 py-1 text-xs text-ink-2 print:text-[9px]">{statusText(r.status)}</td>
                   <td className="px-2 py-1"><FlagChips flags={r.flags} /></td>
                   <td className="px-2 py-1">
                     {auditable(r)

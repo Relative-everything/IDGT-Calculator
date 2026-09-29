@@ -8,6 +8,8 @@ export const FLAG_LABELS = {
   IRREGULAR_GROUPING: 'comma grouping',
   DOT_GROUPING: 'point grouping',
   SMALL_AMOUNT: 'in thousands?',
+  SMALL_SCHEDULE: 'schedule in thousands?',
+  NOT_A_NUMBER: 'not a number',
   DUPLICATE_NAME: 'same name',
   DUPLICATE_ROW: 'same figures',
   BASIS_ABOVE_FMV: 'basis > FMV',

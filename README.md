@@ -86,12 +86,16 @@ source documents, which matters when many assets are keyed in from a spreadsheet
   totals, and a **balance-sheet tie-out**: other estate + Σ candidates, to compare with the client's net worth.
 - **Household register**: every other input with a stable reference (`G.age`, `E.otherEstate`, `S.burnShare`), its
   unit, and whether the model uses it (and why not), plus the derived rate stacks.
-- **Flags** for the usual keying slips: a percentage typed as a decimal (0.07), a decimal comma ("3,5" would be read
-  as 35%), points or irregular commas as digit grouping, amounts that look like thousands, duplicate names or rows,
-  basis above value, and every validation error on the field it belongs to.
-- A **tick** per row that clears itself when anything in the row changes; ticks and the reviewer's initials are saved
-  with Export JSON. **Copy asset table** (tab-separated, to paste beside the source), **Download audit CSV** (same
-  columns and letters), **Print**, and **Full width** for long lists.
+- **Flags** for the usual keying slips: a percentage typed as a decimal (0.07, or 1 for a 100% share), a decimal comma
+  ("3,5" would be read as 35%), points or irregular commas as digit grouping, amounts or a whole schedule that look
+  like thousands, duplicate names or figures, basis above value, and every validation error on each field that feeds
+  it (an error on a rate stack shows on every rate in the stack). A slip in a field the model does not use at present
+  is listed as "confirm".
+- A **tick** per row. It certifies the row's content, so it is hidden as soon as anything in the row changes (it
+  returns if the change is undone), two identical rows need a tick each, and only live ticks are saved with Export
+  JSON, with the reviewer's initials. **Copy asset table** (tab-separated, to paste beside the source), **Download
+  audit CSV** (same columns and letters; money totals foot the cents shown on each row), **Print** (landscape), and
+  **Full width** for long lists.
 The eval suite checks on every scenario that the values the page shows are exactly the engine's inputs.
 [Plan and handback](docs/changes/2026-09-28-inputs-audit/).
 

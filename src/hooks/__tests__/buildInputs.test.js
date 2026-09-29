@@ -68,6 +68,15 @@ describe('buildEngineInputs', () => {
     expect(ui.map((e) => e.field)).toEqual(['stateOrd', 'beneStateLtcg']);
     expect(validateUiFields({ grantor, estate, settings, asset })).toEqual([]);
   });
+  it('a prior-gift year with no exclusion on file is reported on the year (an imported file can hold any text)', () => {
+    const withGifts = { ...estate, priorGifts: '1000000', priorGiftYear: '1990' };
+    expect(validateUiFields({ grantor, estate: withGifts, settings, asset }).map((e) => e.field)).toEqual(['priorGiftYear']);
+    expect(validateUiFields({ grantor, estate: { ...withGifts, priorGiftYear: '2025' }, settings, asset })).toEqual([]);
+    expect(validateUiFields({ grantor, estate: { ...withGifts, priorExclusionMode: 'custom', priorGiftExclusion: '5000000' }, settings, asset })).toEqual([]);
+    expect(validateUiFields({ grantor, estate: { ...estate, priorGiftYear: '1990' }, settings, asset })).toEqual([]); // no prior gifts: not used
+    const couple = { ...estate, spousePriorGifts: '1000000', spousePriorGiftYear: 'n/a' };
+    expect(validateUiFields({ grantor: { ...grantor, married: true, spouseAge: '60' }, estate: couple, settings, asset }).map((e) => e.field)).toEqual(['spousePriorGiftYear']);
+  });
   it('passes the state components and NIIT un-summed; the hook stays the single source of both stacks', () => {
     const inp = buildEngineInputs({ grantor, estate, settings, asset });
     expect(inp.stateOrd).toBeCloseTo(0.05, 12);

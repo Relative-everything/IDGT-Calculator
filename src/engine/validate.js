@@ -96,7 +96,8 @@ export function neutralSwapProfile(rE, tauOrd) {
 export function validateInputs(inp) {
   const errors = [];
   const warnings = [];
-  const err = (field, message) => errors.push({ field, message });
+  // `also`: the asset inputs an error depends on besides `field` (the ING value factor), so a caller can show it on them too
+  const err = (field, message, also) => errors.push(also ? { field, message, also } : { field, message });
   const warn = (code, data = {}) => warnings.push({ code, data });
 
   // Grantor and horizon
@@ -199,9 +200,9 @@ export function validateInputs(inp) {
   // ING value factor must stay positive on both rate profiles (model.md §8): 1 + g + (1 − τ^n_ord) y − c > 0.
   // v1's 1 + g + y > 0 does not imply it once the trust pays its own tax and fee.
   if (isNum(inp.g) && isNum(inp.y) && isNum(ing.tauNo) && isNum(ing.ingAdminRate) && 1 + inp.g + (1 - ing.tauNo) * inp.y - ing.ingAdminRate <= 0) {
-    err('ingAdminRate', 'The ING would lose all its value in a year: growth plus after-tax yield less the administration cost must exceed -100%.');
+    err('ingAdminRate', 'The ING would lose all its value in a year: growth plus after-tax yield less the administration cost must exceed -100%.', ['g', 'y']);
   } else if (inp.S > 0 && isNum(inp.gr) && isNum(inp.yr) && isNum(ing.tauNo) && isNum(ing.ingAdminRate) && 1 + inp.gr + (1 - ing.tauNo) * inp.yr - ing.ingAdminRate <= 0) {
-    err('ingAdminRate', 'After the sale the ING would lose all its value in a year: post-sale growth plus after-tax yield less the administration cost must exceed -100%.');
+    err('ingAdminRate', 'After the sale the ING would lose all its value in a year: post-sale growth plus after-tax yield less the administration cost must exceed -100%.', ['gr', 'yr']);
   }
 
   // Swap consideration: nulls mean "derive the neutral default"; validate the RESOLVED profile.

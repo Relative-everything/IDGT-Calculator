@@ -24,13 +24,13 @@ import { LIFE_TABLES, LIFE_TABLE_BY_ID, DEFAULT_LIFE_TABLE_ID } from '../src/dat
 import { makeScenarios, rng } from './scenarios/generator.js';
 import { PERSONAS, DEFAULTS } from './scenarios/personas.js';
 import { HAND_CASES, MORTALITY_HAND_CASES } from './scenarios/handcalc.js';
-import { expectedEngineInputs, BEA_BY_YEAR, DEFAULT_TABLE, AUDIT_FIELD_MEANING, AUDIT_FIELD_PARSE, auditParse } from './oracle/ui.js';
+import { expectedEngineInputs, BEA_BY_YEAR, DEFAULT_TABLE, AUDIT_FIELD_MEANING, AUDIT_FIELD_PARSE, AUDIT_ERROR_PARTS, auditParse } from './oracle/ui.js';
 import { oracleEvaluate, oracleIng, oracleRank, deathDistribution } from './oracle/evaluate.js';
 import { oracleCouple, coupleLives } from './oracle/couple.js';
 import { ssa2023FromCsv, survivorsFromRates, deathYearsFromRates, secondDeathByPairs, lifeExpectancy, SSA_2023_PDF, TERMINAL_AGE } from './oracle/lives.js';
 import { engineView, oracleView, coupleView, readPath } from './graders/views.js';
 import { runPipeline, PIPELINE_SOURCE } from './graders/pipeline.js';
-import { buildInputRegister, HOUSEHOLD_FIELDS, ASSET_FIELDS } from '../src/hooks/inputRegister.js';
+import { buildInputRegister, assetTableRows, HOUSEHOLD_FIELDS, ASSET_FIELDS, ASSET_COLUMNS } from '../src/hooks/inputRegister.js';
 
 // The deathbed-swap tile's sub-line (src/components/format.js once F3 is fixed; the pre-fix text otherwise).
 let deathbedNote = null;
@@ -331,17 +331,81 @@ export async function runEvals({ label = 'run', n, seed = DEFAULT_SEED, quick = 
     const offMeaning = everyField.find(([ref, raw, model]) => !unlisted && !sameValue(model, expectedShown(ref, raw)));
     record('L5 UI wiring', 'inputs audit: every model value shown = the planner-facing meaning of its label', !offMeaning,
       { id: c.id, ref: offMeaning?.[0], shown: offMeaning?.[2], expected: offMeaning ? expectedShown(offMeaning[0], offMeaning[1]) : undefined });
+    // ...and the derived model inputs (rate stacks, resolved prior-gift exclusions) = the oracle's, shown exactly when they apply
+    const derivedWant = { 'D.tauOrd': want.tauOrd, 'D.tauCg': want.tauCg, 'D.tauBene': want.tauBene,
+      ...(want.P > 0 ? { 'D.XP': want.XP ?? NaN } : {}), ...(want.married && want.PS > 0 ? { 'D.XPS': want.XPS ?? NaN } : {}) };
+    const derivedShown = Object.fromEntries(reg.derived.map((d) => [d.ref, d.model]));
+    const derivedOk = Object.keys(derivedShown).sort().join() === Object.keys(derivedWant).sort().join()
+      && Object.entries(derivedWant).every(([ref, w]) => sameValue(derivedShown[ref], w));
+    record('L5 UI wiring', "inputs audit: derived model inputs shown = the oracle's, exactly when they apply", derivedOk, { id: c.id, shown: derivedShown, expected: derivedWant });
     if (caseIndex % 5 === 0) {
+      // what "in use" means: changing a field the page marks unused leaves every engine input as it was; changing a number
+      // the page marks in use changes one. The statuses are the page's claim; the builder is checked against the oracle above.
+      const SECTION = { G: 'grantor', E: 'estate', S: 'settings' };
+      const ENUM_VALUES = { sex: ['male', 'female'], spouseSex: ['male', 'female'], lifeTable: LIFE_TABLES.map((t) => t.id),
+        priorExclusionMode: ['year', 'custom'], spousePriorExclusionMode: ['year', 'custom'], rankKey: ['opt', 'none'] };
+      const NUMERIC = new Set(['money', 'pct', 'int', 'number']);
+      const perturb = (row) => {
+        if (row.kind === 'bool') return !row.raw;
+        if (row.kind === 'enum') return ENUM_VALUES[row.key]?.find((v) => v !== row.raw);
+        const v = Number(String(row.raw ?? '').replace(/,/g, ''));
+        if (Number.isFinite(v)) return String(v + 1);
+        return row.status.code === 'unused' ? '7' : undefined; // an unreadable value in use already fails validation
+      };
+      const sameInputs = (a, b) => Object.keys(a).every((k) => (Array.isArray(a[k])
+        ? Array.isArray(b[k]) && a[k].length === b[k].length && a[k].every((x, i) => Object.is(x, b[k][i]))
+        : Object.is(a[k], b[k])));
+      const wrongStatus = reg.household.find((row) => {
+        const code = row.status.code;
+        const inUse = code === 'used' || code === 'scope';
+        if (code !== 'unused' && !(inUse && NUMERIC.has(row.kind))) return false; // 'label' rows move the display only
+        const next = perturb(row);
+        if (next === undefined) return false;
+        const sec = SECTION[row.ref[0]];
+        const moved = !sameInputs(got, buildEngineInputs({ ...state, [sec]: { ...state[sec], [row.key]: next } }));
+        return code === 'unused' ? moved : !moved;
+      });
+      record('L5 UI wiring', 'inputs audit: a field marked "not used" moves no engine input, a number marked in use moves one', !wrongStatus,
+        { id: c.id, ref: wrongStatus?.ref, status: wrongStatus?.status.code });
+      // an error on a combined model input shows on every typed field that feeds it (the oracle's list of parts)
+      const misrouted = [];
+      for (const [sec, key, engineKey] of [['grantor', 'fedOrd', 'tauOrd'], ['grantor', 'fedLtcg', 'tauCg'], ['estate', 'beneFedLtcg', 'tauBene']]) {
+        const st = { grantor: c.grantor, estate: c.estate, settings: c.settings, [sec]: { ...c[sec], [key]: '99' } };
+        const ui = validateUiFields({ ...st, asset: c.asset });
+        const errs = ui.length ? ui : engine.validateInputs(buildEngineInputs({ ...st, asset: c.asset })).errors;
+        if (!errs.some((e) => e.field === engineKey)) continue;
+        const r = buildInputRegister({ ...st, assets: [{ ...c.asset, id: 'a1' }], perAsset: [{ id: 'a1', name: 'a1', errors: errs, warnings: [] }] });
+        const flagged = new Set(r.flags.filter((f) => f.code === 'INVALID').map((f) => f.ref));
+        const missing = AUDIT_ERROR_PARTS[engineKey](st).filter((ref) => !flagged.has(ref));
+        if (missing.length) misrouted.push(`${engineKey}: ${missing.join(' ')}`);
+      }
+      record('L5 UI wiring', 'inputs audit: an error on a combined rate shows on every field that feeds it', misrouted.length === 0, { id: c.id, misrouted });
       // a tick certifies the checked values: it holds on them and clears when any value in the row changes
       const ticks = { [reg.assets[0].tickKey]: { at: '2026-09-28' } };
       const kept = buildInputRegister({ grantor: c.grantor, estate: c.estate, settings: c.settings, assets: [c.asset], audit: { ticks } }).assets[0].verified;
       const survived = ASSET_FIELDS.filter((f) => buildInputRegister({ grantor: c.grantor, estate: c.estate, settings: c.settings,
         assets: [{ ...c.asset, [f.key]: `${c.asset[f.key] ?? ''}1` }], audit: { ticks } }).assets[0].verified).map((f) => f.key);
       record('L5 UI wiring', 'inputs audit: a tick holds on the checked values and clears when any value in its row changes', kept && survived.length === 0, { id: c.id, kept, survived });
+      // a double entry needs its own tick: ticking the first of two identical rows leaves the second unverified
+      const twins = buildInputRegister({ grantor: c.grantor, estate: c.estate, settings: c.settings, assets: [c.asset, { ...c.asset, id: 'twin' }], audit: { ticks } });
+      record('L5 UI wiring', 'inputs audit: two identical asset rows need a tick each', twins.assets[0].verified && !twins.assets[1].verified,
+        { id: c.id, verified: twins.assets.map((r) => r.verified) });
+      // the totals row foots the cells shown: every money total = the sum of that column's cells, in whole cents
+      const three = buildInputRegister({ grantor: c.grantor, estate: c.estate, settings: c.settings, assets: [c.asset, { ...c.asset, id: 'b' }, { ...c.asset, id: 'c' }] });
+      const table = assetTableRows(three, 'model');
+      const notFooting = ['fmv', 'basis', 'annualExclusions', 'unrealizedGain', 'giftValue', 'taxableGift'].filter((key) => {
+        const i = ASSET_COLUMNS.findIndex((col) => col.key === key);
+        const cells = table.rows.map((r) => r[i]);
+        if (cells.some((x) => x === '')) return false;
+        const cents = cells.reduce((a, x) => a + Math.round(Number(x) * 100), 0);
+        return Number(table.totals[i]) !== cents / 100;
+      });
+      record('L5 UI wiring', 'inputs audit: every money total foots the cells shown (SUM of the pasted column = the totals row)', notFooting.length === 0, { id: c.id, notFooting });
       // an unreadable cell is left out of a control total and counted, never read as 0
       const two = buildInputRegister({ grantor: c.grantor, estate: c.estate, settings: c.settings, assets: [c.asset, { ...c.asset, basis: 'n/a', fmv: 'tbd' }] });
-      const okTotals = two.totals.count === 2 && two.totals.B0.skipped === 1 && sameValue(two.totals.B0.sum, got.B0)
-        && two.totals.FMV.skipped === 1 && sameValue(two.totals.FMV.sum, got.FMV);
+      const toCents = (v) => Math.round(v * 100) / 100; // totals foot the cent-rounded lines
+      const okTotals = two.totals.count === 2 && two.totals.B0.skipped === 1 && sameValue(two.totals.B0.sum, toCents(got.B0))
+        && two.totals.FMV.skipped === 1 && sameValue(two.totals.FMV.sum, toCents(got.FMV));
       record('L5 UI wiring', 'inputs audit: an unreadable value is left out of a control total and counted', okTotals, { id: c.id, totals: { B0: two.totals.B0, FMV: two.totals.FMV } });
     }
     const uiErrors = validateUiFields(state);

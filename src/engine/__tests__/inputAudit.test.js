@@ -31,6 +31,12 @@ describe('controlTotals, shareOfTotal, balanceSheetTieOut', () => {
     const t = controlTotals([{ a: 1, b: 2 }, { a: NaN, b: 3 }, { a: 4, b: undefined }], ['a', 'b']);
     expect(t).toEqual({ count: 3, a: { sum: 5, skipped: 1 }, b: { sum: 5, skipped: 1 } });
   });
+  it('with cents, a column foots its cent-rounded lines exactly (hand case: 3 × 667.00667 shown as 667.01 = 2001.03)', () => {
+    const rows = [{ a: 667.00667 }, { a: 667.00667 }, { a: 667.00667 }, { a: 'n/a' }];
+    expect(controlTotals(rows, ['a'], { cents: true }).a).toEqual({ sum: 2001.03, skipped: 1 });
+    expect(controlTotals(rows, ['a']).a.sum).toBeCloseTo(2001.02001, 9); // unrounded: prints as 2001.02, off by a cent
+    expect(controlTotals([{ a: 0.1 }, { a: 0.2 }], ['a'], { cents: true }).a.sum).toBe(0.3); // whole cents: no 0.30000000000000004
+  });
   it('share is null without a positive total; the tie-out adds the other estate to the candidates', () => {
     expect(shareOfTotal(5, 20)).toBe(0.25);
     expect(shareOfTotal(5, 0)).toBeNull();

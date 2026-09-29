@@ -1,4 +1,4 @@
-import { ASSET_COLUMNS, assetTableRows } from '../../hooks/inputRegister.js';
+import { ASSET_COLUMNS, assetTableRows, matchesFilter } from '../../hooks/inputRegister.js';
 import FlagChips from './FlagChips.jsx';
 import TickBox from './TickBox.jsx';
 import { SEVERITY_CELL, statusText, worstSeverity } from './auditLabels.js';
@@ -18,20 +18,20 @@ const isNumeric = (c) => c.kind && c.kind !== 'text';
  */
 export default function AssetRegister({ register, mode, filter, onTick }) {
   const { header, rows, totals } = assetTableRows(register, mode);
-  const shown = register.assets.map((r, i) => ({ r, cells: rows[i] })).filter(({ r }) => (
-    filter === 'unverified' ? !r.verified : filter === 'flagged' ? r.flags.length > 0 : true));
+  const shown = register.assets.map((r, i) => ({ r, cells: rows[i] })).filter(({ r }) => matchesFilter(r, filter));
   return (
+    <>
     <div className="scroll-x rounded-md border border-line print:overflow-visible">
       <table className="tabular w-full min-w-[1480px] border-collapse text-[12.5px] print:min-w-0 print:text-[9px]">
         <thead>
           <tr className="border-b border-line bg-surface-2 font-mono text-[10.5px] text-muted">
             {ASSET_COLUMNS.map((c) => (
-              <th key={c.key} scope="col" className={`px-2 py-0.5 font-normal ${isNumeric(c) ? 'text-right' : 'text-left'} ${STICKY[c.key] ?? ''} ${STICKY[c.key] ? 'bg-surface-2' : ''} print:static print:shadow-none`}>{c.letter}</th>
+              <th key={c.key} scope="col" className={`px-2 py-0.5 font-normal ${isNumeric(c) ? 'text-right' : 'text-left'} ${STICKY[c.key] ?? ''} ${STICKY[c.key] ? 'bg-surface-2' : ''} print:static print:min-w-0 print:px-1 print:text-[8px] print:shadow-none`}>{c.letter}</th>
             ))}
           </tr>
           <tr className="border-b border-line-strong text-[11.5px] text-ink-2">
             {ASSET_COLUMNS.map((c, i) => (
-              <th key={c.key} scope="col" className={`px-2 py-1.5 align-bottom font-medium ${isNumeric(c) ? 'text-right' : 'text-left'} ${c.derived ? 'italic text-muted' : ''} ${STICKY[c.key] ?? ''} ${MIN_WIDTH[c.key] ?? ''} ${STICKY[c.key] ? 'bg-surface' : ''} print:static print:min-w-0 print:shadow-none`}>
+              <th key={c.key} scope="col" className={`px-2 py-1.5 align-bottom font-medium ${isNumeric(c) ? 'text-right' : 'text-left'} ${c.derived ? 'italic text-muted' : ''} ${STICKY[c.key] ?? ''} ${MIN_WIDTH[c.key] ?? ''} ${STICKY[c.key] ? 'bg-surface' : ''} print:static print:min-w-0 print:px-1 print:text-[8.5px] print:shadow-none`}>
                 {header[i]}
               </th>
             ))}
@@ -39,12 +39,12 @@ export default function AssetRegister({ register, mode, filter, onTick }) {
         </thead>
         <tbody>
           {shown.map(({ r, cells }) => (
-            <tr key={r.id} className="border-b border-line align-top">
+            <tr key={r.id} className="border-b border-line align-top print:break-inside-avoid">
               {ASSET_COLUMNS.map((c, i) => {
-                if (c.key === 'flags') return <td key={c.key} className={`px-2 py-1 ${MIN_WIDTH.flags} print:min-w-0`}><FlagChips flags={r.flags} /></td>;
+                if (c.key === 'flags') return <td key={c.key} className={`px-2 py-1 ${MIN_WIDTH.flags} print:min-w-0 print:px-1`}><FlagChips flags={r.flags} /></td>;
                 if (c.key === 'verified') {
                   return (
-                    <td key={c.key} className={`bg-surface px-2 py-1 ${STICKY.verified} print:static print:min-w-0 print:shadow-none`}>
+                    <td key={c.key} className={`bg-surface px-2 py-1 ${STICKY.verified} print:static print:min-w-0 print:px-1 print:shadow-none`}>
                       <TickBox id={`tick-${r.id}`} label={`Asset ${r.row}, ${r.name}: matches the source`} checked={r.verified} at={r.tickedAt}
                         onChange={(on) => onTick(r.tickKey, r.tickValue, on)} />
                     </td>
@@ -58,7 +58,7 @@ export default function AssetRegister({ register, mode, filter, onTick }) {
                   <td key={c.key} title={title || undefined}
                     className={`px-2 py-1 ${isNumeric(c) ? 'whitespace-nowrap text-right font-mono' : 'text-left'} ${c.key === 'row' ? 'text-muted' : ''}
                       ${c.derived ? 'text-ink-2' : 'text-ink'} ${unused ? 'text-muted opacity-60' : ''} ${worst ? SEVERITY_CELL[worst] : ''}
-                      ${STICKY[c.key] ?? ''} ${MIN_WIDTH[c.key] ?? ''} ${STICKY[c.key] && !worst ? 'bg-surface' : ''} print:static print:min-w-0 print:shadow-none`}>
+                      ${STICKY[c.key] ?? ''} ${MIN_WIDTH[c.key] ?? ''} ${STICKY[c.key] && !worst ? 'bg-surface' : ''} print:static print:min-w-0 print:px-1 print:shadow-none`}>
                     {cells[i] !== '' || !cell || String(cell.raw ?? '').trim() === ''
                       ? cells[i]
                       : <span className="font-sans text-xs italic">not a number</span>}
@@ -74,11 +74,15 @@ export default function AssetRegister({ register, mode, filter, onTick }) {
         <tfoot>
           <tr className="border-t-2 border-line-strong bg-surface-2 font-medium">
             {ASSET_COLUMNS.map((c, i) => (
-              <td key={c.key} className={`px-2 py-1.5 ${isNumeric(c) ? 'whitespace-nowrap text-right font-mono' : 'text-left'} ${STICKY[c.key] ?? ''} ${STICKY[c.key] ? 'bg-surface-2' : ''} print:static print:shadow-none`}>{totals[i]}</td>
+              <td key={c.key} className={`px-2 py-1.5 ${isNumeric(c) ? 'whitespace-nowrap text-right font-mono' : 'text-left'} ${STICKY[c.key] ?? ''} ${STICKY[c.key] ? 'bg-surface-2' : ''} print:static print:min-w-0 print:px-1 print:shadow-none`}>{totals[i]}</td>
             ))}
           </tr>
         </tfoot>
       </table>
     </div>
+    {filter !== 'all' && (
+      <p className="mt-2 text-xs text-ink-2">{shown.length} of {register.assets.length} asset rows shown. The totals row covers all {register.assets.length}.</p>
+    )}
+    </>
   );
 }

@@ -23,12 +23,14 @@ dist-ssr
 *.sln
 *.sw?
 
-# ad hoc eval runs; pass1 / pass2 / holdout (single-life suite) and pass3 / holdout3 / mutation (life tables and
-# married couples) are the committed records
+# ad hoc eval runs; pass1 / pass2 / holdout (single-life suite), pass3 / holdout3 (life tables and married couples) and
+# pass4 / holdout4 / mutation (inputs audit) are the committed records
 evals/results/*.json
 !evals/results/pass1.json
 !evals/results/pass2.json
 !evals/results/holdout.json
 !evals/results/pass3.json
 !evals/results/holdout3.json
+!evals/results/pass4.json
+!evals/results/holdout4.json
 !evals/results/mutation.json

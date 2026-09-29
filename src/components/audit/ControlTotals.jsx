@@ -26,7 +26,7 @@ export default function ControlTotals({ totals, tieOut }) {
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       <div>
         <h3 className="text-sm font-semibold text-ink">Batch control totals</h3>
-        <p className="mt-0.5 text-xs text-muted">Compare with the column totals of the source. The letter is the asset-register column.</p>
+        <p className="mt-0.5 text-xs text-muted">Compare with the column totals of the source. The letter is the asset-register column. Money totals foot the cents shown on each row.</p>
         <dl className="mt-2 divide-y divide-line rounded-md border border-line text-[13px]">
           <div className="flex items-baseline justify-between gap-3 px-3 py-1.5">
             <dt className="text-ink-2">Assets (record count)</dt>
@@ -47,13 +47,20 @@ export default function ControlTotals({ totals, tieOut }) {
         <p className="mt-0.5 text-xs text-muted">Compare the total with the client's net worth on the balance sheet (e.g. the eMoney net-worth report).</p>
         <dl className="mt-2 divide-y divide-line rounded-md border border-line text-[13px]">
           <div className="grid grid-cols-[1fr_auto] items-baseline gap-3 px-3 py-1.5"><dt className="text-ink-2">Other estate (as entered)</dt><dd><Figure value={tieOut.otherEstate} /></dd></div>
-          <div className="grid grid-cols-[1fr_auto] items-baseline gap-3 px-3 py-1.5"><dt className="text-ink-2">+ Σ candidate assets at FMV</dt><dd><Figure value={tieOut.candidates} /></dd></div>
+          <div className="grid grid-cols-[1fr_auto] items-baseline gap-3 px-3 py-1.5">
+            <dt className="text-ink-2">+ Σ candidate assets at FMV
+              {tieOut.candidatesSkipped > 0 && <span className="block text-xs text-bad">{tieOut.candidatesSkipped} value{tieOut.candidatesSkipped === 1 ? '' : 's'} not a number, left out of this total</span>}
+            </dt>
+            <dd><Figure value={tieOut.candidates} /></dd>
+          </div>
           <div className="grid grid-cols-[1fr_auto] items-baseline gap-3 bg-surface-2 px-3 py-1.5 font-medium"><dt className="text-ink">= Total to compare with net worth</dt><dd><Figure value={tieOut.total} /></dd></div>
         </dl>
         <p className="mt-2 text-xs text-ink-2">
-          Each asset is priced against the other estate plus that asset alone. If the other estate already includes the
-          candidates, this total double-counts them; if it excludes them all, each asset's run leaves the others out,
-          which changes results only when the estate is near the exclusion.
+          Each asset is priced against the other estate plus that asset alone. The other estate also pays the grantor's
+          income tax on the trust's income, any gift tax and the swap consideration. If it already includes the
+          candidates, this total double-counts them. If it leaves them all out, each asset's run ignores the others:
+          results move when the estate is near the exclusion, and at any estate size a swap can look unaffordable that
+          the whole estate could pay for.
         </p>
       </div>
     </div>

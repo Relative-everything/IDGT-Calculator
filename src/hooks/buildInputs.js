@@ -29,8 +29,8 @@ export const UI_LABELS = {
   fedOrd: 'Federal ordinary rate', stateOrd: 'State ordinary rate', niit: 'NIIT',
   fedLtcg: 'Federal LTCG rate', stateLtcg: 'State LTCG rate',
   otherEstate: 'Other estate', otherEstateGrowth: 'Other-estate growth', exclusion: 'Basic exclusion', exclusionIndexing: 'Exclusion indexing',
-  priorGifts: 'Prior taxable gifts', priorGiftExclusion: 'Prior-gift exclusion', estateTaxRate: 'Estate tax rate',
-  spousePriorGifts: "Spouse's prior taxable gifts", spousePriorGiftExclusion: "Spouse's prior-gift exclusion",
+  priorGifts: 'Prior taxable gifts', priorGiftExclusion: 'Prior-gift exclusion', priorGiftYear: 'Year of prior gifts', estateTaxRate: 'Estate tax rate',
+  spousePriorGifts: "Spouse's prior taxable gifts", spousePriorGiftExclusion: "Spouse's prior-gift exclusion", spousePriorGiftYear: "Year of spouse's gifts",
   beneFedLtcg: "Heirs' federal LTCG rate", beneStateLtcg: "Heirs' state LTCG rate", yearsToSale: 'Years until heirs sell',
   discountRate: 'Discount rate', maxYears: 'Table display horizon',
   swapBasisPct: 'Consideration basis', swapGrowth: 'Consideration growth', swapYield: 'Consideration yield', swapTaxRate: 'Rate on consideration yield',
@@ -55,6 +55,13 @@ export function validateUiFields({ grantor, estate, settings, asset }) {
     if (!Number.isFinite(n)) errors.push({ field, label: UI_LABELS[field], message: `${UI_LABELS[field]} is required.` });
     else if (integer && !Number.isInteger(n)) errors.push({ field, label: UI_LABELS[field], message: `${UI_LABELS[field]} must be a whole number.` });
   };
+  // A prior-gift year must have a basic exclusion on file (the panel lists only those; an imported file can hold any text),
+  // else the exclusion the gifts are measured against is unknown.
+  const knownYear = (section, field) => {
+    if (BASIC_EXCLUSION_BY_YEAR[int(section[field])] == null) {
+      errors.push({ field, label: UI_LABELS[field], message: `${UI_LABELS[field]}: no basic exclusion on file for "${String(section[field] ?? '')}". Choose a listed year, or enter the exclusion when made.` });
+    }
+  };
   need(grantor, 'age', { integer: true });
   if (grantor.useDeathYear) need(grantor, 'deathYear', { integer: true });
   if (grantor.married) {
@@ -62,11 +69,13 @@ export function validateUiFields({ grantor, estate, settings, asset }) {
     if (grantor.useDeathYear) need(grantor, 'spouseDeathYear', { integer: true });
     need(estate, 'spousePriorGifts');
     if (parseNum(estate.spousePriorGifts) > 0 && estate.spousePriorExclusionMode === 'custom') need(estate, 'spousePriorGiftExclusion');
+    if (parseNum(estate.spousePriorGifts) > 0 && estate.spousePriorExclusionMode !== 'custom') knownYear(estate, 'spousePriorGiftYear');
   }
   for (const f of ['fedOrd', 'stateOrd', 'niit', 'fedLtcg', 'stateLtcg']) need(grantor, f);
   for (const f of ['otherEstate', 'otherEstateGrowth', 'exclusion', 'exclusionIndexing', 'priorGifts', 'estateTaxRate', 'beneFedLtcg', 'beneStateLtcg', 'yearsToSale', 'discountRate']) need(estate, f);
   need(estate, 'maxYears', { integer: true });
   if (parseNum(estate.priorGifts) > 0 && estate.priorExclusionMode === 'custom') need(estate, 'priorGiftExclusion');
+  if (parseNum(estate.priorGifts) > 0 && estate.priorExclusionMode !== 'custom') knownYear(estate, 'priorGiftYear');
   if (settings.swapCustom) for (const f of ['swapBasisPct', 'swapGrowth', 'swapYield', 'swapTaxRate']) need(settings, f);
   for (const f of ING_SETTING_FIELDS) need(settings, f);
   for (const f of ['fmv', 'discount', 'basis', 'growth', 'yield', 'annualExclusions']) need(asset, f);

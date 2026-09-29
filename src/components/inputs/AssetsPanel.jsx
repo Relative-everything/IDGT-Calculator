@@ -1,7 +1,7 @@
 import Card from '../ui/Card.jsx';
 import NumberField from '../ui/NumberField.jsx';
 import Button from '../ui/Button.jsx';
-import { newId, MAX_IMPORT_ASSETS } from '../../hooks/scenarioIO.js';
+import { newId, MAX_IMPORT_ASSETS, MAX_TEXT_FIELD_LENGTH } from '../../hooks/scenarioIO.js';
 import { parseNum } from '../../hooks/buildInputs.js';
 import { makeAsset } from '../../hooks/defaults.js';
 
@@ -16,6 +16,7 @@ function AssetCard({ asset, index, errors, onChange, onRemove, onDuplicate, canR
         <input
           aria-label="Asset name"
           value={asset.name}
+          maxLength={MAX_TEXT_FIELD_LENGTH}
           onChange={(e) => set('name')(e.target.value)}
           className="min-w-0 flex-1 rounded border border-transparent bg-transparent px-1 text-sm font-medium text-ink hover:border-line focus:border-accent focus:outline-none"
         />
@@ -27,6 +28,7 @@ function AssetCard({ asset, index, errors, onChange, onRemove, onDuplicate, canR
         <input
           id={`source-${asset.id}`}
           value={asset.source ?? ''}
+          maxLength={MAX_TEXT_FIELD_LENGTH}
           onChange={(e) => set('source')(e.target.value)}
           placeholder="e.g. Excel B7, eMoney · Schwab …1234"
           title="Where this asset's figures come from. A label for the inputs audit; never used in the calculation."
