@@ -157,7 +157,7 @@ export default function App() {
       {view === 'audit' ? (
         <ErrorBoundary>
           <InputsAudit register={register} mode={auditMode} onModeChange={setAuditMode} filter={auditFilter} onFilterChange={setAuditFilter}
-            reviewer={audit.reviewer} onReviewerChange={(reviewer) => setAudit((a) => ({ ...a, reviewer }))} onTick={tick}
+            reviewer={audit.reviewer} onReviewerChange={(reviewer) => setAudit((a) => ({ ...a, reviewer }))} ticks={audit.ticks} onTick={tick}
             onClearTicks={clearTicks} onCopy={copyAssetTable} onDownload={downloadAudit}
             onPrint={() => window.print()} printedOn={today()} wide={auditWide} onWideChange={setAuditWide} isStale={isStale} banner={mortalityBanner} />
         </ErrorBoundary>

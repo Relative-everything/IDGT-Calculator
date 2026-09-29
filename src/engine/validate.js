@@ -169,11 +169,11 @@ export function validateInputs(inp) {
   // The state component sits inside the grantor's stack next to NIIT: 0 ≤ σ ≤ τ − niit (model.md §8).
   if (inp.stateOrd != null) {
     if (!isNum(inp.stateOrd) || inp.stateOrd < 0) err('stateOrd', 'State ordinary rate cannot be negative.');
-    else if (isNum(inp.tauOrd) && inp.stateOrd > inp.tauOrd - niitForBound + 1e-12) err('stateOrd', 'State ordinary rate cannot exceed the grantor ordinary rate less NIIT.', ['tauOrd']);
+    else if (isNum(inp.tauOrd) && inp.stateOrd > inp.tauOrd - niitForBound + 1e-12) err('stateOrd', 'State ordinary rate cannot exceed the grantor ordinary rate less NIIT.');
   }
   if (inp.stateCg != null) {
     if (!isNum(inp.stateCg) || inp.stateCg < 0) err('stateCg', 'State capital-gain rate cannot be negative.');
-    else if (isNum(inp.tauCg) && inp.stateCg > inp.tauCg - niitForBound + 1e-12) err('stateCg', 'State capital-gain rate cannot exceed the grantor capital-gain rate less NIIT.', ['tauCg']);
+    else if (isNum(inp.tauCg) && inp.stateCg > inp.tauCg - niitForBound + 1e-12) err('stateCg', 'State capital-gain rate cannot exceed the grantor capital-gain rate less NIIT.');
   }
 
   // Exclusion and prior gifts
@@ -200,10 +200,15 @@ export function validateInputs(inp) {
 
   // ING value factor must stay positive on both rate profiles (model.md §8): 1 + g + (1 − τ^n_ord) y − c > 0.
   // v1's 1 + g + y > 0 does not imply it once the trust pays its own tax and fee.
-  if (isNum(inp.g) && isNum(inp.y) && isNum(ing.tauNo) && isNum(ing.ingAdminRate) && 1 + inp.g + (1 - ing.tauNo) * inp.y - ing.ingAdminRate <= 0) {
-    err('ingAdminRate', 'The ING would lose all its value in a year: growth plus after-tax yield less the administration cost must exceed -100%.', ['g', 'y']);
-  } else if (inp.S > 0 && isNum(inp.gr) && isNum(inp.yr) && isNum(ing.tauNo) && isNum(ing.ingAdminRate) && 1 + inp.gr + (1 - ing.tauNo) * inp.yr - ing.ingAdminRate <= 0) {
-    err('ingAdminRate', 'After the sale the ING would lose all its value in a year: post-sale growth plus after-tax yield less the administration cost must exceed -100%.', ['gr', 'yr']);
+  // Checked only where v1's 1 + g + y > 0 holds (otherwise that error already stands). The trust's ordinary stack is a
+  // part of the factor only when there is a yield to tax.
+  const trustStack = (y) => (y > 0 ? ['ingFedOrd', 'ingStateRate', 'niit'] : []);
+  if (isNum(inp.g) && isNum(inp.y) && isNum(ing.tauNo) && isNum(ing.ingAdminRate) && 1 + inp.g + inp.y > 0
+    && 1 + inp.g + (1 - ing.tauNo) * inp.y - ing.ingAdminRate <= 0) {
+    err('ingAdminRate', 'The ING would lose all its value in a year: growth plus after-tax yield less the administration cost must exceed -100%.', ['g', 'y', ...trustStack(inp.y)]);
+  } else if (inp.S > 0 && isNum(inp.gr) && isNum(inp.yr) && isNum(ing.tauNo) && isNum(ing.ingAdminRate) && 1 + inp.gr + inp.yr > 0
+    && 1 + inp.gr + (1 - ing.tauNo) * inp.yr - ing.ingAdminRate <= 0) {
+    err('ingAdminRate', 'After the sale the ING would lose all its value in a year: post-sale growth plus after-tax yield less the administration cost must exceed -100%.', ['gr', 'yr', ...trustStack(inp.yr)]);
   }
 
   // Swap consideration: nulls mean "derive the neutral default"; validate the RESOLVED profile.
@@ -222,7 +227,7 @@ export function validateInputs(inp) {
 
   // Exclusion must stay >= $1M in every projection year (matters only when pi < 0).
   if (inp.pi < 0 && exclusionAt({ X0: inp.X0, pi: inp.pi }, horizonYears(inp)) < MIN_EXCLUSION_FOR_FLAT_RATE) {
-    err('pi', 'A negative indexing rate drives the exclusion below $1,000,000 within the projection horizon.');
+    err('pi', 'A negative indexing rate drives the exclusion below $1,000,000 within the projection horizon (set by the age and life table, or the assumed death year).', ['X0']);
   }
   if (errors.length) return { errors, warnings };
 

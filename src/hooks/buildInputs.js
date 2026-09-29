@@ -72,6 +72,11 @@ export function validateUiFields({ grantor, estate, settings, asset }) {
     if (parseNum(estate.spousePriorGifts) > 0 && estate.spousePriorExclusionMode !== 'custom') knownYear(estate, 'spousePriorGiftYear');
   }
   for (const f of ['fedOrd', 'stateOrd', 'niit', 'fedLtcg', 'stateLtcg']) need(grantor, f);
+  // A negative federal rate is the only way a state component can exceed its stack less NIIT (state and NIIT cancel in
+  // that bound, validate.js), so it is reported here, on the field that causes it.
+  for (const f of ['fedOrd', 'fedLtcg']) {
+    if (parseNum(grantor[f]) < 0) errors.push({ field: f, label: UI_LABELS[f], message: `${UI_LABELS[f]} cannot be negative.` });
+  }
   for (const f of ['otherEstate', 'otherEstateGrowth', 'exclusion', 'exclusionIndexing', 'priorGifts', 'estateTaxRate', 'beneFedLtcg', 'beneStateLtcg', 'yearsToSale', 'discountRate']) need(estate, f);
   need(estate, 'maxYears', { integer: true });
   if (parseNum(estate.priorGifts) > 0 && estate.priorExclusionMode === 'custom') need(estate, 'priorGiftExclusion');

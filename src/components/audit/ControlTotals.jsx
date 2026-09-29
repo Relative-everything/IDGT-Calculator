@@ -11,22 +11,32 @@ const TOTALS = [
   ['Σ Valuation discount', 'discountAmount', null],
 ];
 
-function Figure({ value }) {
+function Figure({ value, kind = 'money' }) {
   return (
     <span className="flex flex-wrap items-baseline justify-end gap-x-2">
-      <span className="tabular font-mono text-[13px] text-ink">{bare(value, 'money')}</span>
+      <span className="tabular font-mono text-[13px] text-ink">{bare(value, kind)}</span>
       <span className="tabular text-xs text-muted">{fmtMoney(value)}</span>
     </span>
   );
 }
 
-/** Batch control totals and the balance-sheet tie-out; bare figures first (to match a SUM cell), formatted beside. */
-export default function ControlTotals({ totals, tieOut }) {
+// The typed columns, whose totals follow the view: as typed, or to the cent as the model reads them.
+const TYPED_COLUMNS = new Set(['FMV', 'B0', 'annualExclusions']);
+
+/**
+ * Batch control totals and the balance-sheet tie-out; bare figures first (to match a SUM cell), formatted beside. In the
+ * "as typed" view the typed columns total as typed, like the register's totals row.
+ */
+export default function ControlTotals({ totals, typedTotals, mode, tieOut }) {
+  const asTyped = (key) => mode === 'typed' && TYPED_COLUMNS.has(key) && typedTotals;
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       <div>
         <h3 className="text-sm font-semibold text-ink">Batch control totals</h3>
-        <p className="mt-0.5 text-xs text-muted">Compare with the column totals of the source. The letter is the asset-register column. Money totals foot the cents shown on each row.</p>
+        <p className="mt-0.5 text-xs text-muted">
+          Compare with the column totals of the source. The letter is the asset-register column.
+          {mode === 'typed' ? ' Typed columns total as typed; derived columns foot the cents shown on each row.' : ' Money totals foot the cents shown on each row.'}
+        </p>
         <dl className="mt-2 divide-y divide-line rounded-md border border-line text-[13px]">
           <div className="flex items-baseline justify-between gap-3 px-3 py-1.5">
             <dt className="text-ink-2">Assets (record count)</dt>
@@ -37,7 +47,7 @@ export default function ControlTotals({ totals, tieOut }) {
               <dt className="text-ink-2">{text}{col && <span className="ml-1.5 font-mono text-[11px] text-muted">col {col}</span>}
                 {totals[key].skipped > 0 && <span className="block text-xs text-bad">{totals[key].skipped} value{totals[key].skipped === 1 ? '' : 's'} not a number, left out of this total</span>}
               </dt>
-              <dd><Figure value={totals[key].sum} /></dd>
+              <dd>{asTyped(key) ? <Figure value={typedTotals[key].sum} kind="typedSum" /> : <Figure value={totals[key].sum} />}</dd>
             </div>
           ))}
         </dl>

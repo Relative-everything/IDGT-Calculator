@@ -11,7 +11,7 @@
     "scenariosRejected": 0,
     "scenariosWithAnyFailure": 0,
     "pipeline": "src/hooks/computeModel.js (the app's own function)",
-    "seconds": 127.659,
+    "seconds": 121.142,
     "totals": {
       "checks": 678,
       "failingChecks": 0,

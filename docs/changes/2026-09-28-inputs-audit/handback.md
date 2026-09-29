@@ -26,50 +26,57 @@ source documents, such as an Excel sheet or an eMoney-style balance sheet, when 
 5. **Export JSON** saves the ticks and reviewer. **Download audit CSV** or **Print** for the file.
 
 ## Pre-merge review
-Two adversarial review rounds ran before merge, each finding tried by independent skeptics.
+Three adversarial review rounds ran before merge, each finding tried by independent skeptics.
 
 | Round | Scope | Raised | Upheld | Split | Refuted |
 |---|---|---|---|---|---|
 | 1 (97 agents) | the page as first committed | 46 | 39 | 4 | 3 |
 | 2 (73 agents) | the round-1 fixes, plus a regression hunt | 43 | 33 | 1 | 9 |
+| 3 (37 agents) | the round-2 fixes, plus a regression hunt | 20 | 13 | 3 | 4 |
 
-Every upheld and split finding of both rounds was fixed. The most important:
+Every upheld and split finding of all three rounds was fixed. The most important:
 - **Ticks.** In round 1, ticking one of two identical rows verified both. The round-1 fix numbered identical rows, but
   round 2 showed the numbering let a tick pass to the other twin when one was edited or deleted. Ticks now follow the
   row id within a session and hold only while the row's content is unchanged. The file keeps content keys, since ids
-  are regenerated on import. A household row that goes out of use is no longer shown as verified anywhere.
+  are regenerated on import. A household row that goes out of use is no longer shown as verified anywhere. The Clear
+  ticks confirmation is armed for the exact tick set it was shown for, so it cannot reappear by itself.
 - **Footing.** Every total now equals the sum of the cells shown above it, in both views. Money shown to the cent is
-  totalled in whole cents, typed inputs are totalled as typed, and the tie-out foots its two lines.
+  totalled in whole cents, typed inputs are totalled as typed (to 15 significant digits, so large typed amounts keep
+  their cents), and the tie-out foots its two lines. In the "as typed" view the control totals use the same figures.
 - **Error placement.** An error now shows on exactly the fields behind it: every rate in a stack, including the trust
-  stacks and the state-rate bound. A prior-gift year with no exclusion on file is reported on the year. The ING
-  value-factor error names its asset. An exclusion error no longer spills onto unused prior-gift rows.
+  stacks. A negative federal rate is reported on the federal rate: it is the only way a state component can exceed its
+  stack less NIIT. A prior-gift year with no exclusion on file is reported on the year. The ING value-factor error
+  names its asset and shows on the fee, the asset's growth and the trust's ordinary stack. A negative indexing rate
+  that breaks the $1M floor also shows on the exclusion it indexes. An exclusion error no longer spills onto unused
+  prior-gift rows.
 - **Paste and CSV hardening.** Formula injection is blocked in the pasted table and in CSV, including after a `;`
   that a semicolon-locale Excel splits on. Free text that a spreadsheet would read as a number, date or boolean stays
-  text.
+  text. A signed or formatted number in a numeric column (-2%, +2,500,000) stays a number. An amount grouped with
+  spaces is flagged, because a spreadsheet pastes it as text.
 - **Print and dates.** Pages are landscape, and the audit tables are not clipped. The print rule is scoped to the audit
   page, so the Analysis print is unchanged. The flags list prints in full, and rows are not split across pages. Tick
   dates use the reviewer's local date.
 - **Evals.** Five checks were added:
   - the derived rows are compared with the oracle;
   - every in-use, not-used and display-only status is checked metamorphically;
-  - ten error-routing cases are checked by exact set equality;
+  - fourteen error-routing cases are checked by exact set equality;
   - ticks are checked to follow their row;
   - footing is checked in both views, on rows with sub-cent parts.
 
-  Mutations M19–M23 cover the new mechanisms.
+  The status check requires a real model input to move for a field marked in use, and footing is compared exactly.
+  Mutations M19–M24 cover the new mechanisms.
 
 ## Verification
-Final tree (after both review rounds):
+Final tree (after all three review rounds):
 
 | Check | Result |
 |---|---|
-| Unit tests (`npm test -- --run`) | 323 passed, 1 skipped |
+| Unit tests (`npm test -- --run`) | 329 passed, 1 skipped |
 | Lint (`npm run lint`) | clean |
 | Quick eval (`node evals/run.mjs --quick`) | 674/674 checks, 32,726 assertions |
 | Full eval, seed 20260927 (`results/pass4.json`) | 676/676 checks, 215,786 assertions |
 | Hold-out eval, seed 4242, 2,000 scenarios (`results/holdout4.json`) | 678/678 checks, 285,606 assertions |
-| Mutation testing, full run (`results/mutation.json`) | 23/23 caught by the evals, 22/23 by the unit tests |
-| Mutation M23 after its unit test (`results/mutation-subset.json`) | caught by both |
+| Mutation testing (`results/mutation.json`, baseline green) | 24/24 caught by the evals and 24/24 by the unit tests |
 
 Browser check (Chromium, production build, reviewer time zone America/Los_Angeles):
 - Ticking the first of two identical rows left the second unverified. Editing the ticked twin hid its tick without
@@ -85,6 +92,11 @@ Browser check (Chromium, production build, reviewer time zone America/Los_Angele
   row sits under the rows, and no row splits across pages.
 - With the unverified legacy table selected, the warning banner prints on the first landscape page. The Analysis
   page still prints portrait.
+- The Clear ticks confirmation appeared only when clicked. Ticking another row, unticking, or Reset disarmed it, and
+  it did not come back by itself. Focus moved to Confirm when armed and back to Clear ticks on Cancel.
+- A typed FMV of $12,345,678,901.23 kept its cents in the typed totals row and in the control totals.
+- A negative federal rate was flagged on the federal rate only. An FMV typed as "3 000 000" raised the space-grouping
+  flag.
 - There was no page-level horizontal scroll at 390 px and no console errors.
 
 ## Limits

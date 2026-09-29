@@ -34,13 +34,15 @@ function Progress({ progress }) {
  * The inputs audit page: every input as bare data with its reference, the batch control totals, data-entry flags and a
  * tick per row. The register comes from the hook (inputRegister.js); this page only lays it out.
  */
-export default function InputsAudit({ register, mode, onModeChange, filter, onFilterChange, reviewer, onReviewerChange, onTick, onClearTicks, onCopy, onDownload, onPrint, printedOn, wide, onWideChange, isStale, banner }) {
-  // The Clear ticks confirmation is armed for the tick set it was shown for: any tick change disarms it.
-  const tickState = `${register.progress.verified}:${register.progress.hidden}`;
+export default function InputsAudit({ register, mode, onModeChange, filter, onFilterChange, reviewer, onReviewerChange, ticks, onTick, onClearTicks, onCopy, onDownload, onPrint, printedOn, wide, onWideChange, isStale, banner }) {
+  // The Clear ticks confirmation is armed for the tick set it was shown for (the object itself: every tick, import or
+  // reset makes a new one), so any tick change disarms it and it never comes back by itself.
   const [armedFor, setArmedFor] = useState(null);
+  const [focusClear, setFocusClear] = useState(false);
   const modeHint = MODES.find((m) => m.value === mode)?.hint;
   const anyTicks = register.progress.verified + register.progress.hidden > 0;
-  const confirmClear = anyTicks && armedFor === tickState;
+  const confirmClear = anyTicks && armedFor === ticks;
+  const disarm = () => { setArmedFor(null); setFocusClear(true); };
   const shownAssets = register.assets.filter((r) => matchesFilter(r, filter)).length;
   const shownHousehold = register.household.filter((r) => matchesFilter(r, filter)).length;
   const filterText = FILTERS.find((f) => f.value === filter)?.label.toLowerCase();
@@ -88,11 +90,12 @@ export default function InputsAudit({ register, mode, onModeChange, filter, onFi
             {confirmClear
               ? (
                 <>
-                  <Button variant="danger" onClick={() => { onClearTicks(); setArmedFor(null); }}>Confirm: clear all ticks</Button>
-                  <Button variant="ghost" onClick={() => setArmedFor(null)}>Cancel</Button>
+                  <Button variant="danger" autoFocus onClick={() => { onClearTicks(); disarm(); }}>Confirm: clear all ticks</Button>
+                  <Button variant="ghost" onClick={disarm}>Cancel</Button>
                 </>
               )
-              : <Button variant="ghost" onClick={() => setArmedFor(tickState)} disabled={!anyTicks} title="Removes every tick, including hidden ones">Clear ticks</Button>}
+              : <Button variant="ghost" autoFocus={focusClear} onClick={() => { setArmedFor(ticks); setFocusClear(false); }} disabled={!anyTicks} title="Removes every tick, including hidden ones">Clear ticks</Button>}
+            <span role="status" aria-live="polite" className="sr-only">{confirmClear ? 'Confirm to clear all ticks, or cancel.' : ''}</span>
           </div>
         </div>
         <p className="mt-3 text-xs text-muted print:hidden">
@@ -104,7 +107,7 @@ export default function InputsAudit({ register, mode, onModeChange, filter, onFi
       <AuditFlags flags={register.flags} />
 
       <Card title="Control totals">
-        <ControlTotals totals={register.totals} tieOut={register.tieOut} />
+        <ControlTotals totals={register.totals} typedTotals={register.typedTotals} mode={mode} tieOut={register.tieOut} />
       </Card>
 
       <Card title="Asset register" subtitle="Laid out like a sheet: in the CSV and the copied table, asset #n is on row n + 1 (row 1 is the header) and every column keeps its letter. Italic columns are derived by the model; dimmed cells are not used.">

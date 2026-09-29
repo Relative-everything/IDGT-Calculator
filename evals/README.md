@@ -4,7 +4,7 @@
 npm run eval                                   # full: 27 personas + 1,500-scenario sweep, ≈ 1.5 min
 node evals/run.mjs --label holdout4 --seed 4242 --n 2000
 node evals/run.mjs --quick                     # ≈ 30 s; also runs inside `npm test` (evals/evals.test.js)
-node evals/mutation.mjs                        # grade the suite: 23 injected defects, ≈ 25 min
+node evals/mutation.mjs                        # grade the suite: 24 injected defects, ≈ 50 min
 ```
 Results land in `evals/results/<label>.json` (scorecard, every failing check with its first examples, blocked
 checks, discontinuities found, per-tag failure rates, the control-by-control wiring table). Committed runs:
@@ -41,7 +41,7 @@ environment blocks docs.anthropic.com). Each principle maps to a mechanism here:
 | **L2 oracle agreement** (`oracle/`) | every scenario: derived gift facts, horizon, q_t, the NPV-by-swap-year curve and feasibility, s\*, NPV(none), NPV(s\*), deathbed value, efficiency ratios, 14 ledger columns per death year for no swap and s\*, and the ING NPV, Δ versus the IDGT, verdict and ledger. Married couples add both lives' horizons and death-year probabilities, the second-death distribution, and four more ledger columns (first-death tax, DSUE with and without the gift, probability the grantor died first) — every row an expectation given the year of the second death | engine vs oracle |
 | **L3 invariants & theorems** | NPV(s\*) ≥ NPV(none); components sum to NPV; rows reproduce the NPV; the ING bridge closes; a swap cannot affect earlier deaths; Σq = 1; warnings fire iff their condition holds (illiquidity, built-in loss, fee-driven liquidation, portability off, first-death tax, spouse's gift tax, …); what the UI says about the deathbed value is true. Married: Σq^G = Σq^S = Σq^L = 1; E[second death] ≥ each life's; the gift never raises the DSUE; 0 ≤ P(grantor first) ≤ 1 | logical |
 | **L4 metamorphic** | ×3 every dollar input ⇒ ×3 every NPV; toggles that must be inert in a configuration are inert (discount-at-death with no discount, sale toggles with no sale, prior-gift exclusion with no prior gifts, neutral custom swap ≡ default, ING fields never touch the IDGT, display horizon never touches NPVs, NY/CA flag at 0% state, spouse fields for a single grantor); married ≡ single identities (spouse certain to die first without portability ≡ the single ledger; with portability ≡ a single grantor whose exclusion is raised by the spouse's DSUE); **discontinuity scans**: NPV(none) and the ING NPV are continuous in 14 continuous inputs (married: 12, incl. the spouse's gifts and their exclusion) — a jump that survives bisection to a 1e-12-wide interval is a defect | relational |
-| **L5 UI wiring** | every UI field mapped to the engine exactly as its label and tooltip say (independent mapping in `oracle/ui.js`, the default life table derived from the source CSV); ≈ 90 controls each moved on a state where it should matter (or must not) through the app's own pipeline (`src/hooks/computeModel.js`), and the moved state re-checked against the oracle; the life expectancies and table flag the grantor panel shows; portfolio ranking under both rank keys, single and married. **Inputs audit page** (2026-09-28): on every scenario the value it shows for each field equals the engine input and the planner-facing meaning, its derived rows (rate stacks, resolved prior-gift exclusions) equal the oracle's, and its taxable gift equals the engine's U_g; the source-ref field is a label only. On every fifth scenario: every in-use / not-used / display-only status is checked metamorphically (a not-used field moves no engine input; an in-use one moves one, save listed no-ops; a display-only one moves only display inputs); ten injected validation errors each show on exactly the fields behind them; a tick holds on its row's values, stays with its row when an identical row is edited or deleted, and never shows on a row not in use; totals foot the cells shown in both views, on rows with sub-cent parts; unreadable cells are counted, never read as 0 | sensitivity + oracle |
+| **L5 UI wiring** | every UI field mapped to the engine exactly as its label and tooltip say (independent mapping in `oracle/ui.js`, the default life table derived from the source CSV); ≈ 90 controls each moved on a state where it should matter (or must not) through the app's own pipeline (`src/hooks/computeModel.js`), and the moved state re-checked against the oracle; the life expectancies and table flag the grantor panel shows; portfolio ranking under both rank keys, single and married. **Inputs audit page** (2026-09-28): on every scenario the value it shows for each field equals the engine input and the planner-facing meaning, its derived rows (rate stacks, resolved prior-gift exclusions) equal the oracle's, and its taxable gift equals the engine's U_g; the source-ref field is a label only. On every fifth scenario: every in-use / not-used / display-only status is checked metamorphically (a not-used field moves no engine input; an in-use one moves a model input beyond the display, save listed no-ops; a display-only one moves only display inputs); fourteen injected validation errors each show on exactly the fields behind them; a tick holds on its row's values, stays with its row when an identical row is edited or deleted, and never shows on a row not in use; totals foot the cells shown in both views, on rows with sub-cent parts; unreadable cells are counted, never read as 0 | sensitivity + oracle |
 | **L6 breakevens & data** | each breakeven's final bracket straddles a sign change of the oracle's Δ and the reported winning side matches (single and married); grid cells equal the oracle's Δ; the basic exclusion table against the revenue procedures. **Life tables:** the shipped module equals the extracted CSV value for value (720), the source PDF matches the digest the registry records, survivors rebuilt from the published q stay within one life of the published l, life expectancy from q matches the published e_x within 0.01 (ages 1–110), registry checksums; engine death-year probabilities equal the product of the published death rates at **every age 0–119, both sexes**; the second-death distribution equals the explicit double sum on a grid of 11 × 11 ages × all four sex pairings; the legacy table is flagged and the app says so | oracle + reference data |
 
 ## The clean-room oracle (`oracle/`)
@@ -84,8 +84,9 @@ digits). s\*: equal, or the engine's year is within the documented tie tolerance
 ## Mutation testing — grading the suite (`node evals/mutation.mjs`)
 A suite that passes proves little until it has been seen to fail. `mutation.mjs` injects one realistic defect at a
 time (an exact-string replacement in the source), runs the quick suite and the engine/hook unit tests, records which
-turned red, and restores the file byte for byte. A target that no longer exists in the source is reported STALE, never
-as caught. Record: `results/mutation.json`.
+turned red, and restores the file byte for byte. It first checks that both are green without any mutation, and refuses
+to grade otherwise: a red baseline would make every mutation look caught. A target that no longer exists in the source
+is reported STALE, never as caught. Record: `results/mutation.json`.
 
 | # | Injected defect (married couples and life tables) | 1st round: eval / unit | Final: eval / unit |
 |---|---|---|---|
@@ -120,14 +121,15 @@ got a hand case or persona, and the mutation was re-run to confirm it is now cau
 | M20 | the totals row sums unrounded values, so it does not foot the cells shown | — | ✓ / ✓ |
 | M21 | an error on the grantor ordinary stack is flagged on the federal rate only | — | ✓ / ✓ |
 | M22 | a ticked household row stays verified after it goes out of use | — | ✓ / ✓ |
-| M23 | the prior-gift year is marked in use although the custom exclusion is | — | ✓ / **✗** → ✓ |
-| | **caught, all 23** | | **23 / 22** in the full run; **23 / 23** after the M23 unit test |
+| M23 | the prior-gift year is marked in use although the custom exclusion is | ✓ / **✗** | ✓ / ✓ |
+| M24 | the grantor's age is marked in use beside assumed death years (display only there) | — | ✓ / ✓ |
+| | **caught** | | **24 / 24** of 24 |
 
 The eval misses on M15, M17 and M18 came from a circular check (the page's own catalog was used as the expected
 mapping) and from mechanisms no scenario exercised; the suite now reads the expected meaning from an independent table
-(`oracle/ui.js`) and drives ticks and unreadable cells directly. M19–M23 were added after the pre-merge review. The
-unit tests missed M23 in the full run (`results/mutation.json`); a status test was added and a re-run of M23 alone
-(`results/mutation-subset.json`) shows it caught by both.
+(`oracle/ui.js`) and drives ticks and unreadable cells directly. M19–M24 were added during the pre-merge reviews; the
+unit tests first missed M23, and a status test was added. In the final run (`results/mutation.json`, green baseline)
+each of the 24 is caught by both layers, each audit mutation by the check written for it.
 
 ## Extending
 Add a hand case to `scenarios/handcalc.js` for any new mechanism before building it; add its inputs to the generator's

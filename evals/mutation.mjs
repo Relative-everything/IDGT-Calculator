@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 // Mutation testing — grades the eval suite and the unit tests themselves (evals/README.md, "Grade the suite itself").
 //
-//   node evals/mutation.mjs            # every mutation (≈ 25 s each)
+//   node evals/mutation.mjs            # every mutation (≈ 2 min each: the quick suite and the unit tests)
 //   node evals/mutation.mjs M05 M10    # a subset
 //
 // Each mutation injects ONE realistic defect into the source (a single exact-string replacement), runs the quick eval
 // suite and the engine/hook unit tests, records whether each turned red, and restores the file byte for byte (also on
-// failure or Ctrl-C). A mutation whose target string is no longer in the source is reported as STALE, never as caught:
+// failure or Ctrl-C). The unmutated suite must be green first (checked at start). A mutation whose target string is no
+// longer in the source is reported as STALE, never as caught:
 // update the target when the code it guards changes. Results: evals/results/mutation.json (the committed record of a
 // full run); a subset run writes evals/results/mutation-subset.json.
 
@@ -69,10 +70,24 @@ export const MUTATIONS = [
     'const verified = Boolean(tick) && tick.v === tickValue && isAuditable(status);', 'const verified = Boolean(tick) && tick.v === tickValue;'],
   ['M23', "the prior-gift year is marked in use although the custom exclusion is", 'src/hooks/inputRegister.js',
     "s.estate.priorExclusionMode === 'custom' ? unused('custom exclusion entered') : used()) },", "s.estate.priorExclusionMode === 'custom' ? used() : used()) },"],
+  ['M24', "the grantor's age is marked in use beside assumed death years (it is display only there)", 'src/hooks/inputRegister.js',
+    "engine: 'age',\n    use: (s) => (s.grantor.useDeathYear ? label('ages on the ledger rows only (assumed death years)') : used()) },",
+    "engine: 'age',\n    use: () => used() },"],
 ];
 
 const only = new Set(process.argv.slice(2));
 const run = (cmd, args) => spawnSync(cmd, args, { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+const UNIT_TESTS = ['vitest', 'run', 'src/engine/__tests__/', 'src/hooks/__tests__/'];
+
+// A mutation counts as caught only if the same suite is green without it: a red baseline would make every mutation
+// look caught. Check it first and refuse to grade (and to write a record) if it is red.
+const baseEval = run('node', ['evals/run.mjs', '--quick', '--label', 'mutation-baseline']);
+const baseUnit = run('npx', UNIT_TESTS);
+if (baseEval.status !== 0 || baseUnit.status !== 0) {
+  console.error(`Baseline is red (eval exit ${baseEval.status}, unit tests exit ${baseUnit.status}): fix it before grading mutations.`);
+  console.error((baseEval.stdout ?? '').split('Failing checks:')[1]?.slice(0, 2000) ?? '');
+  process.exit(2);
+}
 const results = [];
 let restore = null;
 process.on('SIGINT', () => { if (restore) restore(); process.exit(130); });
@@ -89,7 +104,7 @@ for (const [id, defect, file, target, replacement] of MUTATIONS) {
     writeFileSync(path, original.replace(target, replacement));
     const ev = run('node', ['evals/run.mjs', '--quick', '--label', 'mutation-run']);
     const failing = [...(ev.stdout ?? '').matchAll(/^\s+\[(L\d[^\]]*)\] (.+?): (\d+) fail \/ (\d+)$/gm)].map((m) => ({ layer: m[1], check: m[2], fail: Number(m[3]) }));
-    const ut = run('npx', ['vitest', 'run', 'src/engine/__tests__/', 'src/hooks/__tests__/']);
+    const ut = run('npx', UNIT_TESTS);
     const tests = /Tests\s+(.*)/.exec((ut.stdout ?? '') + (ut.stderr ?? ''))?.[1]?.trim() ?? null;
     const rec = { id, defect, file, caughtByEval: ev.status !== 0, evalFailingChecks: failing.length, evalExamples: failing.slice(0, 5), caughtByUnit: ut.status !== 0, unitTests: tests, seconds: (Date.now() - t0) / 1000 };
     results.push(rec);

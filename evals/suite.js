@@ -366,8 +366,9 @@ export async function runEvals({ label = 'run', n, seed = DEFAULT_SEED, quick = 
         const moved = movedKeys(got, buildEngineInputs({ ...state, [sec]: { ...state[sec], [row.key]: next } }));
         const code = row.status.code;
         if (code === 'unused') return moved.length > 0;
-        if (code === 'label') return moved.some((k) => !AUDIT_DISPLAY_KEYS[k]?.(got));
-        return moved.length === 0 && !AUDIT_INERT_IN_USE[row.ref]?.(state);
+        const movesModel = moved.some((k) => !AUDIT_DISPLAY_KEYS[k]?.(got));
+        if (code === 'label') return movesModel;
+        return !movesModel && !AUDIT_INERT_IN_USE[row.ref]?.(state); // in use: something beyond the display must move
       });
       record('L5 UI wiring', 'inputs audit: every "in use" / "not used" / "display only" status matches what the value moves', !wrongStatus,
         { id: c.id, ref: wrongStatus?.ref, status: wrongStatus?.status.code });
@@ -377,9 +378,10 @@ export async function runEvals({ label = 'run', n, seed = DEFAULT_SEED, quick = 
       for (const rc of AUDIT_ROUTING_CASES) {
         if (rc.when && !rc.when(state)) continue;
         const st = { grantor: { ...c.grantor, ...rc.patch.grantor }, estate: { ...c.estate, ...rc.patch.estate }, settings: { ...c.settings, ...rc.patch.settings } };
-        const ui = validateUiFields({ ...st, asset: c.asset });
-        const errs = ui.length ? ui : engine.validateInputs(buildEngineInputs({ ...st, asset: c.asset })).errors;
-        const r = buildInputRegister({ ...st, assets: [{ ...c.asset, id: 'a1' }], perAsset: [{ id: 'a1', name: 'a1', errors: errs, warnings: [] }] });
+        const asset = { ...c.asset, ...rc.patch.asset, id: 'a1' };
+        const ui = validateUiFields({ ...st, asset });
+        const errs = ui.length ? ui : engine.validateInputs(buildEngineInputs({ ...st, asset })).errors;
+        const r = buildInputRegister({ ...st, assets: [asset], perAsset: [{ id: 'a1', name: 'a1', errors: errs, warnings: [] }] });
         const flagged = [...new Set(r.flags.filter((f) => f.code === 'INVALID').map((f) => f.ref))].sort().join(' ');
         const expected = [...new Set(rc.parts(st))].sort().join(' ');
         if (flagged !== expected) misrouted.push(`${rc.name}: shown on [${flagged}], expected [${expected}]`);
@@ -409,11 +411,13 @@ export async function runEvals({ label = 'run', n, seed = DEFAULT_SEED, quick = 
       };
       const twinsOk = twinCases.tickedFirst === 'true,false' && twinCases.editedFirst === 'false,false' && twinCases.deletedFirst === 'false';
       record('L5 UI wiring', 'inputs audit: a tick stays with its row (identical rows need a tick each)', twinsOk, { id: c.id, ...twinCases });
-      // the totals row foots the cells shown, in both views: rows with sub-cent parts, so rounding is exercised
+      // the totals row foots the cells shown, in both views: rows with sub-cent parts that do not cancel, so a total
+      // rounded after adding (3f + 0.008 → f + 0.01 more) differs from the sum of the rounded cells
       const readNumber = (x) => Number(String(x).replace(/[\s$,%]/g, ''));
       const fmv0 = readNumber(c.asset.fmv);
-      const lots = [c.asset, { ...c.asset, id: 'b', fmv: String(fmv0 + 0.004), basis: String(readNumber(c.asset.basis) + 0.006) },
-        { ...c.asset, id: 'c', fmv: String(fmv0 + 0.006), discount: '33.3' }];
+      const basis0 = readNumber(c.asset.basis);
+      const lots = [c.asset, { ...c.asset, id: 'b', fmv: String(fmv0 + 0.004), basis: String(basis0 + 0.004) },
+        { ...c.asset, id: 'c', fmv: String(fmv0 + 0.004), basis: String(basis0 + 0.004), discount: '33.3' }];
       const three = buildInputRegister({ grantor: c.grantor, estate: c.estate, settings: c.settings, assets: lots });
       const notFooting = [];
       for (const mode of ['model', 'typed']) {
@@ -422,8 +426,12 @@ export async function runEvals({ label = 'run', n, seed = DEFAULT_SEED, quick = 
           const i = ASSET_COLUMNS.findIndex((col) => col.key === key);
           const cells = table.rows.map((r) => readNumber(r[i]));
           if (cells.some((x) => !Number.isFinite(x))) continue;
-          const sum = mode === 'model' ? cells.reduce((a, x) => a + Math.round(x * 100), 0) / 100 : cells.reduce((a, x) => a + x, 0);
-          if (Math.abs(readNumber(table.totals[i]) - sum) > 1e-9 * Math.max(1, Math.abs(sum))) notFooting.push(`${mode} ${key}`);
+          // exact: the model view in whole cents; the typed view to the 15 significant digits a typed sum is shown with
+          const total = readNumber(table.totals[i]);
+          const ok = mode === 'model'
+            ? Math.round(total * 100) === cells.reduce((a, x) => a + Math.round(x * 100), 0)
+            : total === Number(cells.reduce((a, x) => a + x, 0).toPrecision(15));
+          if (!ok) notFooting.push(`${mode} ${key}`);
         }
       }
       record('L5 UI wiring', 'inputs audit: every money total foots the cells shown, in both views (SUM of the pasted column = the totals row)', notFooting.length === 0, { id: c.id, notFooting });

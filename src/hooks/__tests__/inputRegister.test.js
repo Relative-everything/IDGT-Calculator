@@ -110,6 +110,16 @@ describe('control totals and the balance-sheet tie-out', () => {
     }
     expect(assetTableRows(reg, 'typed').totals[ASSET_COLUMNS.findIndex((c) => c.key === 'fmv')]).toBe('3000.018');
   });
+  it('an "as typed" total keeps every digit the typed cells carry (to $10 billion with four decimals)', () => {
+    const st = single();
+    st.assets = [makeAsset({ name: 'Big', fmv: '12345678901.23' }), makeAsset({ name: 'A', fmv: '1' }), makeAsset({ name: 'B', fmv: '150000000.1234' })];
+    const reg = buildInputRegister(st);
+    const fmv = ASSET_COLUMNS.findIndex((c) => c.key === 'fmv');
+    expect(assetTableRows(reg, 'typed').totals[fmv]).toBe('12495678902.3534');
+    expect(assetTableRows(reg, 'model').totals[fmv]).toBe('12495678902.35');
+    const csv = registerToCsv(reg, 'typed').split('\n');
+    expect(csv.find((l) => l.startsWith('Σ Fair market value,'))).toBe('Σ Fair market value,12495678902.3534,0'); // the typed file agrees with its asset block
+  });
 });
 
 describe('data-entry flags', () => {
@@ -196,6 +206,21 @@ describe('data-entry flags', () => {
     const zero = { ...st, estate: { ...st.estate, otherEstate: '0' } };
     expect(buildInputRegister(zero).flags.filter((f) => f.code === 'SMALL_SCHEDULE').map((f) => f.severity)).toEqual(['check']);
   });
+  it('an amount grouped with spaces is read by the model but flagged: a spreadsheet pastes it as text', () => {
+    const st = single();
+    st.assets[1] = { ...st.assets[1], fmv: '3 000 000' };
+    st.assets[2] = { ...st.assets[2], fmv: '5\u00A0000\u00A0000' };
+    const reg = buildInputRegister(st);
+    expect(reg.assets[1].cells.fmv.model).toBe(3_000_000);
+    expect(reg.assets[1].cells.fmv.flags.map((f) => [f.code, f.severity])).toEqual([['SPACE_GROUPING', 'confirm']]);
+    expect(reg.assets[2].cells.fmv.flags.map((f) => f.code)).toEqual(['SPACE_GROUPING']);
+  });
+  it('an unreadable other estate does not make the whole schedule look small', () => {
+    const st = single();
+    st.estate = { ...st.estate, otherEstate: '20M' };
+    st.assets = [makeAsset({ name: 'Small', fmv: '120000' })];
+    expect(buildInputRegister(st).flags.filter((f) => f.code === 'SMALL_SCHEDULE').map((f) => f.severity)).toEqual(['confirm']);
+  });
   it('unreadable figures are compared as typed: "TBD" twice is a duplicate, "TBD" and "4M" are not', () => {
     const st = single();
     st.assets = [makeAsset({ name: 'A', fmv: 'TBD' }), makeAsset({ name: 'B', fmv: 'TBD' }), makeAsset({ name: 'C', fmv: '4M' })];
@@ -227,7 +252,9 @@ describe('validation errors land on every field that feeds them', () => {
     ['a negative sale year', (st) => { st.assets[0].saleYear = '-2'; }, ['A1.saleYear']],
     ['a prior-gift year with no exclusion on file', (st) => { st.estate.priorGifts = '1000000'; st.estate.priorGiftYear = '1990'; }, ['E.priorGiftYear']],
     ['a negative basic exclusion with no prior gifts: once, on the exclusion (not on the unused prior-gift rows)', (st) => { st.estate.exclusion = '-5'; }, ['E.exclusion']],
-    ['a negative federal rate under the state bound: every part of the stack', (st) => { st.grantor.fedOrd = '-2'; st.grantor.stateOrd = '5'; st.grantor.niit = '3.8'; }, ['G.fedOrd', 'G.niit', 'G.stateOrd']],
+    ['a negative federal rate: on the federal rate only (state and NIIT cancel in the bound it breaks)', (st) => { st.grantor.fedOrd = '-2'; }, ['G.fedOrd']],
+    ['a negative federal LTCG rate', (st) => { st.grantor.fedLtcg = '-2'; }, ['G.fedLtcg']],
+    ['a negative indexing rate below the $1M floor: the rate and the exclusion it indexes', (st) => { st.estate.exclusion = '1500000'; st.estate.exclusionIndexing = '-50'; }, ['E.exclusion', 'E.exclusionIndexing']],
     ['the trust stacks at 100% or more: the state rate the ING bears and NIIT too', (st) => { st.settings.ingStateRate = '99'; }, ['G.niit', 'S.ingFedLtcg', 'S.ingFedOrd', 'S.ingStateRate']],
     ['a negative custom prior-gift exclusion', (st) => { st.estate.priorGifts = '1000000'; st.estate.priorExclusionMode = 'custom'; st.estate.priorGiftExclusion = '-5'; }, ['E.priorGiftExclusion']],
   ])('%s', (_, patch, refs) => {
@@ -256,6 +283,13 @@ describe('validation errors land on every field that feeds them', () => {
     expect(refsOf(reg)).toEqual(['A2.growth', 'S.ingAdminRate']);
     const fee = reg.household.find((r) => r.ref === 'S.ingAdminRate').flags.find((f) => f.code === 'INVALID');
     expect(fee.message.startsWith(`Asset #2 ${st.assets[1].name}: The ING would lose`)).toBe(true);
+    // with a yield, the trust's ordinary stack is part of the factor too
+    st.assets[1] = { ...st.assets[1], growth: '-99', yield: '2' };
+    st.settings.ingAdminRate = '5';
+    expect(refsOf(buildInputRegister(withModel(st)))).toEqual(['A2.growth', 'G.niit', 'S.ingAdminRate', 'S.ingFedOrd', 'S.ingStateRate']);
+    // where growth plus yield is already -100% or less, only that error stands
+    st.assets[1] = { ...st.assets[1], growth: '-100', yield: '0' };
+    expect(refsOf(buildInputRegister(withModel(st)))).toEqual(['A2.growth']);
   });
   it('a sale after the horizon is a "confirm" on the sale year', () => {
     const st = single();
@@ -436,6 +470,20 @@ describe('exports', () => {
     const csv = registerToCsv(reg, 'typed').split('\n')[2];
     expect(csv).toContain(`"x;'=1+1;"`); // quoted, and the fragment after ';' neutralised for a ';'-separator Excel
     expect(csv).toContain(",'0042,");
+  });
+  it('a signed or formatted number in a numeric column stays a number when pasted or opened (it cannot be a formula)', () => {
+    const st = single();
+    st.assets[0] = { ...st.assets[0], growth: '-2%', fmv: '+2,500,000', basis: '-$500' };
+    const reg = buildInputRegister(st);
+    const cells = assetTableTsv(reg, 'typed').split('\n')[1].split('\t');
+    const at = (key) => cells[ASSET_COLUMNS.findIndex((c) => c.key === key)];
+    expect([at('growth'), at('fmv'), at('basis')]).toEqual(['-2%', '+2,500,000', '-$500']);
+    const csvRow = registerToCsv(reg, 'typed').split('\n')[1];
+    expect(csvRow).toContain(',"+2,500,000",');
+    expect(csvRow).toContain(',-2%,');
+    // a formula-looking value in a numeric column is still neutralised
+    st.assets[0] = { ...st.assets[0], growth: '-2+3+cmd|x' };
+    expect(assetTableTsv(buildInputRegister(st), 'typed').split('\n')[1].split('\t')[ASSET_COLUMNS.findIndex((c) => c.key === 'growth')]).toBe("'-2+3+cmd|x");
   });
   it('ticks, the reviewer and source refs survive Export/Import JSON; unknown or malformed tick keys are dropped', () => {
     const st = single();

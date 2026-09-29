@@ -312,6 +312,9 @@ function textFlags(field, raw, { unusedField = false } = {}) {
     if (text.includes(',') && !/^-?\d{1,3}(,\d{3})+(\.\d+)?$/.test(text)) {
       flags.push({ code: 'IRREGULAR_GROUPING', severity: 'check', message: `"${raw}" has commas that are not thousands separators; the model reads ${parseNum(raw)}.` });
     }
+    if (/\d[ \u00A0\u202F]+\d/.test(String(raw).trim())) {
+      flags.push({ code: 'SPACE_GROUPING', severity: 'confirm', message: `"${raw}" is grouped with spaces. The model reads ${parseNum(raw)}, but a spreadsheet reads the pasted cell as text and leaves it out of SUM(). Type ${text.replace(/,/g, '')} to match.` });
+    }
     if (/^\d{1,3}(\.\d{3})+$/.test(text)) {
       flags.push({ code: 'DOT_GROUPING', severity: 'check', message: `"${raw}" looks like digit grouping with points; the model reads ${Number.isFinite(parseNum(raw)) ? parseNum(raw) : 'no number'}. Type ${text.replace(/\./g, '')} if that is the amount.` });
     }
@@ -482,10 +485,11 @@ export function buildInputRegister({ grantor, estate, settings, assets, perAsset
   const fmvs = facts.map((f) => f.inp.FMV).filter(Number.isFinite);
   const allSmall = (vals) => vals.length > 0 && vals.every((v) => v >= 0 && v < smallLimit) && vals.some((v) => v > 0);
   if (Number.isFinite(smallLimit) && smallLimit > 0 && allSmall(fmvs)) {
-    if (!Number.isFinite(base.E0) || (base.E0 >= 0 && base.E0 < smallLimit)) {
+    // only an other estate that reads as small (blank reads as unreadable, and has its own error) makes it the whole schedule
+    if (Number.isFinite(base.E0) && base.E0 >= 0 && base.E0 < smallLimit) {
       general.push({ code: 'SMALL_SCHEDULE', severity: 'check', message: `The other estate and every fair market value are below ${limitText}. If the source schedule is in thousands, multiply each amount by 1,000.` });
     } else {
-      general.push({ code: 'SMALL_SCHEDULE', severity: 'confirm', message: `Every fair market value is below ${limitText}, while the other estate is not. If the asset schedule is in thousands, multiply each fair market value, basis and annual exclusion by 1,000.` });
+      general.push({ code: 'SMALL_SCHEDULE', severity: 'confirm', message: `Every fair market value is below ${limitText}. If the asset schedule is in thousands, multiply each fair market value, basis and annual exclusion by 1,000.` });
     }
   }
 
@@ -506,13 +510,21 @@ export function buildInputRegister({ grantor, estate, settings, assets, perAsset
 }
 
 // ---- export ---------------------------------------------------------------------------------------------------------
-/** Bare number for display and export: money to the cent, other values to 12 significant digits (no float noise). */
+// Significant digits kept when a sum of typed amounts is shown: every digit a typed cell can carry up to $10 billion with
+// four decimals, while the binary floating-point noise of the addition (beyond the 16th digit) is dropped.
+const TYPED_SUM_DIGITS = 15;
+
+/**
+ * Bare number for display and export: money to the cent; a sum of typed amounts ('typedSum') to 15 significant digits,
+ * so it foots cells shown as typed; other values to 12 significant digits (no float noise).
+ */
 export function bare(value, kind) {
   if (typeof value === 'boolean') return value ? 'true' : 'false';
   if (value == null) return '';
   if (typeof value !== 'number') return String(value);
   if (!Number.isFinite(value)) return '';
   if (kind === 'money') return String(Math.round(value * CENTS_PER_DOLLAR) / CENTS_PER_DOLLAR);
+  if (kind === 'typedSum') return String(Number(value.toPrecision(TYPED_SUM_DIGITS)));
   return String(Number(value.toPrecision(12)));
 }
 
@@ -544,10 +556,15 @@ const BOOLEAN_WORD = /^\s*(true|false)\s*$/i;
  * number or a date). CSV cells are quoted by csvCell; a pasted (tab-separated) cell that contains a quote is quoted the
  * way Excel writes the clipboard, so an unmatched quote cannot merge the rest of the table into one cell.
  */
+// A number as a spreadsheet reads it: sign, currency sign, digits with comma grouping, decimals, a trailing %. It cannot
+// be a formula, so in a numeric column it is written as it is ("-2%" and "+2,500,000" stay numbers).
+const NUMERIC_CONSTANT = /^\s*[+-]?\$?\s*(\d[\d,]*(\.\d*)?|\.\d+)\s*%?\s*$/;
+
 function sheetCell(text, sep, isText = false) {
   const s = String(text ?? '');
   const numeric = /^-?\d+(\.\d+)?$/.test(s);
   if (numeric && !isText) return s;
+  if (!isText && NUMERIC_CONSTANT.test(s)) return sep === ',' && /[",]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   const keepAsText = isText && s.trim() !== '' && (!LETTER_START.test(s) || BOOLEAN_WORD.test(s));
   if (sep === ',') return csvCell(keepAsText ? `'${s}` : s);
   let flat = s.replace(/[\t\r\n]+/g, ' ');
@@ -582,7 +599,7 @@ export function assetTableRows(register, mode) {
   const totals = ASSET_COLUMNS.map((c) => {
     if (c.key === 'row') return '';
     if (c.key === 'name') return `Total (${t.count} assets)`;
-    if (mode === 'typed' && typedTotalOf[c.key]) return bare(typedTotalOf[c.key].sum);
+    if (mode === 'typed' && typedTotalOf[c.key]) return bare(typedTotalOf[c.key].sum, 'typedSum');
     if (totalOf[c.key]) return bare(totalOf[c.key].sum, 'money');
     if (c.key === 'share') {
       // the shares' own sum (100% when every FMV reads), not the sum of their 12-digit display, which can end in …9999
@@ -618,9 +635,11 @@ export function registerToCsv(register, mode, meta = {}) {
   const t = register.totals;
   row(['Control totals', 'Value', 'Values skipped (not a number)']);
   row(['Assets', String(t.count), '']);
+  // In the "as typed" file the typed columns total as typed, as the asset block's totals row does.
+  const typedSum = (key) => mode === 'typed' && register.typedTotals?.[key];
   for (const [labelText, key] of [['Σ Fair market value', 'FMV'], ['Σ Cost basis', 'B0'], ['Σ Unrealized gain', 'unrealizedGain'], ['Σ Valuation discount', 'discountAmount'],
     ['Σ Gift value after discount', 'giftValue'], ['Σ Annual exclusions', 'annualExclusions'], ['Σ Taxable gift', 'taxableGift']]) {
-    row([labelText, bare(t[key].sum, 'money'), String(t[key].skipped)]);
+    row([labelText, typedSum(key) ? bare(register.typedTotals[key].sum, 'typedSum') : bare(t[key].sum, 'money'), String(t[key].skipped)]);
   }
   row(['Other estate', bare(register.tieOut.otherEstate, 'money'), '']);
   row(['Plus Σ candidate FMV', bare(register.tieOut.candidates, 'money'), String(register.tieOut.candidatesSkipped)]);

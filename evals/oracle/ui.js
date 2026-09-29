@@ -138,9 +138,19 @@ export const AUDIT_ROUTING_CASES = [
   { name: 'grantor capital-gain stack at 100% or more', patch: { grantor: { fedLtcg: '100' } }, parts: () => ['G.fedLtcg', 'G.stateLtcg', 'G.niit'] },
   { name: "heirs' stack at 100% or more", patch: { estate: { beneFedLtcg: '100' } },
     parts: ({ estate }) => ['E.beneFedLtcg', 'E.beneStateLtcg', ...(estate.beneNiit ? ['E.beneNiit', 'G.niit'] : [])] },
-  { name: 'negative federal ordinary rate (state component above the stack)', patch: { grantor: { fedOrd: '-1' } }, parts: () => ['G.fedOrd', 'G.stateOrd', 'G.niit'] },
-  // the trust's federal rate at 100%: its own range error, and the trust ordinary stack on all three of its parts
+  // a negative federal rate is the only way a state component can exceed its stack less NIIT (state and NIIT cancel)
+  { name: 'negative federal ordinary rate', patch: { grantor: { fedOrd: '-1' } }, parts: () => ['G.fedOrd'] },
+  { name: 'negative federal LTCG rate', patch: { grantor: { fedLtcg: '-1' } }, parts: () => ['G.fedLtcg'] },
+  // the trust's federal rate at 100%: its own range error, and the trust stack on all three of its parts
   { name: 'trust ordinary stack at 100% or more', patch: { settings: { ingFedOrd: '100' } }, parts: () => ['S.ingFedOrd', 'S.ingStateRate', 'G.niit'] },
+  { name: 'trust capital-gain stack at 100% or more', patch: { settings: { ingFedLtcg: '100' } }, parts: () => ['S.ingFedLtcg', 'S.ingStateRate', 'G.niit'] },
+  // the ING value factor 1 + g + (1 − trust ordinary stack) · y − fee: the asset's returns, the fee and the stack
+  { name: 'ING loses all its value in a year', patch: { asset: { growth: '-99', yield: '2', saleYear: '0' }, settings: { ingAdminRate: '5' } },
+    parts: () => ['A1.growth', 'S.ingAdminRate', 'S.ingFedOrd', 'S.ingStateRate', 'G.niit'] },
+  // a negative indexing rate that takes the exclusion below $1M within the horizon: the rate and the exclusion it indexes
+  // (only where the horizon has room to index: $1.5M halved twice is below $1M, once may not be)
+  { name: 'negative indexing below the $1M floor', patch: { estate: { exclusion: '1500000', exclusionIndexing: '-50' } }, parts: () => ['E.exclusionIndexing', 'E.exclusion'],
+    when: ({ grantor }) => !grantor.useDeathYear || Math.max(num(grantor.deathYear), grantor.married ? num(grantor.spouseDeathYear) : 0) >= 3 },
   { name: 'negative custom prior-gift exclusion', patch: { estate: { priorGifts: '1000000', priorExclusionMode: 'custom', priorGiftExclusion: '-5' } }, parts: () => ['E.priorGiftExclusion'] },
   { name: 'prior-gift year with no exclusion on file', patch: { estate: { priorGifts: '1000000', priorExclusionMode: 'year', priorGiftYear: '1990' } }, parts: () => ['E.priorGiftYear'] },
   // without prior gifts the exclusion they are measured against IS the basic exclusion: one error, on that field only

@@ -64,7 +64,9 @@ export default function AssetsPanel({ assets, onChange, errorsById }) {
   const duplicate = (asset) => {
     if (assets.length >= MAX_IMPORT_ASSETS) return;
     const suffix = ' (copy)';
-    const copy = { ...asset, id: newId(), name: `${String(asset.name ?? '').slice(0, MAX_TEXT_FIELD_LENGTH - suffix.length)}${suffix}` };
+    // cut to the length cap without splitting a character written as two UTF-16 units (e.g. an emoji)
+    const kept = String(asset.name ?? '').slice(0, MAX_TEXT_FIELD_LENGTH - suffix.length).replace(/[\uD800-\uDBFF]$/, '');
+    const copy = { ...asset, id: newId(), name: `${kept}${suffix}` };
     const i = assets.findIndex((a) => a.id === asset.id);
     onChange([...assets.slice(0, i + 1), copy, ...assets.slice(i + 1)]);
   };

@@ -7,6 +7,7 @@ export const FLAG_LABELS = {
   DECIMAL_COMMA: 'decimal comma',
   IRREGULAR_GROUPING: 'comma grouping',
   DOT_GROUPING: 'point grouping',
+  SPACE_GROUPING: 'space grouping',
   SMALL_AMOUNT: 'in thousands?',
   SMALL_SCHEDULE: 'schedule in thousands?',
   NOT_A_NUMBER: 'not a number',

@@ -34,4 +34,3 @@ evals/results/*.json
 !evals/results/pass4.json
 !evals/results/holdout4.json
 !evals/results/mutation.json
-!evals/results/mutation-subset.json

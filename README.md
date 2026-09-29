@@ -118,7 +118,7 @@ inclusion, whether a scheduled sale also happens when the asset is kept).
   ([findings](docs/changes/2026-09-27-math-evals/)) and, after life tables and married couples were added, three more
   plus a ledger-clarity gap ([handback](docs/changes/2026-09-27-life-tables/handback.md)); all fixed. Latest
   (2026-09-29, with the inputs audit page): 676/676 checks and 215,786/215,786 assertions, 678/678 on an unseen seed;
-  mutation testing — 23 injected defects, each caught by the eval suite and by the unit tests independently
+  mutation testing — 24 injected defects, each caught by the eval suite and by the unit tests independently
   ([table](evals/README.md#mutation-testing--grading-the-suite-node-evalsmutationmjs)).
 - Engine: golden fixtures A–H (hand-derived, builder-confirmed 2026-09-26), §2001(c) cross-check
   against the bracket schedule, model invariants (decomposition sums, Σq = 1, neutrality, swap
