@@ -24,7 +24,7 @@ import { LIFE_TABLES, LIFE_TABLE_BY_ID, DEFAULT_LIFE_TABLE_ID } from '../src/dat
 import { makeScenarios, rng } from './scenarios/generator.js';
 import { PERSONAS, DEFAULTS } from './scenarios/personas.js';
 import { HAND_CASES, MORTALITY_HAND_CASES } from './scenarios/handcalc.js';
-import { expectedEngineInputs, BEA_BY_YEAR, DEFAULT_TABLE, AUDIT_FIELD_MEANING, AUDIT_FIELD_PARSE, AUDIT_ERROR_PARTS, auditParse } from './oracle/ui.js';
+import { expectedEngineInputs, BEA_BY_YEAR, DEFAULT_TABLE, AUDIT_FIELD_MEANING, AUDIT_FIELD_PARSE, AUDIT_ROUTING_CASES, AUDIT_INERT_IN_USE, AUDIT_DISPLAY_KEYS, auditParse } from './oracle/ui.js';
 import { oracleEvaluate, oracleIng, oracleRank, deathDistribution } from './oracle/evaluate.js';
 import { oracleCouple, coupleLives } from './oracle/couple.js';
 import { ssa2023FromCsv, survivorsFromRates, deathYearsFromRates, secondDeathByPairs, lifeExpectancy, SSA_2023_PDF, TERMINAL_AGE } from './oracle/lives.js';
@@ -339,68 +339,94 @@ export async function runEvals({ label = 'run', n, seed = DEFAULT_SEED, quick = 
       && Object.entries(derivedWant).every(([ref, w]) => sameValue(derivedShown[ref], w));
     record('L5 UI wiring', "inputs audit: derived model inputs shown = the oracle's, exactly when they apply", derivedOk, { id: c.id, shown: derivedShown, expected: derivedWant });
     if (caseIndex % 5 === 0) {
-      // what "in use" means: changing a field the page marks unused leaves every engine input as it was; changing a number
-      // the page marks in use changes one. The statuses are the page's claim; the builder is checked against the oracle above.
+      // What "in use" means. A field marked unused moves no engine input. A field marked in use moves one when its value
+      // changes, except the legitimate no-ops listed in AUDIT_INERT_IN_USE. A field marked 'display only' moves only the
+      // display inputs AUDIT_DISPLAY_KEYS allows. The statuses are the page's claim; the builder is checked above.
       const SECTION = { G: 'grantor', E: 'estate', S: 'settings' };
       const ENUM_VALUES = { sex: ['male', 'female'], spouseSex: ['male', 'female'], lifeTable: LIFE_TABLES.map((t) => t.id),
         priorExclusionMode: ['year', 'custom'], spousePriorExclusionMode: ['year', 'custom'], rankKey: ['opt', 'none'] };
-      const NUMERIC = new Set(['money', 'pct', 'int', 'number']);
+      // an enum's current value as the model reads it (a missing mode is 'year', a missing sex 'male', …)
+      const NORMAL = { sex: (v) => (v === 'female' ? 'female' : 'male'), spouseSex: (v) => (v === 'female' ? 'female' : 'male'),
+        priorExclusionMode: (v) => (v === 'custom' ? 'custom' : 'year'), spousePriorExclusionMode: (v) => (v === 'custom' ? 'custom' : 'year'),
+        lifeTable: (v) => (LIFE_TABLE_BY_ID[v] ? v : DEFAULT_LIFE_TABLE_ID), rankKey: (v) => v };
       const perturb = (row) => {
         if (row.kind === 'bool') return !row.raw;
-        if (row.kind === 'enum') return ENUM_VALUES[row.key]?.find((v) => v !== row.raw);
+        if (row.kind === 'enum') return ENUM_VALUES[row.key]?.find((v) => v !== NORMAL[row.key](row.raw));
         const v = Number(String(row.raw ?? '').replace(/,/g, ''));
         if (Number.isFinite(v)) return String(v + 1);
         return row.status.code === 'unused' ? '7' : undefined; // an unreadable value in use already fails validation
       };
-      const sameInputs = (a, b) => Object.keys(a).every((k) => (Array.isArray(a[k])
+      const movedKeys = (a, b) => Object.keys(a).filter((k) => !(Array.isArray(a[k])
         ? Array.isArray(b[k]) && a[k].length === b[k].length && a[k].every((x, i) => Object.is(x, b[k][i]))
         : Object.is(a[k], b[k])));
       const wrongStatus = reg.household.find((row) => {
-        const code = row.status.code;
-        const inUse = code === 'used' || code === 'scope';
-        if (code !== 'unused' && !(inUse && NUMERIC.has(row.kind))) return false; // 'label' rows move the display only
         const next = perturb(row);
         if (next === undefined) return false;
         const sec = SECTION[row.ref[0]];
-        const moved = !sameInputs(got, buildEngineInputs({ ...state, [sec]: { ...state[sec], [row.key]: next } }));
-        return code === 'unused' ? moved : !moved;
+        const moved = movedKeys(got, buildEngineInputs({ ...state, [sec]: { ...state[sec], [row.key]: next } }));
+        const code = row.status.code;
+        if (code === 'unused') return moved.length > 0;
+        if (code === 'label') return moved.some((k) => !AUDIT_DISPLAY_KEYS[k]?.(got));
+        return moved.length === 0 && !AUDIT_INERT_IN_USE[row.ref]?.(state);
       });
-      record('L5 UI wiring', 'inputs audit: a field marked "not used" moves no engine input, a number marked in use moves one', !wrongStatus,
+      record('L5 UI wiring', 'inputs audit: every "in use" / "not used" / "display only" status matches what the value moves', !wrongStatus,
         { id: c.id, ref: wrongStatus?.ref, status: wrongStatus?.status.code });
-      // an error on a combined model input shows on every typed field that feeds it (the oracle's list of parts)
+      // A validation error shows on exactly the typed fields behind it (the oracle's cases: stacks, the state-rate bound,
+      // the trust stacks, prior-gift exclusions by mode, a basic exclusion error that must not spill onto unused rows).
       const misrouted = [];
-      for (const [sec, key, engineKey] of [['grantor', 'fedOrd', 'tauOrd'], ['grantor', 'fedLtcg', 'tauCg'], ['estate', 'beneFedLtcg', 'tauBene']]) {
-        const st = { grantor: c.grantor, estate: c.estate, settings: c.settings, [sec]: { ...c[sec], [key]: '99' } };
+      for (const rc of AUDIT_ROUTING_CASES) {
+        if (rc.when && !rc.when(state)) continue;
+        const st = { grantor: { ...c.grantor, ...rc.patch.grantor }, estate: { ...c.estate, ...rc.patch.estate }, settings: { ...c.settings, ...rc.patch.settings } };
         const ui = validateUiFields({ ...st, asset: c.asset });
         const errs = ui.length ? ui : engine.validateInputs(buildEngineInputs({ ...st, asset: c.asset })).errors;
-        if (!errs.some((e) => e.field === engineKey)) continue;
         const r = buildInputRegister({ ...st, assets: [{ ...c.asset, id: 'a1' }], perAsset: [{ id: 'a1', name: 'a1', errors: errs, warnings: [] }] });
-        const flagged = new Set(r.flags.filter((f) => f.code === 'INVALID').map((f) => f.ref));
-        const missing = AUDIT_ERROR_PARTS[engineKey](st).filter((ref) => !flagged.has(ref));
-        if (missing.length) misrouted.push(`${engineKey}: ${missing.join(' ')}`);
+        const flagged = [...new Set(r.flags.filter((f) => f.code === 'INVALID').map((f) => f.ref))].sort().join(' ');
+        const expected = [...new Set(rc.parts(st))].sort().join(' ');
+        if (flagged !== expected) misrouted.push(`${rc.name}: shown on [${flagged}], expected [${expected}]`);
       }
-      record('L5 UI wiring', 'inputs audit: an error on a combined rate shows on every field that feeds it', misrouted.length === 0, { id: c.id, misrouted });
+      record('L5 UI wiring', 'inputs audit: a validation error shows on exactly the fields behind it', misrouted.length === 0, { id: c.id, misrouted });
+      // a household row that is not in use is never shown as verified, even when its value was ticked
+      const allTicked = Object.fromEntries(reg.household.map((row) => [row.tickKey, { v: row.tickValue, at: '2026-09-28' }]));
+      const tickedReg = buildInputRegister({ grantor: c.grantor, estate: c.estate, settings: c.settings, assets: [c.asset], audit: { ticks: allTicked } });
+      const verifiedUnused = tickedReg.household.filter((row) => row.verified && !['used', 'scope'].includes(row.status.code)).map((row) => row.ref);
+      record('L5 UI wiring', 'inputs audit: a row not in use is never shown as verified', verifiedUnused.length === 0, { id: c.id, verifiedUnused });
       // a tick certifies the checked values: it holds on them and clears when any value in the row changes
-      const ticks = { [reg.assets[0].tickKey]: { at: '2026-09-28' } };
+      const on = (r) => ({ [r.tickKey]: { v: r.tickValue, at: '2026-09-28' } });
+      const ticks = on(reg.assets[0]);
       const kept = buildInputRegister({ grantor: c.grantor, estate: c.estate, settings: c.settings, assets: [c.asset], audit: { ticks } }).assets[0].verified;
       const survived = ASSET_FIELDS.filter((f) => buildInputRegister({ grantor: c.grantor, estate: c.estate, settings: c.settings,
         assets: [{ ...c.asset, [f.key]: `${c.asset[f.key] ?? ''}1` }], audit: { ticks } }).assets[0].verified).map((f) => f.key);
       record('L5 UI wiring', 'inputs audit: a tick holds on the checked values and clears when any value in its row changes', kept && survived.length === 0, { id: c.id, kept, survived });
-      // a double entry needs its own tick: ticking the first of two identical rows leaves the second unverified
-      const twins = buildInputRegister({ grantor: c.grantor, estate: c.estate, settings: c.settings, assets: [c.asset, { ...c.asset, id: 'twin' }], audit: { ticks } });
-      record('L5 UI wiring', 'inputs audit: two identical asset rows need a tick each', twins.assets[0].verified && !twins.assets[1].verified,
-        { id: c.id, verified: twins.assets.map((r) => r.verified) });
-      // the totals row foots the cells shown: every money total = the sum of that column's cells, in whole cents
-      const three = buildInputRegister({ grantor: c.grantor, estate: c.estate, settings: c.settings, assets: [c.asset, { ...c.asset, id: 'b' }, { ...c.asset, id: 'c' }] });
-      const table = assetTableRows(three, 'model');
-      const notFooting = ['fmv', 'basis', 'annualExclusions', 'unrealizedGain', 'giftValue', 'taxableGift'].filter((key) => {
-        const i = ASSET_COLUMNS.findIndex((col) => col.key === key);
-        const cells = table.rows.map((r) => r[i]);
-        if (cells.some((x) => x === '')) return false;
-        const cents = cells.reduce((a, x) => a + Math.round(Number(x) * 100), 0);
-        return Number(table.totals[i]) !== cents / 100;
-      });
-      record('L5 UI wiring', 'inputs audit: every money total foots the cells shown (SUM of the pasted column = the totals row)', notFooting.length === 0, { id: c.id, notFooting });
+      // a tick stays with its row: identical rows need a tick each, and editing or deleting a ticked twin never passes its
+      // tick to the other
+      const pair = [{ ...c.asset, id: 'first' }, { ...c.asset, id: 'twin' }];
+      const pairTicks = on(buildInputRegister({ grantor: c.grantor, estate: c.estate, settings: c.settings, assets: pair }).assets[0]);
+      const pairState = (assets) => buildInputRegister({ grantor: c.grantor, estate: c.estate, settings: c.settings, assets, audit: { ticks: pairTicks } }).assets.map((r) => r.verified);
+      const twinCases = {
+        tickedFirst: pairState(pair).join(),
+        editedFirst: pairState([{ ...pair[0], name: `${pair[0].name ?? ''} (edited)` }, pair[1]]).join(),
+        deletedFirst: pairState([pair[1]]).join(),
+      };
+      const twinsOk = twinCases.tickedFirst === 'true,false' && twinCases.editedFirst === 'false,false' && twinCases.deletedFirst === 'false';
+      record('L5 UI wiring', 'inputs audit: a tick stays with its row (identical rows need a tick each)', twinsOk, { id: c.id, ...twinCases });
+      // the totals row foots the cells shown, in both views: rows with sub-cent parts, so rounding is exercised
+      const readNumber = (x) => Number(String(x).replace(/[\s$,%]/g, ''));
+      const fmv0 = readNumber(c.asset.fmv);
+      const lots = [c.asset, { ...c.asset, id: 'b', fmv: String(fmv0 + 0.004), basis: String(readNumber(c.asset.basis) + 0.006) },
+        { ...c.asset, id: 'c', fmv: String(fmv0 + 0.006), discount: '33.3' }];
+      const three = buildInputRegister({ grantor: c.grantor, estate: c.estate, settings: c.settings, assets: lots });
+      const notFooting = [];
+      for (const mode of ['model', 'typed']) {
+        const table = assetTableRows(three, mode);
+        for (const key of ['fmv', 'basis', 'annualExclusions', 'unrealizedGain', 'giftValue', 'taxableGift']) {
+          const i = ASSET_COLUMNS.findIndex((col) => col.key === key);
+          const cells = table.rows.map((r) => readNumber(r[i]));
+          if (cells.some((x) => !Number.isFinite(x))) continue;
+          const sum = mode === 'model' ? cells.reduce((a, x) => a + Math.round(x * 100), 0) / 100 : cells.reduce((a, x) => a + x, 0);
+          if (Math.abs(readNumber(table.totals[i]) - sum) > 1e-9 * Math.max(1, Math.abs(sum))) notFooting.push(`${mode} ${key}`);
+        }
+      }
+      record('L5 UI wiring', 'inputs audit: every money total foots the cells shown, in both views (SUM of the pasted column = the totals row)', notFooting.length === 0, { id: c.id, notFooting });
       // an unreadable cell is left out of a control total and counted, never read as 0
       const two = buildInputRegister({ grantor: c.grantor, estate: c.estate, settings: c.settings, assets: [c.asset, { ...c.asset, basis: 'n/a', fmv: 'tbd' }] });
       const toCents = (v) => Math.round(v * 100) / 100; // totals foot the cent-rounded lines

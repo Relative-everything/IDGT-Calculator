@@ -96,7 +96,8 @@ export function neutralSwapProfile(rE, tauOrd) {
 export function validateInputs(inp) {
   const errors = [];
   const warnings = [];
-  // `also`: the asset inputs an error depends on besides `field` (the ING value factor), so a caller can show it on them too
+  // `also`: the other inputs an error depends on besides `field` (a stack's parts, the asset's returns for the ING value
+  // factor), so a caller can show the error on them too
   const err = (field, message, also) => errors.push(also ? { field, message, also } : { field, message });
   const warn = (code, data = {}) => warnings.push({ code, data });
 
@@ -162,17 +163,17 @@ export function validateInputs(inp) {
   if (inp.niit != null) rateIn('niit', inp.niit, 0, 1, 'NIIT rate');
   const niitForBound = isNum(inp.niit) ? inp.niit : 0;
   if (isNum(ing.niit) && isNum(ing.ingStateRate)) {
-    if (isNum(ing.ingFedOrd) && ing.tauNo >= 1) err('ingFedOrd', 'The trust ordinary stack (federal + NIIT + state) must be below 100%.');
-    if (isNum(ing.ingFedLtcg) && ing.tauNc >= 1) err('ingFedLtcg', 'The trust capital-gain stack (federal + NIIT + state) must be below 100%.');
+    if (isNum(ing.ingFedOrd) && ing.tauNo >= 1) err('ingFedOrd', 'The trust ordinary stack (federal + NIIT + state) must be below 100%.', ['ingStateRate', 'niit']);
+    if (isNum(ing.ingFedLtcg) && ing.tauNc >= 1) err('ingFedLtcg', 'The trust capital-gain stack (federal + NIIT + state) must be below 100%.', ['ingStateRate', 'niit']);
   }
   // The state component sits inside the grantor's stack next to NIIT: 0 ≤ σ ≤ τ − niit (model.md §8).
   if (inp.stateOrd != null) {
     if (!isNum(inp.stateOrd) || inp.stateOrd < 0) err('stateOrd', 'State ordinary rate cannot be negative.');
-    else if (isNum(inp.tauOrd) && inp.stateOrd > inp.tauOrd - niitForBound + 1e-12) err('stateOrd', 'State ordinary rate cannot exceed the grantor ordinary rate less NIIT.');
+    else if (isNum(inp.tauOrd) && inp.stateOrd > inp.tauOrd - niitForBound + 1e-12) err('stateOrd', 'State ordinary rate cannot exceed the grantor ordinary rate less NIIT.', ['tauOrd']);
   }
   if (inp.stateCg != null) {
     if (!isNum(inp.stateCg) || inp.stateCg < 0) err('stateCg', 'State capital-gain rate cannot be negative.');
-    else if (isNum(inp.tauCg) && inp.stateCg > inp.tauCg - niitForBound + 1e-12) err('stateCg', 'State capital-gain rate cannot exceed the grantor capital-gain rate less NIIT.');
+    else if (isNum(inp.tauCg) && inp.stateCg > inp.tauCg - niitForBound + 1e-12) err('stateCg', 'State capital-gain rate cannot exceed the grantor capital-gain rate less NIIT.', ['tauCg']);
   }
 
   // Exclusion and prior gifts

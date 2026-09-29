@@ -128,13 +128,44 @@ export const AUDIT_FIELD_PARSE = {
   'S.rankKey': 'same', 'S.swapCustom': 'same', 'A.name': 'same', 'A.source': 'same',
 };
 /**
- * The typed fields that make up each combined model input, read off the definitions in expectedEngineInputs above: a
- * validation error on the combined input must show on every one of them (the page cannot know which part is wrong).
+ * Where a validation error must show on the audit page: for each injected error, exactly the typed fields behind it,
+ * read off the definitions in expectedEngineInputs above (a stack is wrong because one of its parts is, and the page
+ * cannot know which). `when` limits a case to the states it applies to.
  */
-export const AUDIT_ERROR_PARTS = {
-  tauOrd: () => ['G.fedOrd', 'G.stateOrd', 'G.niit'],
-  tauCg: () => ['G.fedLtcg', 'G.stateLtcg', 'G.niit'],
-  tauBene: ({ estate }) => ['E.beneFedLtcg', 'E.beneStateLtcg', ...(estate.beneNiit ? ['E.beneNiit', 'G.niit'] : [])],
+export const AUDIT_ROUTING_CASES = [
+  // a part typed as 100% puts its stack at 100% or more whatever the other parts are
+  { name: 'grantor ordinary stack at 100% or more', patch: { grantor: { fedOrd: '100' } }, parts: () => ['G.fedOrd', 'G.stateOrd', 'G.niit'] },
+  { name: 'grantor capital-gain stack at 100% or more', patch: { grantor: { fedLtcg: '100' } }, parts: () => ['G.fedLtcg', 'G.stateLtcg', 'G.niit'] },
+  { name: "heirs' stack at 100% or more", patch: { estate: { beneFedLtcg: '100' } },
+    parts: ({ estate }) => ['E.beneFedLtcg', 'E.beneStateLtcg', ...(estate.beneNiit ? ['E.beneNiit', 'G.niit'] : [])] },
+  { name: 'negative federal ordinary rate (state component above the stack)', patch: { grantor: { fedOrd: '-1' } }, parts: () => ['G.fedOrd', 'G.stateOrd', 'G.niit'] },
+  // the trust's federal rate at 100%: its own range error, and the trust ordinary stack on all three of its parts
+  { name: 'trust ordinary stack at 100% or more', patch: { settings: { ingFedOrd: '100' } }, parts: () => ['S.ingFedOrd', 'S.ingStateRate', 'G.niit'] },
+  { name: 'negative custom prior-gift exclusion', patch: { estate: { priorGifts: '1000000', priorExclusionMode: 'custom', priorGiftExclusion: '-5' } }, parts: () => ['E.priorGiftExclusion'] },
+  { name: 'prior-gift year with no exclusion on file', patch: { estate: { priorGifts: '1000000', priorExclusionMode: 'year', priorGiftYear: '1990' } }, parts: () => ['E.priorGiftYear'] },
+  // without prior gifts the exclusion they are measured against IS the basic exclusion: one error, on that field only
+  { name: 'negative basic exclusion, no prior gifts', patch: { estate: { exclusion: '-5', priorGifts: '0' } }, parts: () => ['E.exclusion'],
+    when: ({ grantor, estate }) => !(grantor.married && num(estate.spousePriorGifts) > 0) },
+  { name: "negative custom exclusion for the spouse's gifts", when: ({ grantor }) => Boolean(grantor.married),
+    patch: { estate: { spousePriorGifts: '1000000', spousePriorExclusionMode: 'custom', spousePriorGiftExclusion: '-5' } }, parts: () => ['E.spousePriorGiftExclusion'] },
+  { name: "spouse's prior-gift year with no exclusion on file", when: ({ grantor }) => Boolean(grantor.married),
+    patch: { estate: { spousePriorGifts: '1000000', spousePriorExclusionMode: 'year', spousePriorGiftYear: '1990' } }, parts: () => ['E.spousePriorGiftYear'] },
+];
+/**
+ * Fields in use whose change can legitimately move no engine input, and when: the year and custom modes give the same
+ * exclusion; NIIT added to the heirs' rate when NIIT is 0; the ranking order, which only reorders results.
+ */
+export const AUDIT_INERT_IN_USE = {
+  'E.priorExclusionMode': ({ estate }) => BEA_BY_YEAR[Number(estate.priorGiftYear)] === num(estate.priorGiftExclusion),
+  'E.spousePriorExclusionMode': ({ estate }) => BEA_BY_YEAR[Number(estate.spousePriorGiftYear)] === num(estate.spousePriorGiftExclusion),
+  'E.beneNiit': ({ grantor }) => rate(grantor.niit) === 0,
+  'S.rankKey': () => true,
+};
+/** Engine inputs a "display only" field may move, and when they are display only (ages beside assumed death years). */
+export const AUDIT_DISPLAY_KEYS = {
+  NDisp: () => true,
+  age: (inp) => inp.deathYearOverride != null,
+  ageSpouse: (inp) => inp.deathYearOverrideSpouse != null,
 };
 /** Reads a typed value the way its label says (for the fields in AUDIT_FIELD_PARSE). */
 export function auditParse(kind, raw) {

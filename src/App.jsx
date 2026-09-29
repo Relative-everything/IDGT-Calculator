@@ -15,7 +15,7 @@ import ErrorBoundary from './components/ui/ErrorBoundary.jsx';
 import InputsAudit from './components/audit/InputsAudit.jsx';
 import { useIdgtModel } from './hooks/useIdgtModel.js';
 import { useInputRegister } from './hooks/useInputRegister.js';
-import { assetTableTsv, registerToCsv, liveTicks } from './hooks/inputRegister.js';
+import { assetTableTsv, registerToCsv, ticksForFile, ticksFromFile } from './hooks/inputRegister.js';
 import { useIngBreakeven } from './hooks/useIngBreakeven.js';
 import { serializeScenario, parseScenario, rankingToCsv, MAX_IMPORT_BYTES } from './hooks/scenarioIO.js';
 import { DEFAULT_GRANTOR, DEFAULT_ESTATE, DEFAULT_SETTINGS, DEFAULT_ASSETS, makeAsset } from './hooks/defaults.js';
@@ -91,9 +91,9 @@ export default function App() {
   const clearTicks = () => setAudit((a) => ({ ...a, ticks: {} }));
 
   const reset = () => { setGrantor(DEFAULT_GRANTOR); setEstate(DEFAULT_ESTATE); setSettings(DEFAULT_SETTINGS); setAssets(DEFAULT_ASSETS()); setAudit(EMPTY_AUDIT); setSelectedId(null); setNotice('Inputs reset to defaults.'); };
-  // Only live ticks are saved: a tick on a row that has changed since does not travel with the file.
+  // Only live ticks are saved (a tick on a row that has changed since does not travel with the file), keyed by content.
   const exportJson = () => download('idgt-scenario.json',
-    serializeScenario({ grantor, estate, settings, assets, audit: { ...audit, ticks: liveTicks({ grantor, estate, settings, assets }, audit.ticks) } }), 'application/json');
+    serializeScenario({ grantor, estate, settings, assets, audit: { ...audit, ticks: ticksForFile({ grantor, estate, settings, assets }, audit.ticks) } }), 'application/json');
   const exportCsv = () => download('idgt-ranking.csv', rankingToCsv(ranked), 'text/csv');
   const importJson = (file) => {
     if (file.size > MAX_IMPORT_BYTES) { setNotice(`Could not load ${file.name}: the file is too large to be a scenario.`); return; }
@@ -102,7 +102,8 @@ export default function App() {
     reader.onload = () => {
       try {
         const s = parseScenario(String(reader.result), defaultsForImport());
-        setGrantor(s.grantor); setEstate(s.estate); setSettings(s.settings); setAssets(s.assets); setAudit(s.audit); setSelectedId(null);
+        // the file keys asset ticks by content; map them onto the imported rows (whose ids are new)
+        setGrantor(s.grantor); setEstate(s.estate); setSettings(s.settings); setAssets(s.assets); setAudit({ ...s.audit, ticks: ticksFromFile(s.assets, s.audit.ticks) }); setSelectedId(null);
         setNotice(`Loaded ${file.name}.${s.dropped > 0 ? ` ${s.dropped} asset entr${s.dropped === 1 ? 'y was' : 'ies were'} skipped (not an object, or beyond the ${s.assets.length}-asset limit).` : ''}`);
       } catch (err) { setNotice(`Could not load ${file.name}: ${err.message}`); }
     };
@@ -129,6 +130,12 @@ export default function App() {
     </>
   );
 
+  // On the audit page the banner sits inside the page's landscape print layout, so it does not print on a page of its own.
+  const mortalityBanner = mortality && !mortality.table.verified && !grantor.useDeathYear ? (
+    <div className="rounded-md border border-warn/40 bg-warn-soft px-3 py-2 text-sm text-ink">
+      <strong>Mortality table unverified.</strong> {mortality.table.label} was never checked against its published source. Probability-weighted results depend on it; choose the verified SSA 2023 table, or an assumed death year for a table-independent result.
+    </div>
+  ) : null;
   const flagged = register.flags.filter((f) => f.severity !== 'confirm').length;
   const tabs = {
     value: view,
@@ -146,17 +153,13 @@ export default function App() {
           <span>{notice}</span><button type="button" className="text-muted" onClick={() => setNotice(null)} aria-label="Dismiss">✕</button>
         </div>
       )}
-      {mortality && !mortality.table.verified && !grantor.useDeathYear && (
-        <div className="rounded-md border border-warn/40 bg-warn-soft px-3 py-2 text-sm text-ink">
-          <strong>Mortality table unverified.</strong> {mortality.table.label} was never checked against its published source. Probability-weighted results depend on it; choose the verified SSA 2023 table, or an assumed death year for a table-independent result.
-        </div>
-      )}
+      {view !== 'audit' && mortalityBanner}
       {view === 'audit' ? (
         <ErrorBoundary>
           <InputsAudit register={register} mode={auditMode} onModeChange={setAuditMode} filter={auditFilter} onFilterChange={setAuditFilter}
             reviewer={audit.reviewer} onReviewerChange={(reviewer) => setAudit((a) => ({ ...a, reviewer }))} onTick={tick}
             onClearTicks={clearTicks} onCopy={copyAssetTable} onDownload={downloadAudit}
-            onPrint={() => window.print()} printedOn={today()} wide={auditWide} onWideChange={setAuditWide} isStale={isStale} />
+            onPrint={() => window.print()} printedOn={today()} wide={auditWide} onWideChange={setAuditWide} isStale={isStale} banner={mortalityBanner} />
         </ErrorBoundary>
       ) : (
         <>

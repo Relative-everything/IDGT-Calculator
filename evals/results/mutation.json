@@ -1,10 +1,10 @@
 {
   "summary": {
-    "mutations": 18,
+    "mutations": 23,
     "stale": 0,
-    "caughtByEval": 15,
-    "caughtByUnit": 18,
-    "caughtByEither": 18
+    "caughtByEval": 23,
+    "caughtByUnit": 22,
+    "caughtByEither": 23
   },
   "results": [
     {
@@ -12,7 +12,7 @@
       "defect": "spouse's table column wired to the grantor's sex",
       "file": "src/hooks/buildInputs.js",
       "caughtByEval": true,
-      "evalFailingChecks": 76,
+      "evalFailingChecks": 77,
       "evalExamples": [
         {
           "layer": "L2 oracle agreement",
@@ -41,15 +41,15 @@
         }
       ],
       "caughtByUnit": true,
-      "unitTests": "2 failed | 284 passed | 1 skipped (287)",
-      "seconds": 23.206
+      "unitTests": "2 failed | 320 passed | 1 skipped (323)",
+      "seconds": 29.841
     },
     {
       "id": "M02",
       "defect": "legacy table choice silently falls back to the default table",
       "file": "src/hooks/buildInputs.js",
       "caughtByEval": true,
-      "evalFailingChecks": 76,
+      "evalFailingChecks": 77,
       "evalExamples": [
         {
           "layer": "L2 oracle agreement",
@@ -78,8 +78,8 @@
         }
       ],
       "caughtByUnit": true,
-      "unitTests": "2 failed | 284 passed | 1 skipped (287)",
-      "seconds": 22.066
+      "unitTests": "2 failed | 320 passed | 1 skipped (323)",
+      "seconds": 31.278
     },
     {
       "id": "M03",
@@ -115,8 +115,8 @@
         }
       ],
       "caughtByUnit": true,
-      "unitTests": "4 failed | 282 passed | 1 skipped (287)",
-      "seconds": 21.897
+      "unitTests": "4 failed | 318 passed | 1 skipped (323)",
+      "seconds": 33.233
     },
     {
       "id": "M04",
@@ -152,8 +152,8 @@
         }
       ],
       "caughtByUnit": true,
-      "unitTests": "1 failed | 285 passed | 1 skipped (287)",
-      "seconds": 22.337
+      "unitTests": "1 failed | 321 passed | 1 skipped (323)",
+      "seconds": 32.915
     },
     {
       "id": "M05",
@@ -189,8 +189,8 @@
         }
       ],
       "caughtByUnit": true,
-      "unitTests": "4 failed | 282 passed | 1 skipped (287)",
-      "seconds": 22.329
+      "unitTests": "4 failed | 318 passed | 1 skipped (323)",
+      "seconds": 32.8
     },
     {
       "id": "M06",
@@ -226,8 +226,8 @@
         }
       ],
       "caughtByUnit": true,
-      "unitTests": "1 failed | 285 passed | 1 skipped (287)",
-      "seconds": 22.94
+      "unitTests": "1 failed | 321 passed | 1 skipped (323)",
+      "seconds": 34.784
     },
     {
       "id": "M07",
@@ -263,8 +263,8 @@
         }
       ],
       "caughtByUnit": true,
-      "unitTests": "1 failed | 285 passed | 1 skipped (287)",
-      "seconds": 21.934
+      "unitTests": "1 failed | 321 passed | 1 skipped (323)",
+      "seconds": 34.837
     },
     {
       "id": "M08",
@@ -300,8 +300,8 @@
         }
       ],
       "caughtByUnit": true,
-      "unitTests": "1 failed | 285 passed | 1 skipped (287)",
-      "seconds": 22.459
+      "unitTests": "1 failed | 321 passed | 1 skipped (323)",
+      "seconds": 33.96
     },
     {
       "id": "M09",
@@ -337,8 +337,8 @@
         }
       ],
       "caughtByUnit": true,
-      "unitTests": "3 failed | 283 passed | 1 skipped (287)",
-      "seconds": 22.526
+      "unitTests": "3 failed | 319 passed | 1 skipped (323)",
+      "seconds": 32.924
     },
     {
       "id": "M10",
@@ -374,8 +374,8 @@
         }
       ],
       "caughtByUnit": true,
-      "unitTests": "1 failed | 285 passed | 1 skipped (287)",
-      "seconds": 22.532
+      "unitTests": "1 failed | 321 passed | 1 skipped (323)",
+      "seconds": 35.18
     },
     {
       "id": "M11",
@@ -411,8 +411,8 @@
         }
       ],
       "caughtByUnit": true,
-      "unitTests": "1 failed | 285 passed | 1 skipped (287)",
-      "seconds": 22.12
+      "unitTests": "1 failed | 321 passed | 1 skipped (323)",
+      "seconds": 33.383
     },
     {
       "id": "M12",
@@ -428,8 +428,8 @@
         }
       ],
       "caughtByUnit": true,
-      "unitTests": "1 failed | 285 passed | 1 skipped (287)",
-      "seconds": 22.442
+      "unitTests": "1 failed | 321 passed | 1 skipped (323)",
+      "seconds": 31.447
     },
     {
       "id": "M13",
@@ -445,8 +445,8 @@
         }
       ],
       "caughtByUnit": true,
-      "unitTests": "1 failed | 285 passed | 1 skipped (287)",
-      "seconds": 21.649
+      "unitTests": "1 failed | 321 passed | 1 skipped (323)",
+      "seconds": 31.651
     },
     {
       "id": "M14",
@@ -482,19 +482,25 @@
         }
       ],
       "caughtByUnit": true,
-      "unitTests": "1 failed | 285 passed | 1 skipped (287)",
-      "seconds": 22.669
+      "unitTests": "1 failed | 321 passed | 1 skipped (323)",
+      "seconds": 33.263
     },
     {
       "id": "M15",
       "defect": "audit page shows the wrong engine input for the income yield",
       "file": "src/hooks/inputRegister.js",
-      "caughtByEval": false,
-      "evalFailingChecks": 0,
-      "evalExamples": [],
+      "caughtByEval": true,
+      "evalFailingChecks": 1,
+      "evalExamples": [
+        {
+          "layer": "L5 UI wiring",
+          "check": "inputs audit: every model value shown = the planner-facing meaning of its label",
+          "fail": 203
+        }
+      ],
       "caughtByUnit": true,
-      "unitTests": "1 failed | 285 passed | 1 skipped (287)",
-      "seconds": 22.256
+      "unitTests": "2 failed | 320 passed | 1 skipped (323)",
+      "seconds": 29.118
     },
     {
       "id": "M16",
@@ -510,30 +516,127 @@
         }
       ],
       "caughtByUnit": true,
-      "unitTests": "2 failed | 284 passed | 1 skipped (287)",
-      "seconds": 22.388
+      "unitTests": "2 failed | 320 passed | 1 skipped (323)",
+      "seconds": 29.921
     },
     {
       "id": "M17",
       "defect": "an asset tick survives edits (fingerprint covers the name only)",
       "file": "src/hooks/inputRegister.js",
-      "caughtByEval": false,
-      "evalFailingChecks": 0,
-      "evalExamples": [],
+      "caughtByEval": true,
+      "evalFailingChecks": 1,
+      "evalExamples": [
+        {
+          "layer": "L5 UI wiring",
+          "check": "inputs audit: a tick holds on the checked values and clears when any value in its row changes",
+          "fail": 45
+        }
+      ],
       "caughtByUnit": true,
-      "unitTests": "1 failed | 285 passed | 1 skipped (287)",
-      "seconds": 22.741
+      "unitTests": "1 failed | 321 passed | 1 skipped (323)",
+      "seconds": 33.651
     },
     {
       "id": "M18",
       "defect": "control totals silently count an unreadable cell as zero",
       "file": "src/engine/inputAudit.js",
-      "caughtByEval": false,
-      "evalFailingChecks": 0,
-      "evalExamples": [],
+      "caughtByEval": true,
+      "evalFailingChecks": 1,
+      "evalExamples": [
+        {
+          "layer": "L5 UI wiring",
+          "check": "inputs audit: an unreadable value is left out of a control total and counted",
+          "fail": 45
+        }
+      ],
       "caughtByUnit": true,
-      "unitTests": "2 failed | 284 passed | 1 skipped (287)",
-      "seconds": 21.828
+      "unitTests": "3 failed | 319 passed | 1 skipped (323)",
+      "seconds": 30.795
+    },
+    {
+      "id": "M19",
+      "defect": "an asset tick is keyed by content, so it passes to an identical row",
+      "file": "src/hooks/inputRegister.js",
+      "caughtByEval": true,
+      "evalFailingChecks": 1,
+      "evalExamples": [
+        {
+          "layer": "L5 UI wiring",
+          "check": "inputs audit: a tick stays with its row (identical rows need a tick each)",
+          "fail": 45
+        }
+      ],
+      "caughtByUnit": true,
+      "unitTests": "5 failed | 317 passed | 1 skipped (323)",
+      "seconds": 30.966
+    },
+    {
+      "id": "M20",
+      "defect": "the totals row sums unrounded values, so it does not foot the cells shown",
+      "file": "src/hooks/inputRegister.js",
+      "caughtByEval": true,
+      "evalFailingChecks": 1,
+      "evalExamples": [
+        {
+          "layer": "L5 UI wiring",
+          "check": "inputs audit: every money total foots the cells shown, in both views (SUM of the pasted column = the totals row)",
+          "fail": 27
+        }
+      ],
+      "caughtByUnit": true,
+      "unitTests": "2 failed | 320 passed | 1 skipped (323)",
+      "seconds": 30.981
+    },
+    {
+      "id": "M21",
+      "defect": "an error on the grantor ordinary stack is flagged on the federal rate only",
+      "file": "src/hooks/inputRegister.js",
+      "caughtByEval": true,
+      "evalFailingChecks": 1,
+      "evalExamples": [
+        {
+          "layer": "L5 UI wiring",
+          "check": "inputs audit: a validation error shows on exactly the fields behind it",
+          "fail": 45
+        }
+      ],
+      "caughtByUnit": true,
+      "unitTests": "2 failed | 320 passed | 1 skipped (323)",
+      "seconds": 32.695
+    },
+    {
+      "id": "M22",
+      "defect": "a ticked household row stays verified after it goes out of use",
+      "file": "src/hooks/inputRegister.js",
+      "caughtByEval": true,
+      "evalFailingChecks": 1,
+      "evalExamples": [
+        {
+          "layer": "L5 UI wiring",
+          "check": "inputs audit: a row not in use is never shown as verified",
+          "fail": 45
+        }
+      ],
+      "caughtByUnit": true,
+      "unitTests": "1 failed | 321 passed | 1 skipped (323)",
+      "seconds": 31.451
+    },
+    {
+      "id": "M23",
+      "defect": "the prior-gift year is marked in use although the custom exclusion is",
+      "file": "src/hooks/inputRegister.js",
+      "caughtByEval": true,
+      "evalFailingChecks": 1,
+      "evalExamples": [
+        {
+          "layer": "L5 UI wiring",
+          "check": "inputs audit: every \"in use\" / \"not used\" / \"display only\" status matches what the value moves",
+          "fail": 5
+        }
+      ],
+      "caughtByUnit": false,
+      "unitTests": "322 passed | 1 skipped (323)",
+      "seconds": 32.539
     }
   ]
 }

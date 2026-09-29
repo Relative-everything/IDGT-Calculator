@@ -42,5 +42,7 @@ describe('controlTotals, shareOfTotal, balanceSheetTieOut', () => {
     expect(shareOfTotal(5, 0)).toBeNull();
     expect(shareOfTotal(NaN, 20)).toBeNull();
     expect(balanceSheetTieOut({ otherEstate: 20_000_000, candidatesFmv: 9_000_000 })).toEqual({ otherEstate: 20_000_000, candidates: 9_000_000, total: 29_000_000 });
+    // the total foots its two lines as shown to the cent: 1000.01 + 2000.01 = 3000.02, not round(3000.012) = 3000.01
+    expect(balanceSheetTieOut({ otherEstate: 1000.006, candidatesFmv: 2000.006 }).total).toBe(3000.02);
   });
 });

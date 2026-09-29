@@ -11,8 +11,8 @@ source documents, such as an Excel sheet or an eMoney-style balance sheet, when 
 | Control totals | Record count, Σ FMV, Σ basis, Σ annual exclusions, Σ unrealized gain, Σ gift value, Σ taxable gift, Σ discount. The bare figure comes first (to match a SUM cell), formatted beside it. Unreadable cells are counted and left out, never read as 0 |
 | Balance-sheet tie-out | Other estate + Σ candidate FMV = the figure to compare with the client's net worth, with what the other-estate convention changes |
 | Household register | Every other input with a stable reference (`G.` grantor, `E.` estate, `S.` settings), its unit and status (in use / not used and why / display only), grouped as on the input panels, plus the derived rate stacks and resolved prior-gift exclusions |
-| Flags | Percent typed as a decimal (0.07, or 1 for a 100% share), decimal comma ("3,5" read as 35), irregular comma or point grouping, amounts or a whole schedule that look like thousands, duplicate names or figures, basis above value, sale after the horizon, and every validation error on each field that feeds it. Worst first, each with its reference; a slip in a field not in use is a "confirm" |
-| Ticks | One per row. A tick records what it certified (the typed value, or a fingerprint of the asset row, numbered when rows are identical). It is hidden as soon as anything in the row changes and returns if the change is undone. Live ticks and reviewer initials are saved with Export JSON |
+| Flags | Percent typed as a decimal (0.07, or 1 for a 100% share), decimal comma ("3,5" read as 35), irregular comma or point grouping, amounts or a whole schedule that look like thousands, duplicate names or figures, basis above value, sale after the horizon, and every validation error on exactly the fields behind it. Worst first, each with its reference; a slip in a field not in use is a "confirm" |
+| Ticks | One per row. A tick records what it certified (the typed value, or a fingerprint of the asset row) and stays with its row: it is hidden as soon as anything in the row changes or the row goes out of use, returns if the change is undone, and never passes to an identical row. Live ticks and reviewer initials are saved with Export JSON; the file keys asset ticks by content and import maps them back onto the rows in order |
 | Exports | Copy asset table (tab-separated, to paste beside the source), Download audit CSV (asset block with the same letters, control totals, household block; UTF-8 with a byte-order mark for Excel), Print (landscape, header and panels hidden, the row filter stated) |
 | Source ref | A free-text field on each asset card ("Excel B7", "eMoney · Schwab …1234"); a label only, never used in the math |
 
@@ -26,44 +26,71 @@ source documents, such as an Excel sheet or an eMoney-style balance sheet, when 
 5. **Export JSON** saves the ticks and reviewer. **Download audit CSV** or **Print** for the file.
 
 ## Pre-merge review
-A five-lens adversarial review (97 agents, two skeptics per finding) raised 46 findings: 39 upheld, 4 split, 3 refuted.
-All 39 upheld and all 4 split findings were fixed, most importantly:
-- **Identical rows shared one tick.** Ticking one of two identical rows verified both. Tick keys now carry an occurrence
-  number, so a double entry needs its own tick.
-- **The totals row did not foot the cells shown.** Totals are now summed in whole cents of the rounded lines, so SUM()
-  over a pasted column equals the totals row exactly.
-- **Errors landed on the wrong field.** An error on a rate stack now shows on every rate in it; a prior-gift year with no
-  exclusion on file is reported on the year; the ING value-factor error names its asset.
-- **Paste and CSV hardening.** A leading quote can no longer start a formula or merge the pasted table; cells holding
-  `;` are quoted for semicolon-locale Excel; numeric-looking source refs stay text.
-- **Print and dates.** Tables are no longer clipped on paper; the flags list prints in full; tick dates are the
-  reviewer's local date, not UTC.
-- **Evals.** Derived rows, in-use statuses (metamorphically), error routing, twin ticks and footing are now checked on
-  every fifth scenario; mutations M19–M21 cover the new mechanisms.
+Two adversarial review rounds ran before merge, each finding tried by independent skeptics.
+
+| Round | Scope | Raised | Upheld | Split | Refuted |
+|---|---|---|---|---|---|
+| 1 (97 agents) | the page as first committed | 46 | 39 | 4 | 3 |
+| 2 (73 agents) | the round-1 fixes, plus a regression hunt | 43 | 33 | 1 | 9 |
+
+Every upheld and split finding of both rounds was fixed. The most important:
+- **Ticks.** In round 1, ticking one of two identical rows verified both. The round-1 fix numbered identical rows, but
+  round 2 showed the numbering let a tick pass to the other twin when one was edited or deleted. Ticks now follow the
+  row id within a session and hold only while the row's content is unchanged. The file keeps content keys, since ids
+  are regenerated on import. A household row that goes out of use is no longer shown as verified anywhere.
+- **Footing.** Every total now equals the sum of the cells shown above it, in both views. Money shown to the cent is
+  totalled in whole cents, typed inputs are totalled as typed, and the tie-out foots its two lines.
+- **Error placement.** An error now shows on exactly the fields behind it: every rate in a stack, including the trust
+  stacks and the state-rate bound. A prior-gift year with no exclusion on file is reported on the year. The ING
+  value-factor error names its asset. An exclusion error no longer spills onto unused prior-gift rows.
+- **Paste and CSV hardening.** Formula injection is blocked in the pasted table and in CSV, including after a `;`
+  that a semicolon-locale Excel splits on. Free text that a spreadsheet would read as a number, date or boolean stays
+  text.
+- **Print and dates.** Pages are landscape, and the audit tables are not clipped. The print rule is scoped to the audit
+  page, so the Analysis print is unchanged. The flags list prints in full, and rows are not split across pages. Tick
+  dates use the reviewer's local date.
+- **Evals.** Five checks were added:
+  - the derived rows are compared with the oracle;
+  - every in-use, not-used and display-only status is checked metamorphically;
+  - ten error-routing cases are checked by exact set equality;
+  - ticks are checked to follow their row;
+  - footing is checked in both views, on rows with sub-cent parts.
+
+  Mutations M19–M23 cover the new mechanisms.
 
 ## Verification
+Final tree (after both review rounds):
+
 | Check | Result |
 |---|---|
-| Unit tests (`npm test -- --run`) | 310 passed, 1 skipped |
+| Unit tests (`npm test -- --run`) | 323 passed, 1 skipped |
 | Lint (`npm run lint`) | clean |
-| Quick eval (`node evals/run.mjs --quick`) | 673/673 checks, 32,681 assertions |
-| Full eval, seed 20260927 (`results/pass4.json`) | 675/675 checks, 215,481 assertions |
-| Hold-out eval, seed 4242, 2,000 scenarios (`results/holdout4.json`) | 677/677 checks, 285,201 assertions |
+| Quick eval (`node evals/run.mjs --quick`) | 674/674 checks, 32,726 assertions |
+| Full eval, seed 20260927 (`results/pass4.json`) | 676/676 checks, 215,786 assertions |
+| Hold-out eval, seed 4242, 2,000 scenarios (`results/holdout4.json`) | 678/678 checks, 285,606 assertions |
+| Mutation testing, full run (`results/mutation.json`) | 23/23 caught by the evals, 22/23 by the unit tests |
+| Mutation M23 after its unit test (`results/mutation-subset.json`) | caught by both |
 
 Browser check (Chromium, production build, reviewer time zone America/Los_Angeles):
-- Ticking the first of two identical rows left the second unverified; progress rose by one.
-- The tick date was the local date (2026-09-28) while UTC was already 2026-09-29.
-- Changing a ticked value showed "1 tick hidden"; undoing it brought the tick back; Export JSON saved only live ticks.
+- Ticking the first of two identical rows left the second unverified. Editing the ticked twin hid its tick without
+  passing it to the other; undoing the edit brought it back.
+- Export JSON saved the tick by content, and Import JSON put it back on the same row.
+- Changing a ticked household value showed "1 tick hidden"; undoing it brought the tick back.
+- The tick date was the reviewer's local date. In an earlier run at 17:00 Pacific it was 2026-09-28 while UTC was
+  already 2026-09-29.
 - A burn share typed as 1 raised the "% typed as decimal" flag and the tab badge.
 - The filtered view stated its row counts on screen and in the print header.
 - The CSV download starts with the UTF-8 byte-order mark.
-- Printed to PDF at Letter size: six landscape pages, all 18 register columns on the page, no row split across pages.
-- No page-level horizontal scroll at 390 px; no console errors.
+- Printed to PDF at Letter size, the audit came out as five landscape pages: all 18 register columns fit, the totals
+  row sits under the rows, and no row splits across pages.
+- With the unverified legacy table selected, the warning banner prints on the first landscape page. The Analysis
+  page still prints portrait.
+- There was no page-level horizontal scroll at 390 px and no console errors.
 
 ## Limits
 - Flags are heuristics for the common slips. A wrong but plausible number is caught only by the control totals or the
   line-by-line tick. False positives are cheap by design: the message explains, and the value is not changed.
 - Ticks are per asset row or per household field. The reviewer is free-text initials, not an authenticated sign-off.
-- A tick certifies a row's content, so a row re-entered with exactly the content of a deleted ticked row shows as
-  verified.
+- An asset tick's fingerprint is a 32-bit FNV-1a hash of the row's typed values. It detects edits, not deliberate
+  tampering with a saved file.
 - No bulk import from Excel yet: a "paste assets" import in the register's column order is the natural next step.

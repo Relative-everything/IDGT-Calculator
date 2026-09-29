@@ -62,8 +62,10 @@ export function controlTotals(rows, fields, { cents = false } = {}) {
  * §0 item 5 and §1), so the
  * other estate plus ALL candidates is the figure to compare with the client's net worth: if the other estate already
  * includes the candidates, this total double-counts them; if it excludes them, each asset's run leaves out the others.
+ * The total foots its two lines as shown to the cent (whole-cent addition, as in controlTotals).
  * @returns {{ otherEstate:number, candidates:number, total:number }}
  */
 export function balanceSheetTieOut({ otherEstate, candidatesFmv }) {
-  return { otherEstate, candidates: candidatesFmv, total: otherEstate + candidatesFmv };
+  const cents = (v) => Math.round(v * CENTS_PER_DOLLAR);
+  return { otherEstate, candidates: candidatesFmv, total: (cents(otherEstate) + cents(candidatesFmv)) / CENTS_PER_DOLLAR };
 }

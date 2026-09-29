@@ -63,7 +63,8 @@ export default function AssetsPanel({ assets, onChange, errorsById }) {
   const remove = (id) => onChange(assets.filter((a) => a.id !== id));
   const duplicate = (asset) => {
     if (assets.length >= MAX_IMPORT_ASSETS) return;
-    const copy = { ...asset, id: newId(), name: `${asset.name} (copy)` };
+    const suffix = ' (copy)';
+    const copy = { ...asset, id: newId(), name: `${String(asset.name ?? '').slice(0, MAX_TEXT_FIELD_LENGTH - suffix.length)}${suffix}` };
     const i = assets.findIndex((a) => a.id === asset.id);
     onChange([...assets.slice(0, i + 1), copy, ...assets.slice(i + 1)]);
   };

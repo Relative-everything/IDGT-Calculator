@@ -180,11 +180,21 @@ const HOUSEHOLD_KEYS = new Set(HOUSEHOLD_FIELDS.map((f) => f.key));
 const ASSET_ENGINE_TO_FIELD = Object.fromEntries(ASSET_FIELDS.filter((f) => f.engine).map((f) => [f.engine, f.key]));
 const ASSET_KEYS = new Set(ASSET_FIELDS.map((f) => f.key));
 
-/** The household fields an engine-level error belongs to, given the modes that decide which field is in use. */
-function householdFieldsFor(engineKey, estate) {
-  // The prior-gift exclusion comes from the year's table entry, or from the custom amount (buildInputs.priorGiftExclusion)
-  if (engineKey === 'XP') return [estate.priorExclusionMode === 'custom' ? 'priorGiftExclusion' : 'priorGiftYear'];
-  if (engineKey === 'XPS') return [estate.spousePriorExclusionMode === 'custom' ? 'spousePriorGiftExclusion' : 'spousePriorGiftYear'];
+/**
+ * The household fields an engine-level error belongs to, given the modes that decide which field is in use. Returns
+ * null for an error that only repeats another one (it is left out).
+ */
+function householdFieldsFor(engineKey, { grantor, estate }) {
+  // The prior-gift exclusion comes from the year's table entry, or from the custom amount (buildInputs.priorGiftExclusion).
+  // Without prior gifts it is the basic exclusion itself, whose own error already stands on E.exclusion.
+  if (engineKey === 'XP') {
+    if (!(parseNum(estate.priorGifts) > 0)) return null;
+    return [estate.priorExclusionMode === 'custom' ? 'priorGiftExclusion' : 'priorGiftYear'];
+  }
+  if (engineKey === 'XPS') {
+    if (!(grantor.married && parseNum(estate.spousePriorGifts) > 0)) return null;
+    return [estate.spousePriorExclusionMode === 'custom' ? 'spousePriorGiftExclusion' : 'spousePriorGiftYear'];
+  }
   if (engineKey === 'tauBene' && estate.beneNiit) return [...ENGINE_TO_FIELDS.tauBene, 'beneNiit', 'niit'];
   if (ENGINE_TO_FIELDS[engineKey]) return ENGINE_TO_FIELDS[engineKey];
   return HOUSEHOLD_KEYS.has(engineKey) ? [engineKey] : [];
@@ -206,31 +216,33 @@ export function assetFingerprint(asset) {
 }
 
 /**
- * Tick keys. A household tick is keyed by the field reference and records the typed value it certified. An asset tick is
- * keyed by the row's content: the fingerprint, plus `#k` for the k-th row with that same content, so two identical rows
- * (a double entry) need a tick each. Content keys survive reordering, deletion of other rows and Export/Import JSON.
+ * Tick keys. A household tick is keyed by the field reference and records the typed value it certified. An asset tick
+ * follows its row: in the app it is keyed by the row id (`R:<id>`) and records the row's fingerprint, so it is hidden as
+ * soon as that row changes and never passes to another row, even an identical one. Row ids are not saved in a scenario
+ * file, so the file keys asset ticks by content instead (`A:<fingerprint>`, plus `#k` for the k-th of several identical
+ * rows); ticksFromFile maps them back onto the imported rows in file order.
  */
 export const householdTickKey = (f) => `${f.state[0].toUpperCase()}.${f.key}`;
-export const assetTickKey = (asset, occurrence = 1) => `A:${assetFingerprint(asset)}${occurrence > 1 ? `#${occurrence}` : ''}`;
+export const assetTickKey = (asset) => `R:${asset.id}`;
 const typedString = (v) => (typeof v === 'boolean' ? (v ? 'true' : 'false') : String(v ?? ''));
 const isAuditable = (status) => status.code === 'used' || status.code === 'scope';
 
-/** Tick key of every asset row, in order (occurrence-numbered among identical rows). */
-function assetTickKeys(assets) {
+/** Each asset row's fingerprint and its content key in a scenario file (occurrence-numbered among identical rows). */
+function fileKeys(assets) {
   const seen = new Map();
   return assets.map((a) => {
     const fp = assetFingerprint(a);
     const k = (seen.get(fp) ?? 0) + 1;
     seen.set(fp, k);
-    return { key: `A:${fp}${k > 1 ? `#${k}` : ''}`, fingerprint: fp };
+    return { asset: a, fp, fileKey: `A:${fp}${k > 1 ? `#${k}` : ''}` };
   });
 }
 
 /**
  * The ticks that still certify the current inputs: household ticks on a row in use whose value is unchanged, and asset
- * ticks whose row still exists. A tick on a row that has changed is hidden on the page (it comes back if the edit is
- * undone) and left out here, so Export JSON saves only live ticks.
- * @returns {object} ticks, same shape as audit.ticks
+ * ticks whose row still holds the content that was ticked. Other ticks are hidden on the page (a tick returns if the
+ * edit is undone) and are not saved.
+ * @returns {object} ticks in the app's keys (same shape as audit.ticks)
  */
 export function liveTicks({ grantor, estate, settings, assets }, ticks = {}) {
   const ui = { grantor, estate, settings };
@@ -240,7 +252,33 @@ export function liveTicks({ grantor, estate, settings, assets }, ticks = {}) {
     const tick = ticks[key];
     if (tick && tick.v === typedString(ui[f.state][f.key]) && isAuditable(f.use(ui))) out[key] = tick;
   }
-  for (const { key } of assetTickKeys(assets)) if (ticks[key]) out[key] = ticks[key];
+  for (const { asset, fp } of fileKeys(assets)) {
+    const tick = ticks[assetTickKey(asset)];
+    if (tick && tick.v === fp) out[assetTickKey(asset)] = tick;
+  }
+  return out;
+}
+
+/** Live ticks as a scenario file stores them: asset ticks keyed by content, since row ids are regenerated on import. */
+export function ticksForFile(state, ticks = {}) {
+  const live = liveTicks(state, ticks);
+  const out = {};
+  for (const [key, tick] of Object.entries(live)) if (!key.startsWith('R:')) out[key] = tick;
+  for (const { asset, fileKey } of fileKeys(state.assets)) {
+    const tick = live[assetTickKey(asset)];
+    if (tick) out[fileKey] = { v: tick.v, ...(tick.at ? { at: tick.at } : {}) };
+  }
+  return out;
+}
+
+/** Ticks read from a scenario file, mapped onto the imported rows: the k-th row with a content gets that content's k-th tick. */
+export function ticksFromFile(assets, ticks = {}) {
+  const out = {};
+  for (const [key, tick] of Object.entries(ticks)) if (!key.startsWith('A:')) out[key] = tick;
+  for (const { asset, fp, fileKey } of fileKeys(assets)) {
+    const tick = ticks[fileKey];
+    if (tick) out[assetTickKey(asset)] = { v: fp, ...(tick.at ? { at: tick.at } : {}) };
+  }
   return out;
 }
 
@@ -280,7 +318,8 @@ function textFlags(field, raw, { unusedField = false } = {}) {
   } else if (['pct', 'int', 'number'].includes(field.kind) && text.includes(',')) {
     flags.push({ code: 'DECIMAL_COMMA', severity: 'check', message: `"${raw}" contains a comma, read as a thousands separator: the model reads ${field.kind === 'pct' ? `${parseNum(raw)}%` : parseNum(raw)}. Use a decimal point.` });
   }
-  if (field.kind === 'pct' && Number.isFinite(parsed)) {
+  // A value typed with its own % sign is a percentage already, whatever its size.
+  if (field.kind === 'pct' && Number.isFinite(parsed) && !String(raw).includes('%')) {
     const v = parseNum(raw); // the typed number of percent
     const suspicious = (field.frac === 'rate' && v > 0 && v < 1)
       || (field.frac === 'share' && v > 0 && v <= SHARE_FRACTION_LIMIT)
@@ -325,14 +364,18 @@ export function buildInputRegister({ grantor, estate, settings, assets, perAsset
       const issue = { code: 'INVALID', severity: 'error', message: e.message };
       const assetField = ASSET_KEYS.has(e.field) ? e.field : ASSET_ENGINE_TO_FIELD[e.field];
       if (assetField) { pushUnique(assetIssues, `${pa.id}.${assetField}`, issue); continue; }
-      // A household-field error that also depends on this asset's inputs (validate.js `also`): shown on the asset's
-      // first such cell, and named on the household row so several assets each get their own line.
-      const alsoField = ASSET_ENGINE_TO_FIELD[e.also?.[0]];
-      if (alsoField) pushUnique(assetIssues, `${pa.id}.${alsoField}`, issue);
+      const fields = householdFieldsFor(e.field, ui);
+      if (fields === null) continue;
+      // validate.js `also`: the other inputs the error depends on. An asset input shows the error on the asset's first
+      // such cell and names the asset on the household row (so several assets each get their own line); a household
+      // input adds the fields behind it.
+      const alsoAsset = (e.also ?? []).map((k) => ASSET_ENGINE_TO_FIELD[k]).find(Boolean);
+      const alsoHousehold = (e.also ?? []).filter((k) => !ASSET_ENGINE_TO_FIELD[k]).flatMap((k) => householdFieldsFor(k, ui) ?? []);
+      if (alsoAsset) pushUnique(assetIssues, `${pa.id}.${alsoAsset}`, issue);
       const row = rowOfId.get(pa.id);
-      const message = alsoField ? `Asset ${row ? `#${row} ` : ''}${pa.name ?? ''}: ${e.message}` : e.message;
-      const fields = householdFieldsFor(e.field, estate);
-      if (fields.length) for (const f of fields) pushUnique(householdIssues, f, { ...issue, message });
+      const message = alsoAsset ? `Asset ${row ? `#${row} ` : ''}${pa.name ?? ''}: ${e.message}` : e.message;
+      const targets = [...new Set([...fields, ...alsoHousehold])];
+      if (targets.length) for (const f of targets) pushUnique(householdIssues, f, { ...issue, message });
       else pushUnique(householdIssues, '*', { ...issue, message: `${e.label ?? e.field}: ${message}` });
     }
     for (const w of pa.warnings ?? []) {
@@ -343,7 +386,8 @@ export function buildInputRegister({ grantor, estate, settings, assets, perAsset
     }
   }
 
-  // Household rows
+  // Household rows. A row counts as verified only while it is in use and its value is the one ticked.
+  let hidden = 0;
   const household = HOUSEHOLD_FIELDS.map((f) => {
     const raw = ui[f.state][f.key];
     const model = f.engine ? base[f.engine] : PARSE[f.kind](raw);
@@ -353,10 +397,12 @@ export function buildInputRegister({ grantor, estate, settings, assets, perAsset
     const flags = [...(householdIssues[f.key] ?? []), ...typedChecks].sort(byWeight);
     const tick = ticks[ref];
     const tickValue = typedString(raw);
+    const verified = Boolean(tick) && tick.v === tickValue && isAuditable(status);
+    if (tick && !verified) hidden += 1;
     return {
       ref, section: f.section, key: f.key, label: f.label, kind: f.kind, unit: f.unit ?? null, raw, model, status, flags,
       display: f.key === 'lifeTable' ? LIFE_TABLE_BY_ID[raw]?.shortLabel ?? raw : null,
-      tickKey: ref, tickValue, verified: Boolean(tick) && tick.v === tickValue, tickedAt: tick?.at ?? null,
+      tickKey: ref, tickValue, verified, tickedAt: verified ? tick.at ?? null : null,
     };
   });
 
@@ -374,29 +420,34 @@ export function buildInputRegister({ grantor, estate, settings, assets, perAsset
     const inp = inputsFor(a);
     return { inp, ...assetAuditFacts({ FMV: inp.FMV, delta: inp.delta, annualExclusions: inp.annualExclusions, B0: inp.B0 }) };
   });
+  // A row has a sale when its sale year reads as positive, the same test the asset card and validateUiFields use.
+  const hasSale = (a) => parseNum(a.saleYear) > 0;
   // Duplicates are found on what the model reads (so "1,000,000" and "1000000" match), leaving out post-sale rates the
-  // row does not use.
-  const figuresKey = (inp) => JSON.stringify(ASSET_FIELDS.filter((f) => f.engine && !(f.saleOnly && !(inp.S > 0))).map((f) => String(inp[f.engine])));
+  // row does not use. A value the model cannot read is compared as typed, so "TBD" matches "TBD" but not "4M".
+  const figuresKey = (a, inp) => JSON.stringify(ASSET_FIELDS.filter((f) => f.engine && !(f.saleOnly && !hasSale(a)))
+    .map((f) => (Number.isFinite(inp[f.engine]) ? String(inp[f.engine]) : `typed:${cleaned(a[f.key]).replace(/,/g, '')}`)));
   const nameCount = new Map();
   const valueRows = new Map();
   assets.forEach((a, i) => {
     const nameKey = String(a.name ?? '').trim().toLowerCase();
     if (nameKey) nameCount.set(nameKey, [...(nameCount.get(nameKey) ?? []), i + 1]);
-    const valuesKey = figuresKey(facts[i].inp);
+    const valuesKey = figuresKey(a, facts[i].inp);
     valueRows.set(valuesKey, [...(valueRows.get(valuesKey) ?? []), i + 1]);
   });
-  const totals = controlTotals(facts.map((f) => ({ FMV: f.inp.FMV, B0: f.inp.B0, annualExclusions: f.inp.annualExclusions, unrealizedGain: f.unrealizedGain,
-    discountAmount: f.discountAmount, giftValue: f.giftValue, taxableGift: f.taxableGift })),
-  ['FMV', 'B0', 'annualExclusions', 'unrealizedGain', 'discountAmount', 'giftValue', 'taxableGift'], { cents: true });
-  const keys = assetTickKeys(assets);
+  const columns = facts.map((f) => ({ FMV: f.inp.FMV, B0: f.inp.B0, annualExclusions: f.inp.annualExclusions, unrealizedGain: f.unrealizedGain,
+    discountAmount: f.discountAmount, giftValue: f.giftValue, taxableGift: f.taxableGift }));
+  // Control totals foot the lines as shown to the cent; `typedTotals` foot the typed inputs as entered (the "as typed"
+  // view shows them unrounded), and the shares divide by the unrounded FMV total so they add up to 100%.
+  const totals = controlTotals(columns, ['FMV', 'B0', 'annualExclusions', 'unrealizedGain', 'discountAmount', 'giftValue', 'taxableGift'], { cents: true });
+  const typedTotals = controlTotals(columns, ['FMV', 'B0', 'annualExclusions']);
+  const keys = fileKeys(assets);
 
   const assetRows = assets.map((a, i) => {
     const { inp, ...fact } = facts[i];
-    const hasSale = inp.S > 0;
     const cells = {};
     for (const f of ASSET_FIELDS) {
       const raw = a[f.key] ?? '';
-      const status = f.saleOnly && !hasSale ? unused('no sale year') : f.kind === 'text' ? label('label only') : used();
+      const status = f.saleOnly && !hasSale(a) ? unused('no sale year') : f.kind === 'text' ? label('label only') : used();
       const typedChecks = f.kind === 'text' ? [] : textFlags(f, raw, { unusedField: status.code === 'unused' });
       const flags = [...(assetIssues[`${a.id}.${f.key}`] ?? []), ...typedChecks].sort(byWeight);
       cells[f.key] = { raw, model: f.engine ? inp[f.engine] : raw, status, flags };
@@ -407,26 +458,35 @@ export function buildInputRegister({ grantor, estate, settings, assets, perAsset
     }
     const sameName = nameCount.get(String(a.name ?? '').trim().toLowerCase()) ?? [];
     if (sameName.length > 1) rowFlags.push({ code: 'DUPLICATE_NAME', severity: 'check', message: `Same name as asset ${sameName.filter((k) => k !== i + 1).map((k) => `#${k}`).join(', ')}.` });
-    const sameValues = valueRows.get(figuresKey(inp)) ?? [];
+    const sameValues = valueRows.get(figuresKey(a, inp)) ?? [];
     if (sameValues.length > 1) rowFlags.push({ code: 'DUPLICATE_ROW', severity: 'check', message: `Same figures as asset ${sameValues.filter((k) => k !== i + 1).map((k) => `#${k}`).join(', ')} — entered twice?` });
     const cellFlags = ASSET_FIELDS.flatMap((f) => cells[f.key].flags.map((x) => ({ ...x, field: f.key, fieldLabel: f.label })));
-    const { key: tickKey, fingerprint } = keys[i];
+    const tickKey = assetTickKey(a);
+    const tick = ticks[tickKey];
+    const verified = Boolean(tick) && tick.v === keys[i].fp;
+    if (tick && !verified) hidden += 1;
     return {
       row: i + 1, id: a.id, ref: `A${i + 1}`, name: a.name ?? '', cells,
-      derived: { ...fact, share: shareOfTotal(inp.FMV, totals.FMV.sum) },
+      derived: { ...fact, share: shareOfTotal(inp.FMV, typedTotals.FMV.sum) },
       flags: [...cellFlags, ...rowFlags].sort(byWeight),
-      tickKey, tickValue: fingerprint, verified: Boolean(ticks[tickKey]), tickedAt: ticks[tickKey]?.at ?? null,
+      tickKey, tickValue: keys[i].fp, verified, tickedAt: verified ? tick.at ?? null : null,
     };
   });
 
   const tieOut = { ...balanceSheetTieOut({ otherEstate: base.E0, candidatesFmv: totals.FMV.sum }), candidatesSkipped: totals.FMV.skipped };
 
-  // A whole schedule typed in thousands: every amount far below anything an IDGT is used for.
+  // Amounts typed in thousands, schedule-wide: every amount far below anything an IDGT is used for.
   const general = [...(householdIssues['*'] ?? [])];
   const smallLimit = SMALL_SCHEDULE_SHARE * base.X0;
-  const amounts = [base.E0, ...facts.map((f) => f.inp.FMV)];
-  if (Number.isFinite(smallLimit) && smallLimit > 0 && amounts.every((v) => Number.isFinite(v) && v > 0 && v < smallLimit)) {
-    general.push({ code: 'SMALL_SCHEDULE', severity: 'check', message: `The other estate and every fair market value are below $${Math.round(smallLimit).toLocaleString('en-US')} (${SMALL_SCHEDULE_SHARE * 100}% of the basic exclusion). If the source schedule is in thousands, multiply each amount by 1,000.` });
+  const limitText = `$${Math.round(smallLimit).toLocaleString('en-US')} (${SMALL_SCHEDULE_SHARE * 100}% of the basic exclusion)`;
+  const fmvs = facts.map((f) => f.inp.FMV).filter(Number.isFinite);
+  const allSmall = (vals) => vals.length > 0 && vals.every((v) => v >= 0 && v < smallLimit) && vals.some((v) => v > 0);
+  if (Number.isFinite(smallLimit) && smallLimit > 0 && allSmall(fmvs)) {
+    if (!Number.isFinite(base.E0) || (base.E0 >= 0 && base.E0 < smallLimit)) {
+      general.push({ code: 'SMALL_SCHEDULE', severity: 'check', message: `The other estate and every fair market value are below ${limitText}. If the source schedule is in thousands, multiply each amount by 1,000.` });
+    } else {
+      general.push({ code: 'SMALL_SCHEDULE', severity: 'confirm', message: `Every fair market value is below ${limitText}, while the other estate is not. If the asset schedule is in thousands, multiply each fair market value, basis and annual exclusion by 1,000.` });
+    }
   }
 
   // Every flag in one list for the summary, with its reference.
@@ -437,13 +497,12 @@ export function buildInputRegister({ grantor, estate, settings, assets, perAsset
   ].sort(byWeight);
 
   const auditable = household.filter((r) => isAuditable(r.status));
-  const live = Object.keys(liveTicks({ grantor, estate, settings, assets }, ticks)).length;
   const progress = {
     verified: auditable.filter((r) => r.verified).length + assetRows.filter((r) => r.verified).length,
     total: auditable.length + assetRows.length,
-    hidden: Object.keys(ticks).length - live, // ticks on rows that changed since, or are no longer in use
+    hidden, // ticks on rows that changed since they were ticked, or are no longer in use (removed rows are not counted)
   };
-  return { household, derived, assets: assetRows, totals, tieOut, flags, progress };
+  return { household, derived, assets: assetRows, totals, typedTotals, tieOut, flags, progress };
 }
 
 // ---- export ---------------------------------------------------------------------------------------------------------
@@ -473,26 +532,34 @@ export function unitFor(kind, mode) {
 const derivedValue = (d, key, kind, mode) => (kind === 'ratio' && mode === 'typed' && d[key] != null ? bare(d[key] * 100) : bare(d[key], kind));
 export { derivedValue as derivedCellValue };
 
+// Free text that starts with a letter stays text in a spreadsheet, except the words it reads as booleans.
+const LETTER_START = /^\s*\p{L}/u;
+const BOOLEAN_WORD = /^\s*(true|false)\s*$/i;
+
 /**
- * Spreadsheet cell. A plain number in a numeric column stays a number. Text is formula-neutralised (CWE-1236: a leading
- * = + - @, or a leading quote that a spreadsheet would strip before reading the rest, gets a ' prefix), and so is text
- * that a spreadsheet would read as a number (a Source ref "0042" or a long account number would lose its zeros or
- * digits). CSV cells are quoted by csvCell; a pasted (tab-separated) cell that contains a quote is quoted the way Excel
- * writes the clipboard, so an unmatched quote cannot merge the rest of the table into one cell.
+ * Spreadsheet cell. A plain number in a numeric column stays a number. Other text is formula-neutralised (CWE-1236): a
+ * leading = + - @ gets a ' prefix, and so does a leading quote or apostrophe in a pasted cell (a spreadsheet would strip
+ * it and read the rest). Free text (asset name, Source ref, reviewer) that does not start with a letter, or is TRUE or
+ * FALSE, gets the prefix too, so a spreadsheet keeps it as typed ("0042", "12/31", "1,234" would otherwise become a
+ * number or a date). CSV cells are quoted by csvCell; a pasted (tab-separated) cell that contains a quote is quoted the
+ * way Excel writes the clipboard, so an unmatched quote cannot merge the rest of the table into one cell.
  */
 function sheetCell(text, sep, isText = false) {
   const s = String(text ?? '');
   const numeric = /^-?\d+(\.\d+)?$/.test(s);
   if (numeric && !isText) return s;
-  if (sep === ',') return numeric ? csvCell(`'${s}`) : csvCell(s);
+  const keepAsText = isText && s.trim() !== '' && (!LETTER_START.test(s) || BOOLEAN_WORD.test(s));
+  if (sep === ',') return csvCell(keepAsText ? `'${s}` : s);
   let flat = s.replace(/[\t\r\n]+/g, ' ');
-  if (numeric || /^[=+\-@"]/.test(flat)) flat = `'${flat}`;
+  if (keepAsText || /^[=+\-@"']/.test(flat)) flat = `'${flat}`;
   return flat.includes('"') ? `"${flat.replace(/"/g, '""')}"` : flat;
 }
 
 /**
- * The asset register as rows of cells (header, one row per asset, totals), in column-letter order. The money totals foot
- * the rounded cells (control totals in whole cents), so SUM() over the pasted column equals the totals row exactly.
+ * The asset register as rows of cells (header, one row per asset, totals), in column-letter order. Every total foots the
+ * cells shown above it, so SUM() over a pasted column equals the totals row: money shown to the cent is totalled in
+ * whole cents (the control totals), and typed inputs shown as entered ("as typed") are totalled as entered. The share
+ * total is the shares' own sum.
  * `textColumns[i]` is true for free-text columns (name, source ref), which are exported as text even when they look numeric.
  */
 export function assetTableRows(register, mode) {
@@ -509,12 +576,16 @@ export function assetTableRows(register, mode) {
     return c.kind === 'text' ? String(cell.raw ?? '') : cellValue(c.kind, cell.raw, cell.model, mode);
   }));
   const t = register.totals;
+  const typed = register.typedTotals;
   const totalOf = { fmv: t.FMV, basis: t.B0, annualExclusions: t.annualExclusions, unrealizedGain: t.unrealizedGain, giftValue: t.giftValue, taxableGift: t.taxableGift };
+  const typedTotalOf = { fmv: typed.FMV, basis: typed.B0, annualExclusions: typed.annualExclusions };
   const totals = ASSET_COLUMNS.map((c) => {
     if (c.key === 'row') return '';
     if (c.key === 'name') return `Total (${t.count} assets)`;
+    if (mode === 'typed' && typedTotalOf[c.key]) return bare(typedTotalOf[c.key].sum);
     if (totalOf[c.key]) return bare(totalOf[c.key].sum, 'money');
     if (c.key === 'share') {
+      // the shares' own sum (100% when every FMV reads), not the sum of their 12-digit display, which can end in …9999
       const shares = register.assets.map((r) => r.derived.share).filter((v) => v != null);
       return shares.length ? derivedValue({ share: shares.reduce((a, b) => a + b, 0) }, 'share', 'ratio', mode) : '';
     }
@@ -527,7 +598,7 @@ export function assetTableRows(register, mode) {
 /** Tab-separated asset table for pasting next to a source spreadsheet. */
 export function assetTableTsv(register, mode) {
   const { header, rows, totals, textColumns } = assetTableRows(register, mode);
-  return [header.map((c) => sheetCell(c, '\t', true)).join('\t'),
+  return [header.map((c) => sheetCell(c, '\t')).join('\t'),
     ...rows.map((cells) => cells.map((c, i) => sheetCell(c, '\t', textColumns[i])).join('\t')),
     totals.map((c) => sheetCell(c, '\t')).join('\t')].join('\n');
 }
@@ -552,7 +623,7 @@ export function registerToCsv(register, mode, meta = {}) {
     row([labelText, bare(t[key].sum, 'money'), String(t[key].skipped)]);
   }
   row(['Other estate', bare(register.tieOut.otherEstate, 'money'), '']);
-  row(['+ Σ candidate FMV', bare(register.tieOut.candidates, 'money'), String(register.tieOut.candidatesSkipped)]);
+  row(['Plus Σ candidate FMV', bare(register.tieOut.candidates, 'money'), String(register.tieOut.candidatesSkipped)]);
   row(['Other estate + Σ candidate FMV (compare with net worth)', bare(register.tieOut.total, 'money'), String(register.tieOut.candidatesSkipped)]);
   lines.push('');
   row(['Ref', 'Section', 'Input', `Value (${mode === 'typed' ? 'as typed' : 'as the model reads it'})`, 'Unit', 'Status', 'Flags', 'Verified']);

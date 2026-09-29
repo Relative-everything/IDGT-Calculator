@@ -1,0 +1,28 @@
+{
+  "summary": {
+    "mutations": 1,
+    "stale": 0,
+    "caughtByEval": 1,
+    "caughtByUnit": 1,
+    "caughtByEither": 1
+  },
+  "results": [
+    {
+      "id": "M23",
+      "defect": "the prior-gift year is marked in use although the custom exclusion is",
+      "file": "src/hooks/inputRegister.js",
+      "caughtByEval": true,
+      "evalFailingChecks": 1,
+      "evalExamples": [
+        {
+          "layer": "L5 UI wiring",
+          "check": "inputs audit: every \"in use\" / \"not used\" / \"display only\" status matches what the value moves",
+          "fail": 5
+        }
+      ],
+      "caughtByUnit": true,
+      "unitTests": "1 failed | 321 passed | 1 skipped (323)",
+      "seconds": 32.16
+    }
+  ]
+}

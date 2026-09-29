@@ -11,11 +11,11 @@
     "scenariosRejected": 0,
     "scenariosWithAnyFailure": 0,
     "pipeline": "src/hooks/computeModel.js (the app's own function)",
-    "seconds": 106.658,
+    "seconds": 127.659,
     "totals": {
-      "checks": 677,
+      "checks": 678,
       "failingChecks": 0,
-      "assertions": 285201,
+      "assertions": 285606,
       "failures": 0
     },
     "layers": {
@@ -26,9 +26,9 @@
         "failures": 0
       },
       "L5 UI wiring": {
-        "checks": 343,
+        "checks": 344,
         "failingChecks": 0,
-        "assertions": 110145,
+        "assertions": 110550,
         "failures": 0
       },
       "L2 oracle agreement": {
@@ -3586,13 +3586,19 @@
     },
     {
       "layer": "L5 UI wiring",
-      "name": "inputs audit: a field marked \"not used\" moves no engine input, a number marked in use moves one",
+      "name": "inputs audit: every \"in use\" / \"not used\" / \"display only\" status matches what the value moves",
       "pass": 405,
       "fail": 0
     },
     {
       "layer": "L5 UI wiring",
-      "name": "inputs audit: an error on a combined rate shows on every field that feeds it",
+      "name": "inputs audit: a validation error shows on exactly the fields behind it",
+      "pass": 405,
+      "fail": 0
+    },
+    {
+      "layer": "L5 UI wiring",
+      "name": "inputs audit: a row not in use is never shown as verified",
       "pass": 405,
       "fail": 0
     },
@@ -3604,13 +3610,13 @@
     },
     {
       "layer": "L5 UI wiring",
-      "name": "inputs audit: two identical asset rows need a tick each",
+      "name": "inputs audit: a tick stays with its row (identical rows need a tick each)",
       "pass": 405,
       "fail": 0
     },
     {
       "layer": "L5 UI wiring",
-      "name": "inputs audit: every money total foots the cells shown (SUM of the pasted column = the totals row)",
+      "name": "inputs audit: every money total foots the cells shown, in both views (SUM of the pasted column = the totals row)",
       "pass": 405,
       "fail": 0
     },

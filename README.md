@@ -88,12 +88,12 @@ source documents, which matters when many assets are keyed in from a spreadsheet
   unit, and whether the model uses it (and why not), plus the derived rate stacks.
 - **Flags** for the usual keying slips: a percentage typed as a decimal (0.07, or 1 for a 100% share), a decimal comma
   ("3,5" would be read as 35%), points or irregular commas as digit grouping, amounts or a whole schedule that look
-  like thousands, duplicate names or figures, basis above value, and every validation error on each field that feeds
-  it (an error on a rate stack shows on every rate in the stack). A slip in a field the model does not use at present
-  is listed as "confirm".
-- A **tick** per row. It certifies the row's content, so it is hidden as soon as anything in the row changes (it
-  returns if the change is undone), two identical rows need a tick each, and only live ticks are saved with Export
-  JSON, with the reviewer's initials. **Copy asset table** (tab-separated, to paste beside the source), **Download
+  like thousands, duplicate names or figures, basis above value, and every validation error on exactly the fields
+  behind it (an error on a rate stack shows on every rate in the stack). A slip in a field the model does not use at
+  present is listed as "confirm".
+- A **tick** per row. It stays with its row and certifies the row's content: it is hidden as soon as anything in the
+  row changes or the row goes out of use (it returns if the change is undone), it never passes to an identical row,
+  and only live ticks are saved with Export JSON, with the reviewer's initials. **Copy asset table** (tab-separated, to paste beside the source), **Download
   audit CSV** (same columns and letters; money totals foot the cents shown on each row), **Print** (landscape), and
   **Full width** for long lists.
 The eval suite checks on every scenario that the values the page shows are exactly the engine's inputs.
@@ -116,9 +116,10 @@ inclusion, whether a scheduled sale also happens when the asset is kept).
   UI control driven through the app's pipeline: 27 client personas plus a 1,500-scenario stratified sweep (≈ 45%
   married couples), all code-graded. On 2026-09-27 it found seven defects in the single-life build
   ([findings](docs/changes/2026-09-27-math-evals/)) and, after life tables and married couples were added, three more
-  plus a ledger-clarity gap ([handback](docs/changes/2026-09-27-life-tables/handback.md)); all fixed. Latest:
-  661/661 checks and 206,013/206,013 assertions, 663/663 on an unseen seed; mutation testing — 14 injected defects,
-  each caught by the eval suite and by the unit tests independently.
+  plus a ledger-clarity gap ([handback](docs/changes/2026-09-27-life-tables/handback.md)); all fixed. Latest
+  (2026-09-29, with the inputs audit page): 676/676 checks and 215,786/215,786 assertions, 678/678 on an unseen seed;
+  mutation testing — 23 injected defects, each caught by the eval suite and by the unit tests independently
+  ([table](evals/README.md#mutation-testing--grading-the-suite-node-evalsmutationmjs)).
 - Engine: golden fixtures A–H (hand-derived, builder-confirmed 2026-09-26), §2001(c) cross-check
   against the bracket schedule, model invariants (decomposition sums, Σq = 1, neutrality, swap
   properties), input-wiring test — `npm test`.

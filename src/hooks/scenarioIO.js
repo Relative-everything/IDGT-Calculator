@@ -118,7 +118,9 @@ export function parseScenario(text, defaults) {
 export function csvCell(v) {
   if (v == null) return '';
   if (typeof v === 'number') return Number.isFinite(v) ? String(v) : '';
-  let s = String(v);
+  // Excel set to a ';' list separator splits a line at every ';' (and a line break) and ignores the quotes around this
+  // cell, so each fragment that starts after one is neutralised too.
+  let s = String(v).replace(/([;\r\n]\s*)(?=[=+\-@])/g, "$1'");
   let quote = /[",;\t\r\n]/.test(s);
   if (/^[=+\-@\t\r]/.test(s)) { s = `'${s}`; quote = true; }
   return quote ? `"${s.replace(/"/g, '""')}"` : s;

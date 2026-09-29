@@ -71,7 +71,7 @@ export default function AssetRegister({ register, mode, filter, onTick }) {
             <tr><td colSpan={ASSET_COLUMNS.length} className="px-3 py-3 text-sm text-muted">No asset rows match this filter.</td></tr>
           )}
         </tbody>
-        <tfoot>
+        <tfoot className="print:table-row-group">
           <tr className="border-t-2 border-line-strong bg-surface-2 font-medium">
             {ASSET_COLUMNS.map((c, i) => (
               <td key={c.key} className={`px-2 py-1.5 ${isNumeric(c) ? 'whitespace-nowrap text-right font-mono' : 'text-left'} ${STICKY[c.key] ?? ''} ${STICKY[c.key] ? 'bg-surface-2' : ''} print:static print:min-w-0 print:px-1 print:shadow-none`}>{totals[i]}</td>

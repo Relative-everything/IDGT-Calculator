@@ -59,13 +59,16 @@ export const MUTATIONS = [
   ['M18', 'control totals silently count an unreadable cell as zero', 'src/engine/inputAudit.js',
     'if (Number.isFinite(v)) sum += cents ? Math.round(v * CENTS_PER_DOLLAR) : v;\n      else skipped += 1;',
     'sum += Number.isFinite(v) ? (cents ? Math.round(v * CENTS_PER_DOLLAR) : v) : 0;'],
-  ['M19', 'two identical asset rows share one tick (the occurrence number is dropped)', 'src/hooks/inputRegister.js',
-    "return { key: `A:${fp}${k > 1 ? `#${k}` : ''}`, fingerprint: fp };", 'return { key: `A:${fp}`, fingerprint: fp };'],
+  ['M19', 'an asset tick is keyed by content, so it passes to an identical row', 'src/hooks/inputRegister.js',
+    'export const assetTickKey = (asset) => `R:${asset.id}`;', 'export const assetTickKey = (asset) => `R:${assetFingerprint(asset)}`;'],
   ['M20', 'the totals row sums unrounded values, so it does not foot the cells shown', 'src/hooks/inputRegister.js',
-    "['FMV', 'B0', 'annualExclusions', 'unrealizedGain', 'discountAmount', 'giftValue', 'taxableGift'], { cents: true });",
-    "['FMV', 'B0', 'annualExclusions', 'unrealizedGain', 'discountAmount', 'giftValue', 'taxableGift']);"],
+    "'giftValue', 'taxableGift'], { cents: true });", "'giftValue', 'taxableGift']);"],
   ['M21', 'an error on the grantor ordinary stack is flagged on the federal rate only', 'src/hooks/inputRegister.js',
     "tauOrd: ['fedOrd', 'stateOrd', 'niit'],", "tauOrd: ['fedOrd'],"],
+  ['M22', 'a ticked household row stays verified after it goes out of use', 'src/hooks/inputRegister.js',
+    'const verified = Boolean(tick) && tick.v === tickValue && isAuditable(status);', 'const verified = Boolean(tick) && tick.v === tickValue;'],
+  ['M23', "the prior-gift year is marked in use although the custom exclusion is", 'src/hooks/inputRegister.js',
+    "s.estate.priorExclusionMode === 'custom' ? unused('custom exclusion entered') : used()) },", "s.estate.priorExclusionMode === 'custom' ? used() : used()) },"],
 ];
 
 const only = new Set(process.argv.slice(2));

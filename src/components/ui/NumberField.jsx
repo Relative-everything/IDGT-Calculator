@@ -1,4 +1,5 @@
 import InfoTip from './InfoTip.jsx';
+import { MAX_TEXT_FIELD_LENGTH } from '../../hooks/scenarioIO.js';
 
 /**
  * Text input for numbers (free typing; the hook parses). `prefix` "$" or `suffix` "%" / "yrs".
@@ -19,6 +20,7 @@ export default function NumberField({ id, label, value, onChange, prefix, suffix
           value={value ?? ''}
           disabled={disabled}
           placeholder={placeholder}
+          maxLength={MAX_TEXT_FIELD_LENGTH}
           onChange={(e) => onChange(e.target.value)}
           className="tabular w-full min-w-0 bg-transparent px-2.5 py-1.5 text-sm text-ink outline-none"
         />

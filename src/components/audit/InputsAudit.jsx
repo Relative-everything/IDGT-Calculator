@@ -19,8 +19,8 @@ function Progress({ progress }) {
     <div className="min-w-[12rem]">
       <div className="text-right text-sm text-ink-2"><strong className="tabular text-ink">{progress.verified}</strong> of <span className="tabular">{progress.total}</span> rows verified</div>
       {progress.hidden > 0 && (
-        <div className="text-right text-xs text-muted" title="Ticks on rows that changed after they were ticked. They return if the change is undone, and are not saved with Export JSON.">
-          {progress.hidden} tick{progress.hidden === 1 ? '' : 's'} hidden: row changed since
+        <div className="text-right text-xs text-muted" title="Ticks on rows that changed after they were ticked, or that are no longer used by the model. They return if the change is undone, and are not saved with Export JSON.">
+          {progress.hidden} tick{progress.hidden === 1 ? '' : 's'} hidden: row changed or no longer in use
         </div>
       )}
       <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-2" role="progressbar" aria-valuemin={0} aria-valuemax={progress.total} aria-valuenow={progress.verified} aria-label="Rows verified">
@@ -34,15 +34,19 @@ function Progress({ progress }) {
  * The inputs audit page: every input as bare data with its reference, the batch control totals, data-entry flags and a
  * tick per row. The register comes from the hook (inputRegister.js); this page only lays it out.
  */
-export default function InputsAudit({ register, mode, onModeChange, filter, onFilterChange, reviewer, onReviewerChange, onTick, onClearTicks, onCopy, onDownload, onPrint, printedOn, wide, onWideChange, isStale }) {
-  const [confirmClear, setConfirmClear] = useState(false);
+export default function InputsAudit({ register, mode, onModeChange, filter, onFilterChange, reviewer, onReviewerChange, onTick, onClearTicks, onCopy, onDownload, onPrint, printedOn, wide, onWideChange, isStale, banner }) {
+  // The Clear ticks confirmation is armed for the tick set it was shown for: any tick change disarms it.
+  const tickState = `${register.progress.verified}:${register.progress.hidden}`;
+  const [armedFor, setArmedFor] = useState(null);
   const modeHint = MODES.find((m) => m.value === mode)?.hint;
   const anyTicks = register.progress.verified + register.progress.hidden > 0;
+  const confirmClear = anyTicks && armedFor === tickState;
   const shownAssets = register.assets.filter((r) => matchesFilter(r, filter)).length;
   const shownHousehold = register.household.filter((r) => matchesFilter(r, filter)).length;
   const filterText = FILTERS.find((f) => f.value === filter)?.label.toLowerCase();
   return (
     <div className={`print-landscape space-y-5 transition-opacity ${isStale ? 'opacity-70' : ''}`} aria-busy={isStale || undefined}>
+      {banner}
       <div className="hidden text-xs text-ink-2 print:block">
         IDGT Asset Analyzer · inputs audit · printed {printedOn}{reviewer ? ` · reviewer ${reviewer}` : ''} · values {mode === 'typed' ? 'as typed' : 'as the model reads them'}
         {filter !== 'all' && (
@@ -51,7 +55,7 @@ export default function InputsAudit({ register, mode, onModeChange, filter, onFi
           </strong>
         )}
       </div>
-      <Card title="Inputs audit" subtitle="Every input as bare data, for checking against the source documents. Tick a row when it matches. A tick is hidden as soon as anything in its row changes (it returns if the change is undone), and only live ticks are saved with Export JSON." aside={<Progress progress={register.progress} />}>
+      <Card title="Inputs audit" subtitle="Every input as bare data, for checking against the source documents. Tick a row when it matches. A tick stays with its row and is hidden as soon as anything in that row changes (it returns if the change is undone); only live ticks are saved with Export JSON." aside={<Progress progress={register.progress} />}>
         <div className="flex flex-wrap items-end gap-x-4 gap-y-3 print:hidden">
           <div>
             <span className="block text-xs font-medium text-ink-2">Show values</span>
@@ -81,14 +85,14 @@ export default function InputsAudit({ register, mode, onModeChange, filter, onFi
             <Button variant="ghost" onClick={() => onWideChange(!wide)} title={wide ? 'Show the input panels again to edit values' : 'Hide the input panels so the register shows more columns'}>
               {wide ? 'Show input panels' : 'Full width'}
             </Button>
-            {confirmClear && anyTicks
+            {confirmClear
               ? (
                 <>
-                  <Button variant="danger" onClick={() => { onClearTicks(); setConfirmClear(false); }}>Confirm: clear all ticks</Button>
-                  <Button variant="ghost" onClick={() => setConfirmClear(false)}>Cancel</Button>
+                  <Button variant="danger" onClick={() => { onClearTicks(); setArmedFor(null); }}>Confirm: clear all ticks</Button>
+                  <Button variant="ghost" onClick={() => setArmedFor(null)}>Cancel</Button>
                 </>
               )
-              : <Button variant="ghost" onClick={() => setConfirmClear(true)} disabled={!anyTicks} title="Removes every tick, including hidden ones">Clear ticks</Button>}
+              : <Button variant="ghost" onClick={() => setArmedFor(tickState)} disabled={!anyTicks} title="Removes every tick, including hidden ones">Clear ticks</Button>}
           </div>
         </div>
         <p className="mt-3 text-xs text-muted print:hidden">

@@ -48,7 +48,9 @@ describe('csv', () => {
     expect(csvCell('a\rb')).toBe('"a\rb"');
     expect(csvCell(-115086.29)).toBe('-115086.29');
     expect(csvCell('Growth stock')).toBe('Growth stock');
-    expect(csvCell('a;=1+1')).toBe('"a;=1+1"'); // a ';' list-separator Excel would otherwise split off a formula
+    expect(csvCell('a;=1+1')).toBe(`"a;'=1+1"`); // a ';' list-separator Excel splits here and ignores the quotes
+    expect(csvCell('a; @SUM(1)\n-2+3')).toBe(`"a; '@SUM(1)\n'-2+3"`);
+    expect(csvCell('a;b')).toBe('"a;b"');
     expect(csvCell('a\tb')).toBe('"a\tb"');
   });
   it('audit tick keys: household refs, asset fingerprints and the #k of an identical row; anything else is dropped', () => {
